@@ -1,0 +1,267 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { ArrowLeft, CheckCircle2, XCircle, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { CandidateStatusBadge } from "@/components/CandidateStatusBadge";
+import {
+  approveCandidate,
+  getCandidateById,
+  getCandidateNotifications,
+  rejectCandidate,
+  updateCandidateForm,
+} from "@/lib/candidates.functions";
+
+export const Route = createFileRoute("/_authenticated/candidatos/$id")({
+  head: () => ({ meta: [{ title: "Revisão do candidato" }] }),
+  component: CandidatoDetailPage,
+});
+
+const DOC_LABELS: Record<string, string> = {
+  rg: "RG",
+  cpf: "CPF",
+  cnh: "CNH",
+  comprovante_residencia: "Comprovante de residência",
+};
+
+function CandidatoDetailPage() {
+  const { id } = Route.useParams();
+  const get = useServerFn(getCandidateById);
+  const approve = useServerFn(approveCandidate);
+  const reject = useServerFn(rejectCandidate);
+  const updateForm = useServerFn(updateCandidateForm);
+  const getNotif = useServerFn(getCandidateNotifications);
+  const qc = useQueryClient();
+
+  const q = useQuery({ queryKey: ["candidate", id], queryFn: () => get({ data: { id } }) });
+  const notifQ = useQuery({ queryKey: ["candidate-notif", id], queryFn: () => getNotif({ data: { id } }) });
+
+  const [activeDoc, setActiveDoc] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Record<string, string>>({});
+  const [reason, setReason] = useState("");
+
+  useEffect(() => {
+    if (q.data?.documents && !activeDoc) setActiveDoc(q.data.documents[0]?.id ?? null);
+  }, [q.data, activeDoc]);
+
+  const doc = q.data?.documents.find((d) => d.id === activeDoc);
+  const candidate = q.data?.candidate;
+
+  const approveM = useMutation({
+    mutationFn: () => approve({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Candidato aprovado");
+      qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const rejectM = useMutation({
+    mutationFn: () => reject({ data: { id, reason } }),
+    onSuccess: () => {
+      toast.success("Candidato rejeitado");
+      setReason("");
+      qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (q.isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
+  if (q.isError || !candidate) return <p className="text-sm text-rose-600">Erro ao carregar candidato.</p>;
+
+  const formData = (candidate.form_data ?? {}) as Record<string, string>;
+
+  return (
+    <div className="mx-auto max-w-7xl space-y-4">
+      <div className="flex items-center gap-3">
+        <Button asChild variant="ghost" size="sm"><Link to="/candidatos"><ArrowLeft className="h-4 w-4" /> Voltar</Link></Button>
+        <div className="flex-1">
+          <h1 className="text-2xl font-semibold">{candidate.full_name}</h1>
+          <p className="text-sm text-muted-foreground">{candidate.position ?? "—"} · {candidate.email ?? "sem email"}</p>
+        </div>
+        <CandidateStatusBadge status={candidate.status as never} />
+      </div>
+
+      <Tabs defaultValue="documentos">
+        <TabsList>
+          <TabsTrigger value="documentos">Documentos & OCR</TabsTrigger>
+          <TabsTrigger value="ficha">Ficha cadastral</TabsTrigger>
+          <TabsTrigger value="historico">Histórico</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="documentos" className="space-y-3">
+          <div className="grid gap-4 lg:grid-cols-[280px_1fr_360px]">
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Documentos enviados</CardTitle></CardHeader>
+              <CardContent className="space-y-1 p-2">
+                {q.data!.documents.length === 0 && (
+                  <p className="px-2 py-3 text-xs text-muted-foreground">Nenhum documento ainda.</p>
+                )}
+                {q.data!.documents.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => setActiveDoc(d.id)}
+                    className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm ${
+                      activeDoc === d.id ? "bg-accent text-accent-foreground" : "hover:bg-muted"
+                    }`}
+                  >
+                    <FileText className="h-4 w-4" />
+                    <div className="flex-1">
+                      <div className="font-medium">{DOC_LABELS[d.type] ?? d.type}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        Confiança: {Math.round((d.ocr_confidence ?? 0) * 100)}%
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden">
+              <CardContent className="flex min-h-[400px] items-center justify-center bg-muted/30 p-2">
+                {doc?.signed_url ? (
+                  /\.(pdf)$/i.test(doc.storage_path) ? (
+                    <iframe src={doc.signed_url} className="h-[600px] w-full" title="Documento" />
+                  ) : (
+                    <img src={doc.signed_url} alt="Documento" className="max-h-[600px] w-auto rounded-md object-contain" />
+                  )
+                ) : (
+                  <p className="text-sm text-muted-foreground">Selecione um documento</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Dados extraídos (OCR)</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {doc ? (
+                  Object.entries((doc.ocr_data ?? {}) as Record<string, string>).map(([k, v]) => (
+                    <div key={k} className="space-y-1">
+                      <Label className="text-xs uppercase tracking-wide text-muted-foreground">{k.replace(/_/g, " ")}</Label>
+                      <Input defaultValue={String(v)} />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">—</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {candidate.status !== "aprovado" && candidate.status !== "rejeitado" && (
+            <Card>
+              <CardContent className="flex flex-wrap items-end gap-3 p-4">
+                <div className="flex-1 min-w-[260px] space-y-1.5">
+                  <Label htmlFor="reason">Motivo (em caso de rejeição)</Label>
+                  <Textarea id="reason" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" disabled={rejectM.isPending || reason.trim().length < 3} onClick={() => rejectM.mutate()}>
+                    <XCircle className="h-4 w-4" /> Rejeitar
+                  </Button>
+                  <Button disabled={approveM.isPending} onClick={() => approveM.mutate()}>
+                    <CheckCircle2 className="h-4 w-4" /> Aprovar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {candidate.status === "rejeitado" && candidate.rejection_reason && (
+            <Card><CardContent className="p-4 text-sm"><span className="font-medium">Motivo da rejeição:</span> {candidate.rejection_reason}</CardContent></Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="ficha">
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Ficha consolidada</CardTitle></CardHeader>
+            <CardContent>
+              <FichaForm
+                initial={{ ...formData, full_name: candidate.full_name, cpf: candidate.cpf ?? "", email: candidate.email ?? "", phone: candidate.phone ?? "" }}
+                editing={editing}
+                setEditing={setEditing}
+                onSave={async (data) => {
+                  await updateForm({ data: { id, form_data: data } });
+                  toast.success("Ficha salva");
+                  qc.invalidateQueries({ queryKey: ["candidate", id] });
+                }}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="historico">
+          <Card>
+            <CardContent className="p-4">
+              {(notifQ.data?.length ?? 0) === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum evento ainda.</p>
+              ) : (
+                <ul className="space-y-2 text-sm">
+                  {notifQ.data!.map((n) => (
+                    <li key={n.id} className="flex items-center justify-between border-b pb-2 last:border-b-0">
+                      <span className="font-medium">{n.event}</span>
+                      <span className="text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString("pt-BR")}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function FichaForm({
+  initial,
+  editing,
+  setEditing,
+  onSave,
+}: {
+  initial: Record<string, string>;
+  editing: Record<string, string>;
+  setEditing: (v: Record<string, string>) => void;
+  onSave: (data: Record<string, string>) => Promise<void>;
+}) {
+  const merged = { ...initial, ...editing };
+  const fields: Array<[string, string]> = [
+    ["full_name", "Nome completo"],
+    ["cpf", "CPF"],
+    ["email", "Email"],
+    ["phone", "Telefone"],
+    ["data_nascimento", "Data de nascimento"],
+    ["endereco", "Endereço"],
+    ["cidade", "Cidade"],
+    ["uf", "UF"],
+    ["cep", "CEP"],
+  ];
+  return (
+    <form
+      onSubmit={async (e) => {
+        e.preventDefault();
+        await onSave(merged);
+      }}
+      className="grid gap-3 md:grid-cols-2"
+    >
+      {fields.map(([k, label]) => (
+        <div key={k} className="space-y-1.5">
+          <Label>{label}</Label>
+          <Input
+            value={merged[k] ?? ""}
+            onChange={(e) => setEditing({ ...editing, [k]: e.target.value })}
+          />
+        </div>
+      ))}
+      <div className="md:col-span-2">
+        <Button type="submit">Salvar ficha</Button>
+      </div>
+    </form>
+  );
+}
