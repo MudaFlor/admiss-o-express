@@ -14,16 +14,199 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      candidates: {
+        Row: {
+          access_token: string
+          cpf: string | null
+          created_at: string
+          created_by: string
+          email: string | null
+          form_data: Json
+          full_name: string
+          id: string
+          phone: string | null
+          position: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["candidate_status"]
+          token_expires_at: string
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string
+          cpf?: string | null
+          created_at?: string
+          created_by: string
+          email?: string | null
+          form_data?: Json
+          full_name: string
+          id?: string
+          phone?: string | null
+          position?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["candidate_status"]
+          token_expires_at?: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          cpf?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          form_data?: Json
+          full_name?: string
+          id?: string
+          phone?: string | null
+          position?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["candidate_status"]
+          token_expires_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          candidate_id: string
+          id: string
+          ocr_confidence: number | null
+          ocr_data: Json | null
+          status: Database["public"]["Enums"]["document_status"]
+          storage_path: string
+          type: Database["public"]["Enums"]["document_type"]
+          uploaded_at: string
+        }
+        Insert: {
+          candidate_id: string
+          id?: string
+          ocr_confidence?: number | null
+          ocr_data?: Json | null
+          status?: Database["public"]["Enums"]["document_status"]
+          storage_path: string
+          type: Database["public"]["Enums"]["document_type"]
+          uploaded_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          id?: string
+          ocr_confidence?: number | null
+          ocr_data?: Json | null
+          status?: Database["public"]["Enums"]["document_status"]
+          storage_path?: string
+          type?: Database["public"]["Enums"]["document_type"]
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          candidate_id: string | null
+          created_at: string
+          event: string
+          id: string
+          payload: Json | null
+        }
+        Insert: {
+          candidate_id?: string | null
+          created_at?: string
+          event: string
+          id?: string
+          payload?: Json | null
+        }
+        Update: {
+          candidate_id?: string | null
+          created_at?: string
+          event?: string
+          id?: string
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "rh"
+      candidate_status: "pendente" | "em_analise" | "aprovado" | "rejeitado"
+      document_status: "pendente" | "processado" | "aprovado" | "rejeitado"
+      document_type: "rg" | "cpf" | "cnh" | "comprovante_residencia"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +333,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "rh"],
+      candidate_status: ["pendente", "em_analise", "aprovado", "rejeitado"],
+      document_status: ["pendente", "processado", "aprovado", "rejeitado"],
+      document_type: ["rg", "cpf", "cnh", "comprovante_residencia"],
+    },
   },
 } as const
