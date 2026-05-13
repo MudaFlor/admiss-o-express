@@ -122,7 +122,7 @@ export const updateCandidateForm = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { error } = await supabase
       .from("candidates")
-      .update({ form_data: data.form_data })
+      .update({ form_data: data.form_data as never })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
