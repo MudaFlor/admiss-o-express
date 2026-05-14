@@ -79,5 +79,7 @@ export async function runOcr(type: DocumentType, _storagePath: string): Promise<
           data_emissao: fakeDate(2024, 2026),
         },
       };
+    case "curriculo":
+      return { confidence, fields: {} };
   }
 }

@@ -20,10 +20,12 @@ export type Database = {
           cpf: string | null
           created_at: string
           created_by: string
+          deletion_requested_at: string | null
           email: string | null
           form_data: Json
           full_name: string
           id: string
+          lgpd_accepted_at: string | null
           phone: string | null
           position: string | null
           rejection_reason: string | null
@@ -38,10 +40,12 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           created_by: string
+          deletion_requested_at?: string | null
           email?: string | null
           form_data?: Json
           full_name: string
           id?: string
+          lgpd_accepted_at?: string | null
           phone?: string | null
           position?: string | null
           rejection_reason?: string | null
@@ -56,10 +60,12 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           created_by?: string
+          deletion_requested_at?: string | null
           email?: string | null
           form_data?: Json
           full_name?: string
           id?: string
+          lgpd_accepted_at?: string | null
           phone?: string | null
           position?: string | null
           rejection_reason?: string | null
@@ -105,6 +111,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "documents_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lgpd_consents: {
+        Row: {
+          accepted_at: string
+          candidate_id: string
+          id: string
+          ip_address: string | null
+          terms_version: string
+          user_agent: string | null
+        }
+        Insert: {
+          accepted_at?: string
+          candidate_id: string
+          id?: string
+          ip_address?: string | null
+          terms_version?: string
+          user_agent?: string | null
+        }
+        Update: {
+          accepted_at?: string
+          candidate_id?: string
+          id?: string
+          ip_address?: string | null
+          terms_version?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lgpd_consents_candidate_id_fkey"
             columns: ["candidate_id"]
             isOneToOne: false
             referencedRelation: "candidates"
@@ -206,7 +247,12 @@ export type Database = {
       app_role: "admin" | "rh"
       candidate_status: "pendente" | "em_analise" | "aprovado" | "rejeitado"
       document_status: "pendente" | "processado" | "aprovado" | "rejeitado"
-      document_type: "rg" | "cpf" | "cnh" | "comprovante_residencia"
+      document_type:
+        | "rg"
+        | "cpf"
+        | "cnh"
+        | "comprovante_residencia"
+        | "curriculo"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -337,7 +383,13 @@ export const Constants = {
       app_role: ["admin", "rh"],
       candidate_status: ["pendente", "em_analise", "aprovado", "rejeitado"],
       document_status: ["pendente", "processado", "aprovado", "rejeitado"],
-      document_type: ["rg", "cpf", "cnh", "comprovante_residencia"],
+      document_type: [
+        "rg",
+        "cpf",
+        "cnh",
+        "comprovante_residencia",
+        "curriculo",
+      ],
     },
   },
 } as const

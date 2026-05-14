@@ -1,8 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import { runOcr } from "@/lib/ocr/provider";
+import { parseResumeFromStorage } from "@/lib/ai/resume-parser.server";
 import type { Database } from "@/integrations/supabase/types";
 
 type DocType = Database["public"]["Enums"]["document_type"];
@@ -21,6 +23,11 @@ async function loadByToken(token: string) {
   if (!data) throw new Error("Link inválido");
   if (new Date(data.token_expires_at) < new Date()) throw new Error("Link expirado");
   return data;
+}
+
+function requireConsent(candidate: { lgpd_accepted_at: string | null; deletion_requested_at: string | null }) {
+  if (candidate.deletion_requested_at) throw new Error("Cadastro encerrado a pedido do candidato");
+  if (!candidate.lgpd_accepted_at) throw new Error("Aceite do termo LGPD obrigatório");
 }
 
 export const getCandidateByToken = createServerFn({ method: "POST" })
@@ -42,6 +49,8 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
         position: candidate.position,
         status: candidate.status,
         form_data: candidate.form_data,
+        lgpd_accepted_at: candidate.lgpd_accepted_at,
+        deletion_requested_at: candidate.deletion_requested_at,
       },
       documents: documents ?? [],
     };
@@ -61,6 +70,7 @@ export const updateCandidateBasics = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const candidate = await loadByToken(data.token);
+    requireConsent(candidate);
     const cpf = normalizeCpf(data.cpf);
     if (!isValidCpf(cpf)) throw new Error("CPF inválido");
     const { error } = await supabaseAdmin
@@ -82,13 +92,14 @@ export const createDocumentUploadUrl = createServerFn({ method: "POST" })
     z
       .object({
         token: z.string().uuid(),
-        type: z.enum(["rg", "cpf", "cnh", "comprovante_residencia"]),
+        type: z.enum(["rg", "cpf", "cnh", "comprovante_residencia", "curriculo"]),
         ext: z.string().regex(/^[a-z0-9]{1,5}$/i),
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
     const candidate = await loadByToken(data.token);
+    requireConsent(candidate);
     const path = `${candidate.id}/${data.type}-${crypto.randomUUID()}.${data.ext.toLowerCase()}`;
     const { data: signed, error } = await supabaseAdmin.storage
       .from("candidate-documents")
@@ -102,13 +113,14 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
     z
       .object({
         token: z.string().uuid(),
-        type: z.enum(["rg", "cpf", "cnh", "comprovante_residencia"]),
+        type: z.enum(["rg", "cpf", "cnh", "comprovante_residencia", "curriculo"]),
         storage_path: z.string().min(3).max(300),
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
     const candidate = await loadByToken(data.token);
+    requireConsent(candidate);
     // Run mock OCR
     const ocr = await runOcr(data.type, data.storage_path);
 
@@ -154,6 +166,7 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const candidate = await loadByToken(data.token);
+    requireConsent(candidate);
 
     // Ensure all 4 documents uploaded
     const { data: docs } = await supabaseAdmin
@@ -176,5 +189,83 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
       payload: {},
     });
 
+    return { ok: true };
+  });
+
+export const acceptLgpdConsent = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ token: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const { data: candidate, error } = await supabaseAdmin
+      .from("candidates")
+      .select("id, token_expires_at, deletion_requested_at, lgpd_accepted_at")
+      .eq("access_token", data.token)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!candidate) throw new Error("Link inválido");
+    if (new Date(candidate.token_expires_at) < new Date()) throw new Error("Link expirado");
+    if (candidate.deletion_requested_at) throw new Error("Cadastro encerrado");
+
+    const ip = getRequestIP({ xForwardedFor: true }) ?? null;
+    const ua = getRequestHeader("user-agent") ?? null;
+
+    await supabaseAdmin.from("lgpd_consents").insert({
+      candidate_id: candidate.id,
+      ip_address: ip,
+      user_agent: ua,
+      terms_version: "v1",
+    });
+
+    if (!candidate.lgpd_accepted_at) {
+      await supabaseAdmin
+        .from("candidates")
+        .update({ lgpd_accepted_at: new Date().toISOString() })
+        .eq("id", candidate.id);
+    }
+    return { ok: true };
+  });
+
+export const parseResumeForCandidate = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z.object({ token: z.string().uuid(), storage_path: z.string().min(3).max(300) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const candidate = await loadByToken(data.token);
+    requireConsent(candidate);
+    const parsed = await parseResumeFromStorage(data.storage_path);
+
+    // Save curriculo doc reference (replace existing)
+    await supabaseAdmin.from("documents").delete().eq("candidate_id", candidate.id).eq("type", "curriculo");
+    await supabaseAdmin.from("documents").insert({
+      candidate_id: candidate.id,
+      type: "curriculo",
+      storage_path: data.storage_path,
+      ocr_data: parsed as never,
+      ocr_confidence: 0.9,
+      status: "pendente",
+    });
+
+    return parsed;
+  });
+
+export const requestDataDeletion = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ token: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const { data: candidate, error } = await supabaseAdmin
+      .from("candidates")
+      .select("id, token_expires_at")
+      .eq("access_token", data.token)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!candidate) throw new Error("Link inválido");
+    if (new Date(candidate.token_expires_at) < new Date()) throw new Error("Link expirado");
+    await supabaseAdmin
+      .from("candidates")
+      .update({ deletion_requested_at: new Date().toISOString() })
+      .eq("id", candidate.id);
+    await supabaseAdmin.from("notifications").insert({
+      candidate_id: candidate.id,
+      event: "candidate.deletion_requested",
+      payload: {},
+    });
     return { ok: true };
   });
