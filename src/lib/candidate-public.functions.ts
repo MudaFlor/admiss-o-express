@@ -22,11 +22,11 @@ async function loadByToken(token: string) {
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Link inválido");
   if (new Date(data.token_expires_at) < new Date()) throw new Error("Link expirado");
-  if (data.deletion_requested_at) throw new Error("Cadastro encerrado a pedido do candidato");
   return data;
 }
 
-function requireConsent(candidate: { lgpd_accepted_at: string | null }) {
+function requireConsent(candidate: { lgpd_accepted_at: string | null; deletion_requested_at: string | null }) {
+  if (candidate.deletion_requested_at) throw new Error("Cadastro encerrado a pedido do candidato");
   if (!candidate.lgpd_accepted_at) throw new Error("Aceite do termo LGPD obrigatório");
 }
 
@@ -49,6 +49,8 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
         position: candidate.position,
         status: candidate.status,
         form_data: candidate.form_data,
+        lgpd_accepted_at: candidate.lgpd_accepted_at,
+        deletion_requested_at: candidate.deletion_requested_at,
       },
       documents: documents ?? [],
     };
