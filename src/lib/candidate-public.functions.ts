@@ -6,7 +6,10 @@ import { runOcr } from "@/lib/ocr/provider";
 import type { Database } from "@/integrations/supabase/types";
 
 type DocType = Database["public"]["Enums"]["document_type"];
-const DOC_TYPES: readonly DocType[] = ["rg", "cpf", "cnh", "comprovante_residencia"] as const;
+const BASE_DOC_TYPES: readonly DocType[] = ["rg", "cpf", "comprovante_residencia"] as const;
+function requiredDocs(position: string | null): readonly DocType[] {
+  return /motorista/i.test(position ?? "") ? [...BASE_DOC_TYPES, "cnh"] : BASE_DOC_TYPES;
+}
 
 async function loadByToken(token: string) {
   const { data, error } = await supabaseAdmin
@@ -158,7 +161,7 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
       .select("type")
       .eq("candidate_id", candidate.id);
     const present = new Set((docs ?? []).map((d) => d.type));
-    const missing = DOC_TYPES.filter((t) => !present.has(t));
+    const missing = requiredDocs(candidate.position).filter((t) => !present.has(t));
     if (missing.length) throw new Error(`Faltam documentos: ${missing.join(", ")}`);
 
     const { error } = await supabaseAdmin
