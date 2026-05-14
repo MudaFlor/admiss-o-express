@@ -16,7 +16,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
-import { Route as CRouteImport } from './routes/c.'
 import { Route as AuthenticatedCandidatosIndexRouteImport } from './routes/_authenticated/candidatos.index'
 import { Route as AuthenticatedCandidatosIdRouteImport } from './routes/_authenticated/candidatos.$id'
 
@@ -55,11 +54,6 @@ const AuthenticatedConfiguracoesRoute =
     path: '/configuracoes',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const CRoute = CRouteImport.update({
-  id: '/c/',
-  path: '/c/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedCandidatosIndexRoute =
   AuthenticatedCandidatosIndexRouteImport.update({
     id: '/candidatos/',
@@ -77,7 +71,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/c/': typeof CRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/c/$token': typeof CTokenRoute
@@ -88,7 +81,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/c': typeof CRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/c/$token': typeof CTokenRoute
@@ -101,7 +93,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/c/': typeof CRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/c/$token': typeof CTokenRoute
@@ -114,7 +105,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/reset-password'
-    | '/c/'
     | '/configuracoes'
     | '/dashboard'
     | '/c/$token'
@@ -125,7 +115,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/reset-password'
-    | '/c'
     | '/configuracoes'
     | '/dashboard'
     | '/c/$token'
@@ -137,7 +126,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/reset-password'
-    | '/c/'
     | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
     | '/c/$token'
@@ -150,7 +138,6 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  CRoute: typeof CRoute
   CTokenRoute: typeof CTokenRoute
 }
 
@@ -205,13 +192,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/c/': {
-      id: '/c/'
-      path: '/c'
-      fullPath: '/c/'
-      preLoaderRoute: typeof CRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/candidatos/': {
       id: '/_authenticated/candidatos/'
       path: '/candidatos'
@@ -252,7 +232,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  CRoute: CRoute,
   CTokenRoute: CTokenRoute,
 }
 export const routeTree = rootRouteImport
