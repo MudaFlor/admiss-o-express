@@ -22,12 +22,12 @@ export const Route = createFileRoute("/c/$token")({
   component: CandidatePage,
 });
 
-const ALL_DOCS = [
+const ALL_DOCS: ReadonlyArray<{ type: "rg" | "cpf" | "cnh" | "comprovante_residencia"; label: string; driverOnly?: boolean }> = [
   { type: "rg", label: "RG" },
   { type: "cpf", label: "CPF" },
   { type: "cnh", label: "CNH", driverOnly: true },
   { type: "comprovante_residencia", label: "Comprovante de residência" },
-] as const;
+];
 
 function isDriver(position: string | null | undefined) {
   return !!position && /motorista/i.test(position);
