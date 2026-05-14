@@ -1,5 +1,4 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-// @ts-expect-error - mammoth has no bundled types in this stack
 import mammoth from "mammoth";
 
 export interface ParsedResume {
