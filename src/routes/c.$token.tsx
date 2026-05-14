@@ -22,12 +22,16 @@ export const Route = createFileRoute("/c/$token")({
   component: CandidatePage,
 });
 
-const DOCS = [
+const ALL_DOCS = [
   { type: "rg", label: "RG" },
   { type: "cpf", label: "CPF" },
-  { type: "cnh", label: "CNH" },
+  { type: "cnh", label: "CNH", driverOnly: true },
   { type: "comprovante_residencia", label: "Comprovante de residência" },
 ] as const;
+
+function isDriver(position: string | null | undefined) {
+  return !!position && /motorista/i.test(position);
+}
 
 function CandidatePage() {
   const { token } = Route.useParams();
@@ -47,6 +51,8 @@ function CandidatePage() {
 
   const { candidate, documents } = q.data!;
   const uploadedTypes = new Set(documents.map((d) => d.type));
+  const driver = isDriver(candidate.position);
+  const DOCS = ALL_DOCS.filter((d) => !d.driverOnly || driver);
   const allUploaded = DOCS.every((d) => uploadedTypes.has(d.type));
 
   if (candidate.status === "aprovado") return <Done title="Admissão aprovada!" desc="Você receberá os próximos passos por email." />;
@@ -199,7 +205,7 @@ function CandidatePage() {
               <div className="space-y-2 rounded-md border bg-muted/30 p-3 text-sm">
                 {documents.map((d) => (
                   <div key={d.id}>
-                    <div className="text-xs font-semibold uppercase text-muted-foreground">{DOCS.find((x) => x.type === d.type)?.label}</div>
+                       <div className="text-xs font-semibold uppercase text-muted-foreground">{ALL_DOCS.find((x) => x.type === d.type)?.label}</div>
                     {Object.entries((d.ocr_data ?? {}) as Record<string, string>).map(([k, v]) => (
                       <div key={k} className="flex justify-between gap-2">
                         <span className="text-muted-foreground">{k.replace(/_/g, " ")}</span>
