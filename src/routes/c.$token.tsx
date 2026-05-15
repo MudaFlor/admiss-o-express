@@ -360,17 +360,37 @@ function CandidatePage() {
             </div>
             <div className="space-y-2">
               {DOCS.map((d) => {
-                const done = uploadedTypes.has(d.type);
+                const uploaded = documents.find((x) => x.type === d.type);
+                const done = !!uploaded;
+                const isPdf = uploaded?.storage_path ? /\.pdf$/i.test(uploaded.storage_path) : false;
                 return (
                   <Card key={d.type}>
                     <CardContent className="flex items-center justify-between gap-3 p-4">
                       <div className="flex items-center gap-3">
-                        <div className={`flex h-9 w-9 items-center justify-center rounded-md ${done ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
-                          {done ? <CheckCircle2 className="h-5 w-5" /> : <FileText className="h-4 w-4" />}
-                        </div>
+                        {done && uploaded?.signed_url && !isPdf ? (
+                          <a href={uploaded.signed_url} target="_blank" rel="noreferrer" className="block">
+                            <img
+                              src={uploaded.signed_url}
+                              alt={d.label}
+                              className="h-14 w-14 rounded-md border object-cover"
+                            />
+                          </a>
+                        ) : (
+                          <div className={`flex h-14 w-14 items-center justify-center rounded-md ${done ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
+                            {done ? <CheckCircle2 className="h-5 w-5" /> : <FileText className="h-4 w-4" />}
+                          </div>
+                        )}
                         <div>
                           <div className="text-sm font-medium">{d.label}</div>
-                          <div className="text-xs text-muted-foreground">{done ? "Enviado" : "Pendente"}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {done ? (
+                              uploaded?.signed_url ? (
+                                <a href={uploaded.signed_url} target="_blank" rel="noreferrer" className="text-primary underline">
+                                  {isPdf ? "Visualizar PDF" : "Ver em tamanho real"}
+                                </a>
+                              ) : "Enviado"
+                            ) : "Pendente"}
+                          </div>
                         </div>
                       </div>
                       <label className="cursor-pointer">
