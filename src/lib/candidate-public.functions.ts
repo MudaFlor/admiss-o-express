@@ -36,8 +36,17 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
     const candidate = await loadByToken(data.token);
     const { data: documents } = await supabaseAdmin
       .from("documents")
-      .select("id, type, status, ocr_data, ocr_confidence, uploaded_at")
+      .select("id, type, status, storage_path, ocr_data, ocr_confidence, uploaded_at")
       .eq("candidate_id", candidate.id);
+
+    const docsWithUrls = await Promise.all(
+      (documents ?? []).map(async (d) => {
+        const { data: signed } = await supabaseAdmin.storage
+          .from("candidate-documents")
+          .createSignedUrl(d.storage_path, 60 * 10);
+        return { ...d, signed_url: signed?.signedUrl ?? null };
+      }),
+    );
 
     return {
       candidate: {
@@ -52,7 +61,7 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
         lgpd_accepted_at: candidate.lgpd_accepted_at,
         deletion_requested_at: candidate.deletion_requested_at,
       },
-      documents: documents ?? [],
+      documents: docsWithUrls,
     };
   });
 
