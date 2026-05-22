@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CTokenRouteImport } from './routes/c.$token'
+import { Route as AuthenticatedRecrutamentoRouteImport } from './routes/_authenticated/recrutamento'
 import { Route as AuthenticatedFeriasRouteImport } from './routes/_authenticated/ferias'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -46,6 +47,12 @@ const CTokenRoute = CTokenRouteImport.update({
   path: '/c/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRecrutamentoRoute =
+  AuthenticatedRecrutamentoRouteImport.update({
+    id: '/recrutamento',
+    path: '/recrutamento',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedFeriasRoute = AuthenticatedFeriasRouteImport.update({
   id: '/ferias',
   path: '/ferias',
@@ -95,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/ferias': typeof AuthenticatedFeriasRoute
+  '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
   '/candidatos/': typeof AuthenticatedCandidatosIndexRoute
@@ -108,6 +116,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/ferias': typeof AuthenticatedFeriasRoute
+  '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
   '/candidatos': typeof AuthenticatedCandidatosIndexRoute
@@ -123,6 +132,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/ferias': typeof AuthenticatedFeriasRoute
+  '/_authenticated/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
   '/_authenticated/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
   '/_authenticated/candidatos/': typeof AuthenticatedCandidatosIndexRoute
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/documentos'
     | '/ferias'
+    | '/recrutamento'
     | '/c/$token'
     | '/candidatos/$id'
     | '/candidatos/'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/documentos'
     | '/ferias'
+    | '/recrutamento'
     | '/c/$token'
     | '/candidatos/$id'
     | '/candidatos'
@@ -165,6 +177,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/documentos'
     | '/_authenticated/ferias'
+    | '/_authenticated/recrutamento'
     | '/c/$token'
     | '/_authenticated/candidatos/$id'
     | '/_authenticated/candidatos/'
@@ -214,6 +227,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/c/$token'
       preLoaderRoute: typeof CTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/recrutamento': {
+      id: '/_authenticated/recrutamento'
+      path: '/recrutamento'
+      fullPath: '/recrutamento'
+      preLoaderRoute: typeof AuthenticatedRecrutamentoRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/ferias': {
       id: '/_authenticated/ferias'
@@ -273,6 +293,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedFeriasRoute: typeof AuthenticatedFeriasRoute
+  AuthenticatedRecrutamentoRoute: typeof AuthenticatedRecrutamentoRoute
   AuthenticatedCandidatosIdRoute: typeof AuthenticatedCandidatosIdRoute
   AuthenticatedCandidatosIndexRoute: typeof AuthenticatedCandidatosIndexRoute
 }
@@ -283,6 +304,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedFeriasRoute: AuthenticatedFeriasRoute,
+  AuthenticatedRecrutamentoRoute: AuthenticatedRecrutamentoRoute,
   AuthenticatedCandidatosIdRoute: AuthenticatedCandidatosIdRoute,
   AuthenticatedCandidatosIndexRoute: AuthenticatedCandidatosIndexRoute,
 }
