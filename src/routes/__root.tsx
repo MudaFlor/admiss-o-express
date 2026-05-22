@@ -73,17 +73,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Admissão Digital — RH integrado ao WhatsApp" },
+      { title: "FlowRH — Plataforma de RH e Departamento Pessoal" },
       {
         name: "description",
         content:
-          "Plataforma de admissão digital: envie um link pelo WhatsApp, o candidato envia documentos e o sistema lê automaticamente com OCR.",
+          "FlowRH: a plataforma moderna de RH e Departamento Pessoal. Gestão de colaboradores, documentos, férias e recrutamento em um único lugar.",
       },
-      { property: "og:title", content: "Admissão Digital — RH integrado ao WhatsApp" },
+      { property: "og:title", content: "FlowRH — Plataforma de RH" },
       {
         property: "og:description",
         content:
-          "Reduza burocracia na admissão. Documentos, OCR e ficha cadastral em um único fluxo.",
+          "Centralize colaboradores, documentos, férias e recrutamento. RH moderno, premium e sem atrito.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
