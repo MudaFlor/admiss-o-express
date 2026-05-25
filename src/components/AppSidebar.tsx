@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, FileText, Palmtree, Briefcase, Settings, LogOut, Sparkles } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Palmtree, Briefcase, Settings, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   Sidebar,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import logo from "@/assets/logo-mudaflor.jpg";
 
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -41,13 +42,13 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-3 px-2 py-4">
-          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-[image:var(--gradient-brand)] text-primary-foreground shadow-[var(--shadow-elevated)]">
-            <Sparkles className="h-4.5 w-4.5" strokeWidth={2.5} />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/95 ring-1 ring-white/10">
+            <img src={logo} alt="Mudaflor" className="h-7 w-7 object-contain" />
           </div>
           {!collapsed && (
             <div className="flex flex-col leading-tight">
-              <span className="text-base font-bold tracking-tight text-sidebar-foreground">FlowRH</span>
-              <span className="text-[10.5px] font-medium uppercase tracking-wider text-sidebar-foreground/50">People Platform</span>
+              <span className="text-base font-semibold tracking-tight text-sidebar-foreground">Mudaflor</span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-sidebar-foreground/40">People OS</span>
             </div>
           )}
         </div>
