@@ -73,13 +73,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "FlowRH — Plataforma de RH e Departamento Pessoal" },
+      { title: "Mudaflor — People OS" },
       {
         name: "description",
         content:
-          "FlowRH: a plataforma moderna de RH e Departamento Pessoal. Gestão de colaboradores, documentos, férias e recrutamento em um único lugar.",
+          "Mudaflor People OS: plataforma premium para gestão de colaboradores, documentos, férias e recrutamento.",
       },
-      { property: "og:title", content: "FlowRH — Plataforma de RH" },
+      { property: "og:title", content: "Mudaflor — People OS" },
       {
         property: "og:description",
         content:
