@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Sparkles, Mail, Lock, ArrowRight, Users, UserCog, User } from "lucide-react";
+import { Mail, Lock, ArrowRight, Users, UserCog, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import loginArt from "@/assets/flowrh-login.jpg";
+import logo from "@/assets/logo-mudaflor.jpg";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -95,25 +95,24 @@ function LoginPage() {
     <div className="grid min-h-screen w-full lg:grid-cols-2">
       {/* Left: branding */}
       <div className="relative hidden overflow-hidden bg-sidebar lg:flex lg:flex-col">
-        <img
-          src={loginArt}
-          alt=""
-          aria-hidden="true"
-          width={1024}
-          height={1536}
-          className="absolute inset-0 h-full w-full object-cover opacity-70"
+        <div
+          className="absolute inset-0 opacity-40"
+          style={{
+            background:
+              "radial-gradient(circle at 30% 20%, var(--primary) 0%, transparent 45%), radial-gradient(circle at 70% 80%, var(--accent) 0%, transparent 45%)",
+          }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-sidebar/85 via-sidebar/60 to-sidebar/95" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:24px_24px]" />
 
         <div className="relative z-10 flex h-full flex-col justify-between p-12 text-sidebar-foreground">
           <Link to="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[image:var(--gradient-brand)] shadow-[var(--shadow-elevated)]">
-              <Sparkles className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
+            <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white/95 ring-1 ring-white/10">
+              <img src={logo} alt="Mudaflor" className="h-8 w-8 object-contain" />
             </div>
             <div className="flex flex-col leading-tight">
-              <span className="text-lg font-bold tracking-tight">FlowRH</span>
-              <span className="text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/60">
-                People Platform
+              <span className="text-lg font-semibold tracking-tight">Mudaflor</span>
+              <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-sidebar-foreground/50">
+                People OS
               </span>
             </div>
           </Link>
@@ -124,24 +123,25 @@ function LoginPage() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="max-w-md space-y-6"
           >
-            <h1 className="text-4xl font-bold leading-tight tracking-tight">
-              A plataforma de RH que sua empresa merece.
+            <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight">
+              A plataforma de gestão de pessoas da Mudaflor.
             </h1>
-            <p className="text-lg text-sidebar-foreground/75">
-              Colaboradores, documentos, férias e recrutamento — em um único lugar, com a experiência
-              premium que sua equipe vai amar usar.
+            <p className="text-base text-sidebar-foreground/70">
+              Colaboradores, documentos, férias e recrutamento — operados em um único painel premium,
+              com a precisão que sua equipe merece.
             </p>
             <div className="flex items-center gap-6 pt-4">
-              {["+10k colaboradores", "LGPD ready", "99.9% uptime"].map((t) => (
-                <div key={t} className="text-xs font-medium text-sidebar-foreground/60">
+              {["LGPD compliant", "99.9% uptime", "SSO corporativo"].map((t) => (
+                <div key={t} className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/55">
+                  <span className="h-1 w-1 rounded-full bg-primary" />
                   {t}
                 </div>
               ))}
             </div>
           </motion.div>
 
-          <div className="text-xs text-sidebar-foreground/40">
-            © {new Date().getFullYear()} FlowRH · Todos os direitos reservados
+          <div className="text-xs text-sidebar-foreground/35">
+            © {new Date().getFullYear()} Mudaflor · Todos os direitos reservados
           </div>
         </div>
       </div>
@@ -156,10 +156,10 @@ function LoginPage() {
         >
           <div className="mb-8 lg:hidden">
             <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[image:var(--gradient-brand)] text-primary-foreground">
-                <Sparkles className="h-4 w-4" />
+              <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-white/95">
+                <img src={logo} alt="Mudaflor" className="h-6 w-6 object-contain" />
               </div>
-              <span className="text-lg font-bold tracking-tight">FlowRH</span>
+              <span className="text-lg font-semibold tracking-tight">Mudaflor</span>
             </Link>
           </div>
 
@@ -235,7 +235,7 @@ function LoginPage() {
                     Esqueci minha senha
                   </button>
                 </div>
-                <Button type="submit" disabled={loading} className="group h-11 w-full bg-[image:var(--gradient-brand)] text-base font-semibold shadow-[var(--shadow-elevated)] transition-all hover:opacity-95 hover:shadow-lg">
+                <Button type="submit" disabled={loading} className="group h-11 w-full bg-primary text-base font-semibold text-primary-foreground shadow-[var(--shadow-elevated)] transition-all hover:bg-primary/90">
                   {loading ? "Entrando..." : "Entrar"}
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Button>
@@ -273,7 +273,7 @@ function LoginPage() {
                   <Input id="signup_password" name="password" type="password" required minLength={8} autoComplete="new-password" className="h-11" />
                   <p className="text-[11px] text-muted-foreground">Mínimo de 8 caracteres.</p>
                 </div>
-                <Button type="submit" disabled={loading} className="h-11 w-full bg-[image:var(--gradient-brand)] font-semibold shadow-[var(--shadow-elevated)] hover:opacity-95">
+                <Button type="submit" disabled={loading} className="h-11 w-full bg-primary font-semibold text-primary-foreground shadow-[var(--shadow-elevated)] hover:bg-primary/90">
                   {loading ? "Criando..." : "Criar minha conta"}
                 </Button>
               </form>
