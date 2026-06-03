@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      absences: {
+        Row: {
+          created_at: string
+          created_by: string
+          employee_id: string
+          end_date: string
+          hours_lost: number
+          id: string
+          notes: string | null
+          reason: Database["public"]["Enums"]["absence_reason"]
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          employee_id: string
+          end_date: string
+          hours_lost?: number
+          id?: string
+          notes?: string | null
+          reason: Database["public"]["Enums"]["absence_reason"]
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          employee_id?: string
+          end_date?: string
+          hours_lost?: number
+          id?: string
+          notes?: string | null
+          reason?: Database["public"]["Enums"]["absence_reason"]
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "absences_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       candidates: {
         Row: {
           access_token: string
@@ -111,6 +158,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "documents_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employees: {
+        Row: {
+          admission_date: string
+          candidate_id: string | null
+          created_at: string
+          created_by: string
+          department: string | null
+          full_name: string
+          id: string
+          position: string | null
+          termination_date: string | null
+          termination_reason:
+            | Database["public"]["Enums"]["termination_reason"]
+            | null
+          updated_at: string
+        }
+        Insert: {
+          admission_date: string
+          candidate_id?: string | null
+          created_at?: string
+          created_by: string
+          department?: string | null
+          full_name: string
+          id?: string
+          position?: string | null
+          termination_date?: string | null
+          termination_reason?:
+            | Database["public"]["Enums"]["termination_reason"]
+            | null
+          updated_at?: string
+        }
+        Update: {
+          admission_date?: string
+          candidate_id?: string | null
+          created_at?: string
+          created_by?: string
+          department?: string | null
+          full_name?: string
+          id?: string
+          position?: string | null
+          termination_date?: string | null
+          termination_reason?:
+            | Database["public"]["Enums"]["termination_reason"]
+            | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_candidate_id_fkey"
             columns: ["candidate_id"]
             isOneToOne: false
             referencedRelation: "candidates"
@@ -244,6 +347,11 @@ export type Database = {
       }
     }
     Enums: {
+      absence_reason:
+        | "atestado"
+        | "falta_justificada"
+        | "falta_injustificada"
+        | "licenca"
       app_role: "admin" | "rh"
       candidate_status: "pendente" | "em_analise" | "aprovado" | "rejeitado"
       document_status: "pendente" | "processado" | "aprovado" | "rejeitado"
@@ -253,6 +361,12 @@ export type Database = {
         | "cnh"
         | "comprovante_residencia"
         | "curriculo"
+      termination_reason:
+        | "pedido_demissao"
+        | "sem_justa_causa"
+        | "justa_causa"
+        | "fim_experiencia"
+        | "acordo"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -380,6 +494,12 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      absence_reason: [
+        "atestado",
+        "falta_justificada",
+        "falta_injustificada",
+        "licenca",
+      ],
       app_role: ["admin", "rh"],
       candidate_status: ["pendente", "em_analise", "aprovado", "rejeitado"],
       document_status: ["pendente", "processado", "aprovado", "rejeitado"],
@@ -389,6 +509,13 @@ export const Constants = {
         "cnh",
         "comprovante_residencia",
         "curriculo",
+      ],
+      termination_reason: [
+        "pedido_demissao",
+        "sem_justa_causa",
+        "justa_causa",
+        "fim_experiencia",
+        "acordo",
       ],
     },
   },
