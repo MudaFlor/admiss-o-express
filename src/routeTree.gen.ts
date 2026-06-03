@@ -23,6 +23,7 @@ import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authen
 import { Route as AuthenticatedColaboradoresRouteImport } from './routes/_authenticated/colaboradores'
 import { Route as AuthenticatedGestaoIndexRouteImport } from './routes/_authenticated/gestao.index'
 import { Route as AuthenticatedCandidatosIndexRouteImport } from './routes/_authenticated/candidatos.index'
+import { Route as AuthenticatedGestaoAbsenteismoRouteImport } from './routes/_authenticated/gestao.absenteismo'
 import { Route as AuthenticatedCandidatosIdRouteImport } from './routes/_authenticated/candidatos.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -99,6 +100,12 @@ const AuthenticatedCandidatosIndexRoute =
     path: '/candidatos/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedGestaoAbsenteismoRoute =
+  AuthenticatedGestaoAbsenteismoRouteImport.update({
+    id: '/absenteismo',
+    path: '/absenteismo',
+    getParentRoute: () => AuthenticatedGestaoRoute,
+  } as any)
 const AuthenticatedCandidatosIdRoute =
   AuthenticatedCandidatosIdRouteImport.update({
     id: '/candidatos/$id',
@@ -119,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
+  '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/candidatos/': typeof AuthenticatedCandidatosIndexRoute
   '/gestao/': typeof AuthenticatedGestaoIndexRoute
 }
@@ -134,6 +142,7 @@ export interface FileRoutesByTo {
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
+  '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/candidatos': typeof AuthenticatedCandidatosIndexRoute
   '/gestao': typeof AuthenticatedGestaoIndexRoute
 }
@@ -152,6 +161,7 @@ export interface FileRoutesById {
   '/_authenticated/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
   '/_authenticated/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
+  '/_authenticated/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/_authenticated/candidatos/': typeof AuthenticatedCandidatosIndexRoute
   '/_authenticated/gestao/': typeof AuthenticatedGestaoIndexRoute
 }
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/recrutamento'
     | '/c/$token'
     | '/candidatos/$id'
+    | '/gestao/absenteismo'
     | '/candidatos/'
     | '/gestao/'
   fileRoutesByTo: FileRoutesByTo
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/recrutamento'
     | '/c/$token'
     | '/candidatos/$id'
+    | '/gestao/absenteismo'
     | '/candidatos'
     | '/gestao'
   id:
@@ -202,6 +214,7 @@ export interface FileRouteTypes {
     | '/_authenticated/recrutamento'
     | '/c/$token'
     | '/_authenticated/candidatos/$id'
+    | '/_authenticated/gestao/absenteismo'
     | '/_authenticated/candidatos/'
     | '/_authenticated/gestao/'
   fileRoutesById: FileRoutesById
@@ -314,6 +327,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCandidatosIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/gestao/absenteismo': {
+      id: '/_authenticated/gestao/absenteismo'
+      path: '/absenteismo'
+      fullPath: '/gestao/absenteismo'
+      preLoaderRoute: typeof AuthenticatedGestaoAbsenteismoRouteImport
+      parentRoute: typeof AuthenticatedGestaoRoute
+    }
     '/_authenticated/candidatos/$id': {
       id: '/_authenticated/candidatos/$id'
       path: '/candidatos/$id'
@@ -325,10 +345,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedGestaoRouteChildren {
+  AuthenticatedGestaoAbsenteismoRoute: typeof AuthenticatedGestaoAbsenteismoRoute
   AuthenticatedGestaoIndexRoute: typeof AuthenticatedGestaoIndexRoute
 }
 
 const AuthenticatedGestaoRouteChildren: AuthenticatedGestaoRouteChildren = {
+  AuthenticatedGestaoAbsenteismoRoute: AuthenticatedGestaoAbsenteismoRoute,
   AuthenticatedGestaoIndexRoute: AuthenticatedGestaoIndexRoute,
 }
 
