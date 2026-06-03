@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedRecrutamentoRouteImport } from './routes/_authenticated/recrutamento'
+import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated/gestao'
 import { Route as AuthenticatedFeriasRouteImport } from './routes/_authenticated/ferias'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -53,6 +54,11 @@ const AuthenticatedRecrutamentoRoute =
     path: '/recrutamento',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedGestaoRoute = AuthenticatedGestaoRouteImport.update({
+  id: '/gestao',
+  path: '/gestao',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedFeriasRoute = AuthenticatedFeriasRouteImport.update({
   id: '/ferias',
   path: '/ferias',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/ferias': typeof AuthenticatedFeriasRoute
+  '/gestao': typeof AuthenticatedGestaoRoute
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/ferias': typeof AuthenticatedFeriasRoute
+  '/gestao': typeof AuthenticatedGestaoRoute
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/ferias': typeof AuthenticatedFeriasRoute
+  '/_authenticated/gestao': typeof AuthenticatedGestaoRoute
   '/_authenticated/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
   '/_authenticated/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/documentos'
     | '/ferias'
+    | '/gestao'
     | '/recrutamento'
     | '/c/$token'
     | '/candidatos/$id'
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/documentos'
     | '/ferias'
+    | '/gestao'
     | '/recrutamento'
     | '/c/$token'
     | '/candidatos/$id'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/documentos'
     | '/_authenticated/ferias'
+    | '/_authenticated/gestao'
     | '/_authenticated/recrutamento'
     | '/c/$token'
     | '/_authenticated/candidatos/$id'
@@ -233,6 +245,13 @@ declare module '@tanstack/react-router' {
       path: '/recrutamento'
       fullPath: '/recrutamento'
       preLoaderRoute: typeof AuthenticatedRecrutamentoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/gestao': {
+      id: '/_authenticated/gestao'
+      path: '/gestao'
+      fullPath: '/gestao'
+      preLoaderRoute: typeof AuthenticatedGestaoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/ferias': {
@@ -293,6 +312,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedFeriasRoute: typeof AuthenticatedFeriasRoute
+  AuthenticatedGestaoRoute: typeof AuthenticatedGestaoRoute
   AuthenticatedRecrutamentoRoute: typeof AuthenticatedRecrutamentoRoute
   AuthenticatedCandidatosIdRoute: typeof AuthenticatedCandidatosIdRoute
   AuthenticatedCandidatosIndexRoute: typeof AuthenticatedCandidatosIndexRoute
@@ -304,6 +324,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedFeriasRoute: AuthenticatedFeriasRoute,
+  AuthenticatedGestaoRoute: AuthenticatedGestaoRoute,
   AuthenticatedRecrutamentoRoute: AuthenticatedRecrutamentoRoute,
   AuthenticatedCandidatosIdRoute: AuthenticatedCandidatosIdRoute,
   AuthenticatedCandidatosIndexRoute: AuthenticatedCandidatosIndexRoute,
@@ -323,3 +344,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
