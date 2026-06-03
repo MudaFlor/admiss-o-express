@@ -24,6 +24,7 @@ import { Route as AuthenticatedColaboradoresRouteImport } from './routes/_authen
 import { Route as AuthenticatedGestaoIndexRouteImport } from './routes/_authenticated/gestao.index'
 import { Route as AuthenticatedCandidatosIndexRouteImport } from './routes/_authenticated/candidatos.index'
 import { Route as AuthenticatedGestaoRotatividadeRouteImport } from './routes/_authenticated/gestao.rotatividade'
+import { Route as AuthenticatedGestaoPipelineRouteImport } from './routes/_authenticated/gestao.pipeline'
 import { Route as AuthenticatedGestaoAbsenteismoRouteImport } from './routes/_authenticated/gestao.absenteismo'
 import { Route as AuthenticatedCandidatosIdRouteImport } from './routes/_authenticated/candidatos.$id'
 
@@ -107,6 +108,12 @@ const AuthenticatedGestaoRotatividadeRoute =
     path: '/rotatividade',
     getParentRoute: () => AuthenticatedGestaoRoute,
   } as any)
+const AuthenticatedGestaoPipelineRoute =
+  AuthenticatedGestaoPipelineRouteImport.update({
+    id: '/pipeline',
+    path: '/pipeline',
+    getParentRoute: () => AuthenticatedGestaoRoute,
+  } as any)
 const AuthenticatedGestaoAbsenteismoRoute =
   AuthenticatedGestaoAbsenteismoRouteImport.update({
     id: '/absenteismo',
@@ -134,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/c/$token': typeof CTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
   '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
+  '/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
   '/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/candidatos/': typeof AuthenticatedCandidatosIndexRoute
   '/gestao/': typeof AuthenticatedGestaoIndexRoute
@@ -151,6 +159,7 @@ export interface FileRoutesByTo {
   '/c/$token': typeof CTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
   '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
+  '/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
   '/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/candidatos': typeof AuthenticatedCandidatosIndexRoute
   '/gestao': typeof AuthenticatedGestaoIndexRoute
@@ -171,6 +180,7 @@ export interface FileRoutesById {
   '/c/$token': typeof CTokenRoute
   '/_authenticated/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
   '/_authenticated/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
+  '/_authenticated/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
   '/_authenticated/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/_authenticated/candidatos/': typeof AuthenticatedCandidatosIndexRoute
   '/_authenticated/gestao/': typeof AuthenticatedGestaoIndexRoute
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/candidatos/$id'
     | '/gestao/absenteismo'
+    | '/gestao/pipeline'
     | '/gestao/rotatividade'
     | '/candidatos/'
     | '/gestao/'
@@ -208,6 +219,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/candidatos/$id'
     | '/gestao/absenteismo'
+    | '/gestao/pipeline'
     | '/gestao/rotatividade'
     | '/candidatos'
     | '/gestao'
@@ -227,6 +239,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/_authenticated/candidatos/$id'
     | '/_authenticated/gestao/absenteismo'
+    | '/_authenticated/gestao/pipeline'
     | '/_authenticated/gestao/rotatividade'
     | '/_authenticated/candidatos/'
     | '/_authenticated/gestao/'
@@ -347,6 +360,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGestaoRotatividadeRouteImport
       parentRoute: typeof AuthenticatedGestaoRoute
     }
+    '/_authenticated/gestao/pipeline': {
+      id: '/_authenticated/gestao/pipeline'
+      path: '/pipeline'
+      fullPath: '/gestao/pipeline'
+      preLoaderRoute: typeof AuthenticatedGestaoPipelineRouteImport
+      parentRoute: typeof AuthenticatedGestaoRoute
+    }
     '/_authenticated/gestao/absenteismo': {
       id: '/_authenticated/gestao/absenteismo'
       path: '/absenteismo'
@@ -366,12 +386,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedGestaoRouteChildren {
   AuthenticatedGestaoAbsenteismoRoute: typeof AuthenticatedGestaoAbsenteismoRoute
+  AuthenticatedGestaoPipelineRoute: typeof AuthenticatedGestaoPipelineRoute
   AuthenticatedGestaoRotatividadeRoute: typeof AuthenticatedGestaoRotatividadeRoute
   AuthenticatedGestaoIndexRoute: typeof AuthenticatedGestaoIndexRoute
 }
 
 const AuthenticatedGestaoRouteChildren: AuthenticatedGestaoRouteChildren = {
   AuthenticatedGestaoAbsenteismoRoute: AuthenticatedGestaoAbsenteismoRoute,
+  AuthenticatedGestaoPipelineRoute: AuthenticatedGestaoPipelineRoute,
   AuthenticatedGestaoRotatividadeRoute: AuthenticatedGestaoRotatividadeRoute,
   AuthenticatedGestaoIndexRoute: AuthenticatedGestaoIndexRoute,
 }
