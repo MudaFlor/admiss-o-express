@@ -57,20 +57,20 @@ function OverviewPage() {
             <AreaChart data={data.series}>
               <defs>
                 <linearGradient id="abs" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="turn" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="hsl(var(--border))" strokeOpacity={0.3} vertical={false} />
-              <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} unit="%" />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-              <Area type="monotone" dataKey="absenteeism_rate" stroke="hsl(var(--primary))" fill="url(#abs)" strokeWidth={2} name="Absenteísmo %" />
-              <Area type="monotone" dataKey="turnover_rate" stroke="hsl(var(--accent))" fill="url(#turn)" strokeWidth={2} name="Rotatividade %" />
+              <CartesianGrid stroke="var(--border)" strokeOpacity={0.3} vertical={false} />
+              <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} unit="%" />
+              <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+              <Area type="monotone" dataKey="absenteeism_rate" stroke="var(--primary)" fill="url(#abs)" strokeWidth={2} name="Absenteísmo %" />
+              <Area type="monotone" dataKey="turnover_rate" stroke="var(--accent)" fill="url(#turn)" strokeWidth={2} name="Rotatividade %" />
             </AreaChart>
           </ResponsiveContainer>
         </div>

@@ -21,11 +21,11 @@ function PipelinePage() {
 
   const k = data.kpis;
   const funnel = [
-    { label: "Currículos recebidos", value: data.pipeline.curriculos, color: "hsl(var(--primary))" },
+    { label: "Currículos recebidos", value: data.pipeline.curriculos, color: "var(--primary)" },
     { label: "Pendentes / Em análise", value: data.pipeline.pendentes + data.pipeline.em_analise, color: "#6366f1" },
     { label: "Em integração", value: data.pipeline.aprovados_aguardando, color: "#C9A84C" },
-    { label: "Admissões no período", value: k.period_admissions, color: "hsl(var(--primary))" },
-    { label: "Rescisões em experiência", value: k.probation_terminations, color: "hsl(var(--accent))" },
+    { label: "Admissões no período", value: k.period_admissions, color: "var(--primary)" },
+    { label: "Rescisões em experiência", value: k.probation_terminations, color: "var(--accent)" },
   ];
   const max = Math.max(...funnel.map((f) => f.value), 1);
 

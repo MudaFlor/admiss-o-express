@@ -31,7 +31,7 @@ const reasonLabels: Record<string, string> = {
   acordo: "Acordo",
 };
 
-const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "#C9A84C", "#6366f1", "#94a3b8"];
+const PIE_COLORS = ["var(--primary)", "var(--accent)", "#C9A84C", "#6366f1", "#94a3b8"];
 
 function RotatividadePage() {
   const fetcher = useServerFn(getManagementOverview);
@@ -62,13 +62,13 @@ function RotatividadePage() {
         <div className="mt-4 h-72">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={data.series}>
-              <CartesianGrid stroke="hsl(var(--border))" strokeOpacity={0.3} vertical={false} />
-              <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} unit="%" />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-              <Bar yAxisId="left" dataKey="admissions" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Admissões" />
-              <Bar yAxisId="left" dataKey="terminations" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} name="Rescisões" />
+              <CartesianGrid stroke="var(--border)" strokeOpacity={0.3} vertical={false} />
+              <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis yAxisId="left" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis yAxisId="right" orientation="right" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} unit="%" />
+              <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+              <Bar yAxisId="left" dataKey="admissions" fill="var(--primary)" radius={[4, 4, 0, 0]} name="Admissões" />
+              <Bar yAxisId="left" dataKey="terminations" fill="var(--accent)" radius={[4, 4, 0, 0]} name="Rescisões" />
               <Line yAxisId="right" type="monotone" dataKey="turnover_rate" stroke="#C9A84C" strokeWidth={2.5} name="Turnover %" dot={{ r: 3 }} />
             </ComposedChart>
           </ResponsiveContainer>
@@ -89,7 +89,7 @@ function RotatividadePage() {
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
                 </PieChart>
               </ResponsiveContainer>
             )}
