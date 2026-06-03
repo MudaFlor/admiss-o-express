@@ -23,6 +23,7 @@ import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authen
 import { Route as AuthenticatedColaboradoresRouteImport } from './routes/_authenticated/colaboradores'
 import { Route as AuthenticatedGestaoIndexRouteImport } from './routes/_authenticated/gestao.index'
 import { Route as AuthenticatedCandidatosIndexRouteImport } from './routes/_authenticated/candidatos.index'
+import { Route as AuthenticatedGestaoRotatividadeRouteImport } from './routes/_authenticated/gestao.rotatividade'
 import { Route as AuthenticatedGestaoAbsenteismoRouteImport } from './routes/_authenticated/gestao.absenteismo'
 import { Route as AuthenticatedCandidatosIdRouteImport } from './routes/_authenticated/candidatos.$id'
 
@@ -100,6 +101,12 @@ const AuthenticatedCandidatosIndexRoute =
     path: '/candidatos/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedGestaoRotatividadeRoute =
+  AuthenticatedGestaoRotatividadeRouteImport.update({
+    id: '/rotatividade',
+    path: '/rotatividade',
+    getParentRoute: () => AuthenticatedGestaoRoute,
+  } as any)
 const AuthenticatedGestaoAbsenteismoRoute =
   AuthenticatedGestaoAbsenteismoRouteImport.update({
     id: '/absenteismo',
@@ -127,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/c/$token': typeof CTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
   '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
+  '/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/candidatos/': typeof AuthenticatedCandidatosIndexRoute
   '/gestao/': typeof AuthenticatedGestaoIndexRoute
 }
@@ -143,6 +151,7 @@ export interface FileRoutesByTo {
   '/c/$token': typeof CTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
   '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
+  '/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/candidatos': typeof AuthenticatedCandidatosIndexRoute
   '/gestao': typeof AuthenticatedGestaoIndexRoute
 }
@@ -162,6 +171,7 @@ export interface FileRoutesById {
   '/c/$token': typeof CTokenRoute
   '/_authenticated/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
   '/_authenticated/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
+  '/_authenticated/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/_authenticated/candidatos/': typeof AuthenticatedCandidatosIndexRoute
   '/_authenticated/gestao/': typeof AuthenticatedGestaoIndexRoute
 }
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/candidatos/$id'
     | '/gestao/absenteismo'
+    | '/gestao/rotatividade'
     | '/candidatos/'
     | '/gestao/'
   fileRoutesByTo: FileRoutesByTo
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/candidatos/$id'
     | '/gestao/absenteismo'
+    | '/gestao/rotatividade'
     | '/candidatos'
     | '/gestao'
   id:
@@ -215,6 +227,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/_authenticated/candidatos/$id'
     | '/_authenticated/gestao/absenteismo'
+    | '/_authenticated/gestao/rotatividade'
     | '/_authenticated/candidatos/'
     | '/_authenticated/gestao/'
   fileRoutesById: FileRoutesById
@@ -327,6 +340,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCandidatosIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/gestao/rotatividade': {
+      id: '/_authenticated/gestao/rotatividade'
+      path: '/rotatividade'
+      fullPath: '/gestao/rotatividade'
+      preLoaderRoute: typeof AuthenticatedGestaoRotatividadeRouteImport
+      parentRoute: typeof AuthenticatedGestaoRoute
+    }
     '/_authenticated/gestao/absenteismo': {
       id: '/_authenticated/gestao/absenteismo'
       path: '/absenteismo'
@@ -346,11 +366,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedGestaoRouteChildren {
   AuthenticatedGestaoAbsenteismoRoute: typeof AuthenticatedGestaoAbsenteismoRoute
+  AuthenticatedGestaoRotatividadeRoute: typeof AuthenticatedGestaoRotatividadeRoute
   AuthenticatedGestaoIndexRoute: typeof AuthenticatedGestaoIndexRoute
 }
 
 const AuthenticatedGestaoRouteChildren: AuthenticatedGestaoRouteChildren = {
   AuthenticatedGestaoAbsenteismoRoute: AuthenticatedGestaoAbsenteismoRoute,
+  AuthenticatedGestaoRotatividadeRoute: AuthenticatedGestaoRotatividadeRoute,
   AuthenticatedGestaoIndexRoute: AuthenticatedGestaoIndexRoute,
 }
 
