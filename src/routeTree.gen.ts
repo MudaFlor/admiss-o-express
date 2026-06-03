@@ -15,12 +15,17 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedRecrutamentoRouteImport } from './routes/_authenticated/recrutamento'
+import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated/gestao'
 import { Route as AuthenticatedFeriasRouteImport } from './routes/_authenticated/ferias'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedColaboradoresRouteImport } from './routes/_authenticated/colaboradores'
+import { Route as AuthenticatedGestaoIndexRouteImport } from './routes/_authenticated/gestao.index'
 import { Route as AuthenticatedCandidatosIndexRouteImport } from './routes/_authenticated/candidatos.index'
+import { Route as AuthenticatedGestaoRotatividadeRouteImport } from './routes/_authenticated/gestao.rotatividade'
+import { Route as AuthenticatedGestaoPipelineRouteImport } from './routes/_authenticated/gestao.pipeline'
+import { Route as AuthenticatedGestaoAbsenteismoRouteImport } from './routes/_authenticated/gestao.absenteismo'
 import { Route as AuthenticatedCandidatosIdRouteImport } from './routes/_authenticated/candidatos.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -53,6 +58,11 @@ const AuthenticatedRecrutamentoRoute =
     path: '/recrutamento',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedGestaoRoute = AuthenticatedGestaoRouteImport.update({
+  id: '/gestao',
+  path: '/gestao',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedFeriasRoute = AuthenticatedFeriasRouteImport.update({
   id: '/ferias',
   path: '/ferias',
@@ -80,11 +90,35 @@ const AuthenticatedColaboradoresRoute =
     path: '/colaboradores',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedGestaoIndexRoute =
+  AuthenticatedGestaoIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedGestaoRoute,
+  } as any)
 const AuthenticatedCandidatosIndexRoute =
   AuthenticatedCandidatosIndexRouteImport.update({
     id: '/candidatos/',
     path: '/candidatos/',
     getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedGestaoRotatividadeRoute =
+  AuthenticatedGestaoRotatividadeRouteImport.update({
+    id: '/rotatividade',
+    path: '/rotatividade',
+    getParentRoute: () => AuthenticatedGestaoRoute,
+  } as any)
+const AuthenticatedGestaoPipelineRoute =
+  AuthenticatedGestaoPipelineRouteImport.update({
+    id: '/pipeline',
+    path: '/pipeline',
+    getParentRoute: () => AuthenticatedGestaoRoute,
+  } as any)
+const AuthenticatedGestaoAbsenteismoRoute =
+  AuthenticatedGestaoAbsenteismoRouteImport.update({
+    id: '/absenteismo',
+    path: '/absenteismo',
+    getParentRoute: () => AuthenticatedGestaoRoute,
   } as any)
 const AuthenticatedCandidatosIdRoute =
   AuthenticatedCandidatosIdRouteImport.update({
@@ -102,10 +136,15 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/ferias': typeof AuthenticatedFeriasRoute
+  '/gestao': typeof AuthenticatedGestaoRouteWithChildren
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
+  '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
+  '/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
+  '/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/candidatos/': typeof AuthenticatedCandidatosIndexRoute
+  '/gestao/': typeof AuthenticatedGestaoIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -119,7 +158,11 @@ export interface FileRoutesByTo {
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
+  '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
+  '/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
+  '/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/candidatos': typeof AuthenticatedCandidatosIndexRoute
+  '/gestao': typeof AuthenticatedGestaoIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -132,10 +175,15 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/ferias': typeof AuthenticatedFeriasRoute
+  '/_authenticated/gestao': typeof AuthenticatedGestaoRouteWithChildren
   '/_authenticated/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
   '/_authenticated/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
+  '/_authenticated/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
+  '/_authenticated/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
+  '/_authenticated/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/_authenticated/candidatos/': typeof AuthenticatedCandidatosIndexRoute
+  '/_authenticated/gestao/': typeof AuthenticatedGestaoIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -148,10 +196,15 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/documentos'
     | '/ferias'
+    | '/gestao'
     | '/recrutamento'
     | '/c/$token'
     | '/candidatos/$id'
+    | '/gestao/absenteismo'
+    | '/gestao/pipeline'
+    | '/gestao/rotatividade'
     | '/candidatos/'
+    | '/gestao/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -165,7 +218,11 @@ export interface FileRouteTypes {
     | '/recrutamento'
     | '/c/$token'
     | '/candidatos/$id'
+    | '/gestao/absenteismo'
+    | '/gestao/pipeline'
+    | '/gestao/rotatividade'
     | '/candidatos'
+    | '/gestao'
   id:
     | '__root__'
     | '/'
@@ -177,10 +234,15 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/documentos'
     | '/_authenticated/ferias'
+    | '/_authenticated/gestao'
     | '/_authenticated/recrutamento'
     | '/c/$token'
     | '/_authenticated/candidatos/$id'
+    | '/_authenticated/gestao/absenteismo'
+    | '/_authenticated/gestao/pipeline'
+    | '/_authenticated/gestao/rotatividade'
     | '/_authenticated/candidatos/'
+    | '/_authenticated/gestao/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -235,6 +297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRecrutamentoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/gestao': {
+      id: '/_authenticated/gestao'
+      path: '/gestao'
+      fullPath: '/gestao'
+      preLoaderRoute: typeof AuthenticatedGestaoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/ferias': {
       id: '/_authenticated/ferias'
       path: '/ferias'
@@ -270,12 +339,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedColaboradoresRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/gestao/': {
+      id: '/_authenticated/gestao/'
+      path: '/'
+      fullPath: '/gestao/'
+      preLoaderRoute: typeof AuthenticatedGestaoIndexRouteImport
+      parentRoute: typeof AuthenticatedGestaoRoute
+    }
     '/_authenticated/candidatos/': {
       id: '/_authenticated/candidatos/'
       path: '/candidatos'
       fullPath: '/candidatos/'
       preLoaderRoute: typeof AuthenticatedCandidatosIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/gestao/rotatividade': {
+      id: '/_authenticated/gestao/rotatividade'
+      path: '/rotatividade'
+      fullPath: '/gestao/rotatividade'
+      preLoaderRoute: typeof AuthenticatedGestaoRotatividadeRouteImport
+      parentRoute: typeof AuthenticatedGestaoRoute
+    }
+    '/_authenticated/gestao/pipeline': {
+      id: '/_authenticated/gestao/pipeline'
+      path: '/pipeline'
+      fullPath: '/gestao/pipeline'
+      preLoaderRoute: typeof AuthenticatedGestaoPipelineRouteImport
+      parentRoute: typeof AuthenticatedGestaoRoute
+    }
+    '/_authenticated/gestao/absenteismo': {
+      id: '/_authenticated/gestao/absenteismo'
+      path: '/absenteismo'
+      fullPath: '/gestao/absenteismo'
+      preLoaderRoute: typeof AuthenticatedGestaoAbsenteismoRouteImport
+      parentRoute: typeof AuthenticatedGestaoRoute
     }
     '/_authenticated/candidatos/$id': {
       id: '/_authenticated/candidatos/$id'
@@ -287,12 +384,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedGestaoRouteChildren {
+  AuthenticatedGestaoAbsenteismoRoute: typeof AuthenticatedGestaoAbsenteismoRoute
+  AuthenticatedGestaoPipelineRoute: typeof AuthenticatedGestaoPipelineRoute
+  AuthenticatedGestaoRotatividadeRoute: typeof AuthenticatedGestaoRotatividadeRoute
+  AuthenticatedGestaoIndexRoute: typeof AuthenticatedGestaoIndexRoute
+}
+
+const AuthenticatedGestaoRouteChildren: AuthenticatedGestaoRouteChildren = {
+  AuthenticatedGestaoAbsenteismoRoute: AuthenticatedGestaoAbsenteismoRoute,
+  AuthenticatedGestaoPipelineRoute: AuthenticatedGestaoPipelineRoute,
+  AuthenticatedGestaoRotatividadeRoute: AuthenticatedGestaoRotatividadeRoute,
+  AuthenticatedGestaoIndexRoute: AuthenticatedGestaoIndexRoute,
+}
+
+const AuthenticatedGestaoRouteWithChildren =
+  AuthenticatedGestaoRoute._addFileChildren(AuthenticatedGestaoRouteChildren)
+
 interface AuthenticatedRouteChildren {
   AuthenticatedColaboradoresRoute: typeof AuthenticatedColaboradoresRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedFeriasRoute: typeof AuthenticatedFeriasRoute
+  AuthenticatedGestaoRoute: typeof AuthenticatedGestaoRouteWithChildren
   AuthenticatedRecrutamentoRoute: typeof AuthenticatedRecrutamentoRoute
   AuthenticatedCandidatosIdRoute: typeof AuthenticatedCandidatosIdRoute
   AuthenticatedCandidatosIndexRoute: typeof AuthenticatedCandidatosIndexRoute
@@ -304,6 +419,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedFeriasRoute: AuthenticatedFeriasRoute,
+  AuthenticatedGestaoRoute: AuthenticatedGestaoRouteWithChildren,
   AuthenticatedRecrutamentoRoute: AuthenticatedRecrutamentoRoute,
   AuthenticatedCandidatosIdRoute: AuthenticatedCandidatosIdRoute,
   AuthenticatedCandidatosIndexRoute: AuthenticatedCandidatosIndexRoute,
@@ -323,13 +439,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

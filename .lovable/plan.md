@@ -1,96 +1,97 @@
+## Dashboards Gerenciais — Acesso da Gestão
 
-# Rebrand para identidade preta premium (Mudaflor)
+Criar uma nova área **"Gestão"** acessível pelo sidebar (somente para usuários com role `admin`/`rh`), com 3 dashboards interligados focados em KPIs reais de RH.
 
-Transformar o FlowRH atual num dashboard de RH com identidade visual predominantemente preta, inspirada no logotipo Mudaflor (preto + verde-limão + rosa-magenta discretos como acentos), mantendo a estrutura já construída (sidebar + topbar + rotas autenticadas).
+### 1. Estrutura de navegação
 
-## 1. Identidade visual (tokens em `src/styles.css`)
+- Nova entrada no `AppSidebar.tsx`: **"Gestão"** com ícone `BarChart3`.
+- Rota layout `src/routes/_authenticated/gestao.tsx` com `<Outlet />` e abas (Tabs) para os 4 painéis.
+- Rotas filhas:
+  - `gestao.index.tsx` → visão consolidada (todos os KPIs resumidos)
+  - `gestao.absenteismo.tsx`
+  - `gestao.rotatividade.tsx`
+  - `gestao.pipeline.tsx` (currículos, integração, admissões, rescisões)
 
-Paleta nova em `oklch`, dark-first:
-- `--background` quase-preto grafite (#0B0B0C)
-- `--card` / `--popover` preto levemente elevado (#141416)
-- `--foreground` branco off (#F5F5F4)
-- `--muted` / `--muted-foreground` cinzas sofisticados
-- `--border` cinza 12% sobre preto, bordas sutis
-- `--sidebar` preto puro (#000) com `--sidebar-foreground` off-white
-- `--primary` verde-limão do logo (#A8D90A aprox.) — usado com parcimônia em CTAs e estados ativos
-- `--accent` rosa-magenta do logo (#E91E63 aprox.) — apenas microacentos (badges, indicadores)
-- `--gold` dourado discreto (#C9A84C) para selos premium opcionais
-- Tipografia: manter Inter + Plus Jakarta Sans, mas reduzir pesos para sensação corporativa (headings 600, body 400/500)
-- Sombras: trocar para sombras pretas profundas e sutis (`0 1px 0 rgba(255,255,255,0.04)` para "lift" sobre preto)
+Filtro global de período (últimos 30/90/180 dias, ano) no topo via `validateSearch` + `Route.useSearch()`.
 
-Forçar tema escuro global (remover toggle / `dark:` condicional). Logo Mudaflor entra no topo da sidebar e na tela de login (copiar `user-uploads://LOGO_MUDA_FLOR.jpg` para `src/assets/logo-mudaflor.jpg`).
+### 2. Modelo de dados (migration)
 
-## 2. Shell (sidebar + topbar)
+Hoje só existe a tabela `candidates`. Para suportar os indicadores reais, criar:
 
-- `AppSidebar.tsx`: fundo `#000`, logo Mudaflor no topo, itens com hover sutil (white/5), item ativo com barra vertical verde-limão à esquerda + leve glow. Tipografia menor, tracking discreto.
-- `AppTopbar.tsx`: fundo `--background`, borda inferior 1px, search com `bg-card` e ícone cinza, sino com dot magenta, avatar circular com anel cinza.
-- `_authenticated.tsx`: garantir `dark` no `<html>` ou aplicar classes pretas direto via tokens.
+- **`employees`** — colaboradores admitidos
+  - `id`, `created_by` (rh dono), `candidate_id` (opcional, FK lógica), `full_name`, `position`, `department`, `admission_date`, `termination_date` (null = ativo), `termination_reason` (enum: `pedido_demissao`, `sem_justa_causa`, `justa_causa`, `fim_experiencia`, `acordo`), `in_probation` (bool gerado: admission < 90 dias)
+- **`absences`** — registros de ausência
+  - `id`, `employee_id`, `start_date`, `end_date`, `reason` (enum: `atestado`, `falta_justificada`, `falta_injustificada`, `licenca`), `hours_lost`, `created_by`
+- Enums: `termination_reason`, `absence_reason`
+- Trigger `set_updated_at` nas duas tabelas
+- RLS: dono (`created_by = auth.uid()`) OU `has_role(auth.uid(),'admin')`, mesmo padrão das tabelas atuais
+- GRANTs para `authenticated` + `service_role`
 
-## 3. Dashboard real (substitui `dashboard.tsx` atual)
+Pipeline (currículos / em integração) é derivado de `candidates.status`; rescisões em experiência vêm de `employees` com `termination_date - admission_date <= 90`.
 
-Hoje o dashboard mostra só "Pendentes/Em análise/Aprovados/Rejeitados" + fila de candidatos. Substituir por experiência completa de RH:
+### 3. Server functions (`src/lib/management.functions.ts`)
 
-- **5 KPI cards** no topo (grid 2/3/5 responsivo):
-  - Colaboradores ativos
-  - Vagas abertas
-  - Admissões do mês
-  - Documentos pendentes
-  - Conformidade (%)
-  Cada card: ícone monocromático cinza, número grande em branco, delta vs. mês anterior em verde-limão ou magenta.
+Todas com `requireSupabaseAuth`, retornando DTOs serializáveis:
 
-- **Pipeline de recrutamento** (linha cheia): visualização horizontal das 5 etapas (Triagem → Entrevista → Teste → Proposta → Contratado) com contagem por etapa, usando dados reais de `listCandidates` agrupados por status + mock para etapas inexistentes. Barras finas pretas com preenchimento verde-limão proporcional.
+- `getAbsenteeismStats({ from, to })` → série mensal `{ month, rate, hours_lost, employees_count }` + breakdown por motivo + top 5 departamentos.
+- `getTurnoverStats({ from, to })` → série mensal `{ month, hires, terminations, turnover_rate }` + breakdown por motivo + tempo médio de casa.
+- `getPipelineStats({ from, to })` → contadores por status de candidato, admissões no período, rescisões em experiência, gráfico de funil.
+- `listEmployees`, `createEmployee`, `terminateEmployee`, `createAbsence` para alimentar dados.
 
-- **Coluna esquerda (2/3)**:
-  - Gráfico de admissões/desligamentos (Recharts AreaChart, 6 meses, mock) — linhas finas brancas/verde, grid quase invisível.
-  - Tabela "Últimos colaboradores / candidatos" (8 linhas) com avatar, nome, cargo, status badge (variantes preto+borda colorida) e ação.
+Cálculos:
+- **Absenteísmo mensal** = `horas_perdidas / (colaboradores_ativos * 220h)` × 100
+- **Rotatividade mensal** = `(admissões + rescisões) / 2 / colaboradores_ativos_inicio_mês` × 100
+- **Rescisão em experiência** = terminations onde `(termination_date - admission_date) <= 90 dias`
 
-- **Coluna direita (1/3)**:
-  - **Agenda de entrevistas e eventos** (lista vertical com hora, título, participantes, ponto colorido por tipo).
-  - **Tarefas pendentes do RH** (checklist com 4–6 itens, mock).
+### 4. UI dos dashboards
 
-- Botões de ação principais ("Novo colaborador", "Abrir vaga") no header do dashboard, com ícone Lucide à esquerda, fundo verde-limão sobre preto para CTA primário e ghost para secundário.
+Mantendo a identidade dark (`#0B0B0C` + lime `#A8D90A` + magenta `#E91E63`):
 
-Tudo com microanimações leves via `framer-motion` (fade+slide-up escalonado nos cards).
+**`gestao.index.tsx`** — visão executiva
+- 4 KPI cards: Taxa de absenteísmo, Taxa de rotatividade, Admissões no período, Rescisões em experiência
+- Mini-gráficos sparkline por card (Recharts `AreaChart` compacto)
+- Atalhos para os 3 painéis detalhados
 
-## 4. Login e landing
+**`gestao.absenteismo.tsx`**
+- KPI grande: taxa atual + variação vs período anterior
+- `LineChart` mensal (12 meses)
+- `BarChart` horizontal: motivos (atestado, injustificada, licença…)
+- Tabela: top 10 colaboradores com mais ausências no período
 
-- `login.tsx`: trocar coluna esquerda pelo logo Mudaflor centralizado sobre preto puro, com tagline curta e gradiente sutil verde→magenta atrás do logo (opacity 10%). Coluna direita: form sobre `--background`, inputs `bg-card`, botão primário verde-limão.
-- `index.tsx` (landing): manter, mas reaplicar paleta preta — sem reescrever conteúdo, só tokens. (Se preferir, posso ocultar a landing e redirecionar `/` para `/dashboard` quando autenticado — confirmar se quiser).
+**`gestao.rotatividade.tsx`**
+- KPI: taxa de rotatividade + tempo médio de casa
+- `ComposedChart`: barras de admissões/rescisões + linha de turnover %
+- `PieChart`: motivos de desligamento
+- Tabela: rescisões recentes com dias na empresa
 
-## 5. Responsividade
+**`gestao.pipeline.tsx`**
+- Funil: Currículos recebidos → Em análise → Em integração (aprovados ainda sem `employees.admission_date`) → Admitidos → Rescindidos em experiência
+- KPI cards: Currículos no período, Em integração agora, Admissões, Rescisões em experiência
+- Tabela: candidatos aprovados aguardando admissão (CTA "Converter em colaborador")
 
-- Sidebar já é colapsável via shadcn — verificar `collapsible="icon"` ativo, garantir mini-modo com ícones.
-- Dashboard: grid 1 coluna em <768px, 2 em md, 3/5 em xl.
-- Tabela com scroll horizontal em mobile; agenda vira card empilhado.
+### 5. Componentes reutilizáveis (`src/components/management/`)
 
-## 6. Fora de escopo (não muda)
+- `KpiCard.tsx` (com delta + sparkline opcional)
+- `PeriodFilter.tsx` (Dropdown 30/90/180/ano + custom)
+- `ChartCard.tsx` (wrapper com título, legenda, loading skeleton)
+- `EmptyState.tsx` para quando ainda não há dados
 
-- Lógica de candidatos, OCR, LGPD, signed URLs, server functions, RLS, auth — intactos.
-- Rotas `colaboradores/documentos/ferias/recrutamento` continuam como `ComingSoon` (só repaginadas no tema preto).
-- Sem migrations novas, sem mexer em Supabase.
+Tudo via `useSuspenseQuery` + `ensureQueryData` no loader (padrão TanStack Query do template).
 
-## Detalhes técnicos
+### 6. Controle de acesso
 
-Arquivos a editar:
-- `src/styles.css` — paleta dark + tokens novos (`--primary` lime, `--accent` magenta, `--gold`)
-- `src/components/AppSidebar.tsx` — fundo preto, logo Mudaflor, item ativo lime
-- `src/components/AppTopbar.tsx` — ajustes de cor
-- `src/routes/_authenticated/dashboard.tsx` — reescrita completa (KPIs, pipeline, agenda, tabela, tarefas)
-- `src/routes/login.tsx` — coluna esquerda com logo
-- `src/routes/index.tsx` — reaplicar paleta
-- `src/components/ComingSoon.tsx` — leve ajuste para tema escuro
+- `_authenticated/gestao.tsx` faz `beforeLoad` chamando uma server function `requireManagementRole()` que verifica `has_role(uid,'admin')` OR `has_role(uid,'rh')`. Se falhar → `redirect({ to: '/dashboard' })`.
 
-Arquivos a criar:
-- `src/assets/logo-mudaflor.jpg` (copy do upload)
-- `src/components/dashboard/KpiCard.tsx`
-- `src/components/dashboard/RecruitmentPipeline.tsx`
-- `src/components/dashboard/HiringChart.tsx` (Recharts)
-- `src/components/dashboard/AgendaList.tsx`
-- `src/components/dashboard/TasksList.tsx`
-- `src/components/dashboard/RecentPeopleTable.tsx`
+### 7. Detalhes técnicos
 
-Dependências: `framer-motion` e `recharts` já instaladas (verificar — se faltar recharts, adicionar).
+- Migration SQL com `CREATE TYPE`, `CREATE TABLE`, GRANTs, RLS, triggers — em **um único arquivo** novo em `supabase/migrations/`.
+- Atualizar `AppSidebar.tsx` adicionando item "Gestão" condicionado ao role (consultado por server fn `getCurrentUserRoles`).
+- Sem dependências novas; Recharts já está disponível.
+- Toda a UI segue tokens existentes de `src/styles.css` (sem cores hardcoded).
+- Mobile: cards empilhados, tabelas com `overflow-x-auto`, abas convertidas em `Select` em telas <640px.
 
-## Pergunta rápida antes de implementar
+### Fora de escopo
 
-A `/` (landing pública) deve continuar existindo ou prefere que usuários autenticados sejam redirecionados direto para `/dashboard`?
+- Importação em massa de colaboradores via CSV (pode vir depois).
+- Integração com ponto eletrônico real.
+- Exportação PDF dos dashboards.
