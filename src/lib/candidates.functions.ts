@@ -128,6 +128,56 @@ export const updateCandidateForm = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const updateCandidateBasicsRH = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        full_name: z.string().trim().min(2).max(120),
+        email: z.string().trim().max(255).optional().or(z.literal("")),
+        phone: z.string().trim().max(20).optional().or(z.literal("")),
+        cpf: z.string().trim().max(20).optional().or(z.literal("")),
+        position: z.string().trim().max(120).optional().or(z.literal("")),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("candidates")
+      .update({
+        full_name: data.full_name,
+        email: data.email || null,
+        phone: data.phone || null,
+        cpf: data.cpf ? normalizeCpf(data.cpf) : null,
+        position: data.position || null,
+      })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const updateDocumentOcr = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        document_id: z.string().uuid(),
+        ocr_data: z.record(z.string(), z.unknown()),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("documents")
+      .update({ ocr_data: data.ocr_data as never })
+      .eq("id", data.document_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const approveCandidate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
