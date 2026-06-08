@@ -221,6 +221,29 @@ export const rejectCandidate = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const reopenCandidate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("candidates")
+      .update({
+        status: "em_analise",
+        rejection_reason: null,
+        reviewed_by: null,
+        reviewed_at: null,
+      })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    await supabaseAdmin.from("notifications").insert({
+      candidate_id: data.id,
+      event: "candidate.reopened",
+      payload: { by: userId },
+    });
+    return { ok: true };
+  });
+
 export const getCandidateNotifications = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
