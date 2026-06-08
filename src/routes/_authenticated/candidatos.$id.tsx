@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, XCircle, FileText } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +16,8 @@ import {
   getCandidateById,
   getCandidateNotifications,
   rejectCandidate,
+  updateCandidateBasicsRH,
+  updateDocumentOcr,
   updateCandidateForm,
 } from "@/lib/candidates.functions";
 
@@ -37,6 +39,8 @@ function CandidatoDetailPage() {
   const approve = useServerFn(approveCandidate);
   const reject = useServerFn(rejectCandidate);
   const updateForm = useServerFn(updateCandidateForm);
+  const updateBasics = useServerFn(updateCandidateBasicsRH);
+  const updateOcr = useServerFn(updateDocumentOcr);
   const getNotif = useServerFn(getCandidateNotifications);
   const qc = useQueryClient();
 
@@ -46,10 +50,33 @@ function CandidatoDetailPage() {
   const [activeDoc, setActiveDoc] = useState<string | null>(null);
   const [editing, setEditing] = useState<Record<string, string>>({});
   const [reason, setReason] = useState("");
+  const [editingBasics, setEditingBasics] = useState(false);
+  const [editingFicha, setEditingFicha] = useState(false);
+  const [editingOcr, setEditingOcr] = useState(false);
+  const [ocrDraft, setOcrDraft] = useState<Record<string, string>>({});
+  const [basics, setBasics] = useState({ full_name: "", cpf: "", email: "", phone: "", position: "" });
 
   useEffect(() => {
     if (q.data?.documents && !activeDoc) setActiveDoc(q.data.documents[0]?.id ?? null);
   }, [q.data, activeDoc]);
+
+  useEffect(() => {
+    if (q.data?.candidate) {
+      setBasics({
+        full_name: q.data.candidate.full_name ?? "",
+        cpf: q.data.candidate.cpf ?? "",
+        email: q.data.candidate.email ?? "",
+        phone: q.data.candidate.phone ?? "",
+        position: q.data.candidate.position ?? "",
+      });
+    }
+  }, [q.data?.candidate]);
+
+  useEffect(() => {
+    setEditingOcr(false);
+    const d = q.data?.documents.find((x) => x.id === activeDoc);
+    setOcrDraft((d?.ocr_data ?? {}) as Record<string, string>);
+  }, [activeDoc, q.data?.documents]);
 
   const doc = q.data?.documents.find((d) => d.id === activeDoc);
   const candidate = q.data?.candidate;
@@ -88,6 +115,62 @@ function CandidatoDetailPage() {
         </div>
         <CandidateStatusBadge status={candidate.status as never} />
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-sm">Dados básicos</CardTitle>
+          {!editingBasics ? (
+            <Button size="sm" variant="outline" onClick={() => setEditingBasics(true)}>
+              <Pencil className="h-3.5 w-3.5" /> Editar
+            </Button>
+          ) : (
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={() => {
+                setBasics({
+                  full_name: candidate.full_name ?? "",
+                  cpf: candidate.cpf ?? "",
+                  email: candidate.email ?? "",
+                  phone: candidate.phone ?? "",
+                  position: candidate.position ?? "",
+                });
+                setEditingBasics(false);
+              }}>
+                <X className="h-3.5 w-3.5" /> Cancelar
+              </Button>
+              <Button size="sm" onClick={async () => {
+                try {
+                  await updateBasics({ data: { id, ...basics } });
+                  toast.success("Dados salvos");
+                  setEditingBasics(false);
+                  qc.invalidateQueries({ queryKey: ["candidate", id] });
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Erro");
+                }
+              }}>
+                <Save className="h-3.5 w-3.5" /> Salvar
+              </Button>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {([
+            ["full_name", "Nome completo"],
+            ["cpf", "CPF"],
+            ["email", "Email"],
+            ["phone", "Telefone"],
+            ["position", "Cargo"],
+          ] as const).map(([k, label]) => (
+            <div key={k} className="space-y-1.5">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
+              <Input
+                value={basics[k]}
+                disabled={!editingBasics}
+                onChange={(e) => setBasics({ ...basics, [k]: e.target.value })}
+              />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="documentos">
         <TabsList>
@@ -139,15 +222,51 @@ function CandidatoDetailPage() {
             </Card>
 
             <Card>
-              <CardHeader><CardTitle className="text-sm">Dados extraídos (OCR)</CardTitle></CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm">Dados extraídos (OCR)</CardTitle>
+                {doc && (!editingOcr ? (
+                  <Button size="sm" variant="outline" onClick={() => setEditingOcr(true)}>
+                    <Pencil className="h-3.5 w-3.5" /> Editar
+                  </Button>
+                ) : (
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => {
+                      setOcrDraft((doc.ocr_data ?? {}) as Record<string, string>);
+                      setEditingOcr(false);
+                    }}>
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="sm" onClick={async () => {
+                      try {
+                        await updateOcr({ data: { document_id: doc.id, ocr_data: ocrDraft } });
+                        toast.success("OCR salvo");
+                        setEditingOcr(false);
+                        qc.invalidateQueries({ queryKey: ["candidate", id] });
+                      } catch (e) {
+                        toast.error(e instanceof Error ? e.message : "Erro");
+                      }
+                    }}>
+                      <Save className="h-3.5 w-3.5" /> Salvar
+                    </Button>
+                  </div>
+                ))}
+              </CardHeader>
               <CardContent className="space-y-3">
                 {doc ? (
-                  Object.entries((doc.ocr_data ?? {}) as Record<string, string>).map(([k, v]) => (
-                    <div key={k} className="space-y-1">
-                      <Label className="text-xs uppercase tracking-wide text-muted-foreground">{k.replace(/_/g, " ")}</Label>
-                      <Input defaultValue={String(v)} />
-                    </div>
-                  ))
+                  Object.entries(ocrDraft).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nenhum dado extraído.</p>
+                  ) : (
+                    Object.entries(ocrDraft).map(([k, v]) => (
+                      <div key={k} className="space-y-1">
+                        <Label className="text-xs uppercase tracking-wide text-muted-foreground">{k.replace(/_/g, " ")}</Label>
+                        <Input
+                          value={String(v ?? "")}
+                          disabled={!editingOcr}
+                          onChange={(e) => setOcrDraft({ ...ocrDraft, [k]: e.target.value })}
+                        />
+                      </div>
+                    ))
+                  )
                 ) : (
                   <p className="text-sm text-muted-foreground">—</p>
                 )}
@@ -180,15 +299,28 @@ function CandidatoDetailPage() {
 
         <TabsContent value="ficha">
           <Card>
-            <CardHeader><CardTitle className="text-sm">Ficha consolidada</CardTitle></CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm">Ficha consolidada</CardTitle>
+              {!editingFicha ? (
+                <Button size="sm" variant="outline" onClick={() => setEditingFicha(true)}>
+                  <Pencil className="h-3.5 w-3.5" /> Editar
+                </Button>
+              ) : (
+                <Button size="sm" variant="ghost" onClick={() => { setEditing({}); setEditingFicha(false); }}>
+                  <X className="h-3.5 w-3.5" /> Cancelar
+                </Button>
+              )}
+            </CardHeader>
             <CardContent>
               <FichaForm
+                disabled={!editingFicha}
                 initial={{ ...formData, full_name: candidate.full_name, cpf: candidate.cpf ?? "", email: candidate.email ?? "", phone: candidate.phone ?? "" }}
                 editing={editing}
                 setEditing={setEditing}
                 onSave={async (data) => {
                   await updateForm({ data: { id, form_data: data } });
                   toast.success("Ficha salva");
+                  setEditingFicha(false);
                   qc.invalidateQueries({ queryKey: ["candidate", id] });
                 }}
               />
@@ -224,11 +356,13 @@ function FichaForm({
   editing,
   setEditing,
   onSave,
+  disabled,
 }: {
   initial: Record<string, string>;
   editing: Record<string, string>;
   setEditing: (v: Record<string, string>) => void;
   onSave: (data: Record<string, string>) => Promise<void>;
+  disabled?: boolean;
 }) {
   const merged = { ...initial, ...editing };
   const fields: Array<[string, string]> = [
@@ -255,12 +389,15 @@ function FichaForm({
           <Label>{label}</Label>
           <Input
             value={merged[k] ?? ""}
+            disabled={disabled}
             onChange={(e) => setEditing({ ...editing, [k]: e.target.value })}
           />
         </div>
       ))}
       <div className="md:col-span-2">
-        <Button type="submit">Salvar ficha</Button>
+        <Button type="submit" disabled={disabled}>
+          <Save className="h-4 w-4" /> Salvar ficha
+        </Button>
       </div>
     </form>
   );
