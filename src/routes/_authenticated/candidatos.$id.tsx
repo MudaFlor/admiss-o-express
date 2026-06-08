@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +16,7 @@ import {
   getCandidateById,
   getCandidateNotifications,
   rejectCandidate,
+  reopenCandidate,
   updateCandidateBasicsRH,
   updateDocumentOcr,
   updateCandidateForm,
@@ -38,6 +39,7 @@ function CandidatoDetailPage() {
   const get = useServerFn(getCandidateById);
   const approve = useServerFn(approveCandidate);
   const reject = useServerFn(rejectCandidate);
+  const reopen = useServerFn(reopenCandidate);
   const updateForm = useServerFn(updateCandidateForm);
   const updateBasics = useServerFn(updateCandidateBasicsRH);
   const updateOcr = useServerFn(updateDocumentOcr);
@@ -95,6 +97,15 @@ function CandidatoDetailPage() {
     onSuccess: () => {
       toast.success("Candidato rejeitado");
       setReason("");
+      qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const reopenM = useMutation({
+    mutationFn: () => reopen({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Candidato reaberto — em processo de admissão");
       qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -293,7 +304,14 @@ function CandidatoDetailPage() {
             </Card>
           )}
           {candidate.status === "rejeitado" && candidate.rejection_reason && (
-            <Card><CardContent className="p-4 text-sm"><span className="font-medium">Motivo da rejeição:</span> {candidate.rejection_reason}</CardContent></Card>
+            <Card>
+              <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+                <div><span className="font-medium">Motivo da rejeição:</span> {candidate.rejection_reason}</div>
+                <Button size="sm" disabled={reopenM.isPending} onClick={() => reopenM.mutate()}>
+                  <RotateCcw className="h-4 w-4" /> Reabrir — mover para em processo
+                </Button>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
 
