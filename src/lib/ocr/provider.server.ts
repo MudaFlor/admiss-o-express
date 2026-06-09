@@ -17,7 +17,7 @@ export interface OcrResult {
 
 // Campos esperados por tipo de documento
 const FIELDS_BY_TYPE: Record<DocumentType, string[]> = {
-  rg: ["nome", "rg", "orgao_emissor", "data_nascimento", "naturalidade", "nome_mae", "nome_pai"],
+  rg: ["nome", "rg", "cpf", "orgao_emissor", "data_nascimento", "naturalidade", "nome_mae", "nome_pai", "data_emissao", "validade"],
   cpf: ["nome", "cpf", "data_nascimento"],
   cnh: ["nome", "cpf", "numero_registro", "categoria", "data_emissao", "validade", "data_nascimento"],
   comprovante_residencia: ["titular", "endereco", "bairro", "cidade", "uf", "cep", "emissor", "data_emissao"],
