@@ -3,7 +3,7 @@ import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
-import { runOcr } from "@/lib/ocr/provider";
+import { runOcr } from "@/lib/ocr/provider.server";
 import { parseResumeFromStorage } from "@/lib/ai/resume-parser.server";
 import type { Database } from "@/integrations/supabase/types";
 
