@@ -95,14 +95,18 @@ function buildExtractionTool(type: DocumentType) {
 function userInstruction(type: DocumentType): string {
   const fields = FIELDS_BY_TYPE[type].join(", ");
   const labels: Record<DocumentType, string> = {
-    rg: "Cédula de Identidade (RG)",
+    rg: "Documento de Identidade — RG tradicional OU Carteira de Identidade Nacional (CIN). Aceitar ambos os formatos; na CIN o número do RG pode aparecer como 'Nº' ou estar ausente — nesse caso retorne null para 'rg' e preencha 'cpf'.",
     cpf: "Cadastro de Pessoa Física (CPF)",
-    cnh: "Carteira Nacional de Habilitação (CNH)",
+    cnh: "Carteira Nacional de Habilitação (CNH) — modelo antigo ou novo (CNH Digital/e-CNH).",
     comprovante_residencia: "Comprovante de Residência",
     curriculo: "Currículo",
   };
   return `Tipo de documento esperado: ${labels[type]}.
 Extraia somente os campos: ${fields}.
+Observações importantes:
+- Documentos brasileiros podem aparecer em formatos diversos (RG antigo, CIN nova, CNH antiga/digital). Identifique o formato e extraia o que estiver visível.
+- "FILIAÇÃO" contém normalmente nome do pai e nome da mãe (em linhas separadas ou separados por vírgula). Extraia cada um quando claramente identificável; do contrário, retorne null.
+- Ignore textos de marca d'água ou rótulos como "MODELO DE TESTE" / "ESPÉCIME" — não são dados do titular.
 Siga rigorosamente as regras: sem suposições, sem invenções. Para cada campo, retorne null se não houver evidência visível e legível.`;
 }
 
