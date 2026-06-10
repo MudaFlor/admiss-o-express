@@ -7,13 +7,9 @@ import {
   Briefcase,
   UserPlus,
   FileText,
-  ShieldCheck,
+  TrendingDown,
   Plus,
   ArrowUpRight,
-  ArrowDownRight,
-  Calendar,
-  CheckCircle2,
-  Circle,
   MoreHorizontal,
   Search,
 } from "lucide-react";
@@ -30,49 +26,34 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getDashboardStats, listCandidates } from "@/lib/candidates.functions";
+import { getManagementOverview } from "@/lib/management.functions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Mudaflor People OS" }] }),
   component: DashboardPage,
 });
 
-const chartData = [
-  { m: "Jun", admissoes: 8, desligamentos: 3 },
-  { m: "Jul", admissoes: 12, desligamentos: 4 },
-  { m: "Ago", admissoes: 9, desligamentos: 6 },
-  { m: "Set", admissoes: 15, desligamentos: 5 },
-  { m: "Out", admissoes: 18, desligamentos: 7 },
-  { m: "Nov", admissoes: 22, desligamentos: 4 },
-];
-
-const agenda = [
-  { time: "09:00", title: "Entrevista — Ana Lima", who: "Vaga: Designer Pleno", type: "interview" },
-  { time: "11:30", title: "Onboarding — Lucas R.", who: "Marketing", type: "onboarding" },
-  { time: "14:00", title: "Review trimestral", who: "Liderança", type: "meeting" },
-  { time: "16:30", title: "Entrevista — Pedro S.", who: "Vaga: Backend Sênior", type: "interview" },
-];
-
-const tasks = [
-  { t: "Validar contratos pendentes (4)", done: false },
-  { t: "Enviar holerites — Novembro", done: true },
-  { t: "Atualizar política LGPD", done: false },
-  { t: "Aprovar férias de Camila M.", done: false },
-  { t: "Revisar feedback 360°", done: true },
-];
-
-const stages = [
-  { name: "Triagem", count: 24, color: "bg-muted-foreground/50" },
-  { name: "Entrevista", count: 12, color: "bg-primary/70" },
-  { name: "Teste técnico", count: 6, color: "bg-primary/85" },
-  { name: "Proposta", count: 3, color: "bg-primary" },
-  { name: "Contratado", count: 2, color: "bg-accent" },
-];
-
 function DashboardPage() {
   const stats = useServerFn(getDashboardStats);
   const list = useServerFn(listCandidates);
+  const overview = useServerFn(getManagementOverview);
+
   const statsQ = useQuery({ queryKey: ["dash-stats"], queryFn: () => stats() });
   const recentQ = useQuery({ queryKey: ["dash-recent"], queryFn: () => list({ data: {} }) });
+  const overviewQ = useQuery({
+    queryKey: ["dash-overview", 6],
+    queryFn: () => overview({ data: { months: 6 } }),
+  });
+
+  const k = overviewQ.data?.kpis;
+  const pipeline = overviewQ.data?.pipeline;
+  const series = overviewQ.data?.series ?? [];
+  const chartData = series.map((s) => ({
+    m: s.month,
+    admissoes: s.admissions,
+    desligamentos: s.terminations,
+  }));
+  const hasMovement = chartData.some((d) => d.admissoes > 0 || d.desligamentos > 0);
 
   const candCount =
     (statsQ.data?.counts.pendente ?? 0) +
@@ -81,11 +62,23 @@ function DashboardPage() {
     (statsQ.data?.counts.rejeitado ?? 0);
 
   const kpis = [
-    { label: "Colaboradores ativos", value: 248, delta: "+12", up: true, icon: Users },
-    { label: "Vagas abertas", value: 14, delta: "+3", up: true, icon: Briefcase },
-    { label: "Admissões / mês", value: 22, delta: "+18%", up: true, icon: UserPlus },
-    { label: "Documentos pendentes", value: statsQ.data?.counts.pendente ?? 7, delta: "-4", up: false, icon: FileText },
-    { label: "Conformidade", value: "98.4%", delta: "+0.6", up: true, icon: ShieldCheck },
+    { label: "Colaboradores ativos", value: k?.active_employees ?? 0, icon: Users },
+    { label: "Candidatos no pipeline", value: candCount, icon: Briefcase },
+    { label: "Admissões no período", value: k?.period_admissions ?? 0, icon: UserPlus },
+    { label: "Documentos pendentes", value: statsQ.data?.counts.pendente ?? 0, icon: FileText },
+    {
+      label: "Absenteísmo (mês)",
+      value: `${(k?.absenteeism_rate ?? 0).toFixed(2)}%`,
+      icon: TrendingDown,
+    },
+  ];
+
+  const stages = [
+    { name: "Pendentes", count: pipeline?.pendentes ?? 0, color: "bg-muted-foreground/50" },
+    { name: "Em análise", count: pipeline?.em_analise ?? 0, color: "bg-primary/70" },
+    { name: "Aprovados", count: pipeline?.aprovados_aguardando ?? 0, color: "bg-primary" },
+    { name: "Rejeitados", count: pipeline?.rejeitados ?? 0, color: "bg-accent" },
+    { name: "Total currículos", count: pipeline?.curriculos ?? 0, color: "bg-accent/70" },
   ];
 
   return (
@@ -97,12 +90,12 @@ function DashboardPage() {
             People OS · Visão geral
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight text-foreground">
-            Bom dia, equipe Mudaflor.
+            Bem-vindo de volta.
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {candCount > 0
-              ? `${candCount} candidatos no pipeline · 4 entrevistas hoje`
-              : "4 entrevistas hoje · 7 documentos aguardando revisão"}
+              ? `${candCount} candidato${candCount === 1 ? "" : "s"} no pipeline`
+              : "Cadastre colaboradores e candidatos para começar a ver dados."}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -121,9 +114,9 @@ function DashboardPage() {
 
       {/* KPI cards */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {kpis.map((k, i) => (
+        {kpis.map((kp, i) => (
           <motion.div
-            key={k.label}
+            key={kp.label}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.04, duration: 0.3 }}
@@ -131,22 +124,14 @@ function DashboardPage() {
             <Card className="group relative overflow-hidden border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-white/15">
               <div className="flex items-start justify-between">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
-                  <k.icon className="h-4 w-4" />
+                  <kp.icon className="h-4 w-4" />
                 </div>
-                <span
-                  className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10.5px] font-semibold ${
-                    k.up ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"
-                  }`}
-                >
-                  {k.up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                  {k.delta}
-                </span>
               </div>
               <div className="mt-5">
                 <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  {k.label}
+                  {kp.label}
                 </p>
-                <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{k.value}</p>
+                <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{kp.value}</p>
               </div>
               <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/[0.04] blur-2xl transition-opacity group-hover:opacity-100" />
             </Card>
@@ -159,7 +144,7 @@ function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold tracking-tight">Pipeline de recrutamento</h2>
-            <p className="text-xs text-muted-foreground">Distribuição de candidatos por etapa</p>
+            <p className="text-xs text-muted-foreground">Distribuição de candidatos por status</p>
           </div>
           <Button asChild variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground">
             <Link to="/recrutamento">Ver kanban <ArrowUpRight className="h-3 w-3" /></Link>
@@ -183,27 +168,25 @@ function DashboardPage() {
         </div>
       </Card>
 
-      {/* Main grid */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Chart + table column */}
-        <div className="space-y-4 lg:col-span-2">
-          {/* Chart */}
-          <Card className="border-border bg-card p-6 shadow-[var(--shadow-card)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-semibold tracking-tight">Movimentação de pessoas</h2>
-                <p className="text-xs text-muted-foreground">Admissões e desligamentos · últimos 6 meses</p>
-              </div>
-              <div className="flex items-center gap-3 text-xs">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  <span className="h-2 w-2 rounded-full bg-primary" /> Admissões
-                </span>
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  <span className="h-2 w-2 rounded-full bg-accent" /> Desligamentos
-                </span>
-              </div>
+      {/* Chart + table */}
+      <div className="space-y-4">
+        <Card className="border-border bg-card p-6 shadow-[var(--shadow-card)]">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold tracking-tight">Movimentação de pessoas</h2>
+              <p className="text-xs text-muted-foreground">Admissões e desligamentos · últimos 6 meses</p>
             </div>
-            <div className="mt-4 h-64">
+            <div className="flex items-center gap-3 text-xs">
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <span className="h-2 w-2 rounded-full bg-primary" /> Admissões
+              </span>
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <span className="h-2 w-2 rounded-full bg-accent" /> Desligamentos
+              </span>
+            </div>
+          </div>
+          <div className="mt-4 h-64">
+            {hasMovement ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
                   <defs>
@@ -231,152 +214,90 @@ function DashboardPage() {
                   <Area type="monotone" dataKey="desligamentos" stroke="var(--accent)" strokeWidth={2} fill="url(#g2)" />
                 </AreaChart>
               </ResponsiveContainer>
-            </div>
-          </Card>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                Sem movimentações no período. Cadastre colaboradores para ver o gráfico.
+              </div>
+            )}
+          </div>
+        </Card>
 
-          {/* People table */}
-          <Card className="border-border bg-card shadow-[var(--shadow-card)]">
-            <div className="flex items-center justify-between border-b border-border p-5">
-              <div>
-                <h2 className="text-base font-semibold tracking-tight">Últimos candidatos</h2>
-                <p className="text-xs text-muted-foreground">Pipeline ativo do recrutamento</p>
-              </div>
-              <div className="hidden md:flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5">
-                <Search className="h-3.5 w-3.5 text-muted-foreground" />
-                <input
-                  placeholder="Buscar..."
-                  className="w-40 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
-                />
-              </div>
+        {/* People table */}
+        <Card className="border-border bg-card shadow-[var(--shadow-card)]">
+          <div className="flex items-center justify-between border-b border-border p-5">
+            <div>
+              <h2 className="text-base font-semibold tracking-tight">Últimos candidatos</h2>
+              <p className="text-xs text-muted-foreground">Pipeline ativo do recrutamento</p>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    <th className="px-5 py-3">Nome</th>
-                    <th className="px-5 py-3">Cargo</th>
-                    <th className="px-5 py-3">Status</th>
-                    <th className="px-5 py-3"></th>
+            <div className="hidden md:flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5">
+              <Search className="h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                placeholder="Buscar..."
+                className="w-40 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <th className="px-5 py-3">Nome</th>
+                  <th className="px-5 py-3">Cargo</th>
+                  <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {(recentQ.data ?? []).slice(0, 6).map((c) => (
+                  <tr key={c.id} className="border-b border-border/60 transition-colors last:border-0 hover:bg-white/[0.02]">
+                    <td className="px-5 py-3">
+                      <Link
+                        to="/candidatos/$id"
+                        params={{ id: c.id }}
+                        className="flex items-center gap-3"
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-secondary text-xs font-medium text-foreground">
+                            {c.full_name
+                              .split(" ")
+                              .slice(0, 2)
+                              .map((p) => p[0])
+                              .join("")
+                              .toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium text-foreground hover:underline">{c.full_name}</span>
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3 text-muted-foreground">{c.position ?? "—"}</td>
+                    <td className="px-5 py-3">
+                      <StatusPill status={c.status as string} />
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {(recentQ.data ?? []).slice(0, 6).map((c) => (
-                    <tr key={c.id} className="border-b border-border/60 transition-colors last:border-0 hover:bg-white/[0.02]">
-                      <td className="px-5 py-3">
-                        <Link
-                          to="/candidatos/$id"
-                          params={{ id: c.id }}
-                          className="flex items-center gap-3"
-                        >
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="bg-secondary text-xs font-medium text-foreground">
-                              {c.full_name
-                                .split(" ")
-                                .slice(0, 2)
-                                .map((p) => p[0])
-                                .join("")
-                                .toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium text-foreground hover:underline">{c.full_name}</span>
-                        </Link>
-                      </td>
-                      <td className="px-5 py-3 text-muted-foreground">{c.position ?? "—"}</td>
-                      <td className="px-5 py-3">
-                        <StatusPill status={c.status as string} />
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                  {recentQ.isLoading && (
-                    <tr>
-                      <td colSpan={4} className="px-5 py-8 text-center text-sm text-muted-foreground">
-                        Carregando…
-                      </td>
-                    </tr>
-                  )}
-                  {!recentQ.isLoading && (recentQ.data?.length ?? 0) === 0 && (
-                    <tr>
-                      <td colSpan={4} className="px-5 py-8 text-center text-sm text-muted-foreground">
-                        Nenhum candidato cadastrado ainda.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </div>
-
-        {/* Right column: agenda + tasks */}
-        <div className="space-y-4">
-          <Card className="border-border bg-card p-5 shadow-[var(--shadow-card)]">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <h2 className="text-base font-semibold tracking-tight">Agenda de hoje</h2>
-              </div>
-              <span className="text-[11px] font-medium text-muted-foreground">
-                {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "short" })}
-              </span>
-            </div>
-            <ul className="mt-4 space-y-3">
-              {agenda.map((a) => (
-                <li key={a.title} className="group flex gap-3 rounded-lg border border-transparent p-2 transition-colors hover:border-border hover:bg-background/40">
-                  <div className="flex flex-col items-center pt-0.5">
-                    <span
-                      className={`mt-1 h-2 w-2 rounded-full ${
-                        a.type === "interview"
-                          ? "bg-primary"
-                          : a.type === "onboarding"
-                            ? "bg-accent"
-                            : "bg-gold"
-                      }`}
-                      style={a.type === "meeting" ? { backgroundColor: "var(--gold)" } : undefined}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-foreground">{a.title}</p>
-                      <span className="text-[11px] font-medium text-muted-foreground">{a.time}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{a.who}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </Card>
-
-          <Card className="border-border bg-card p-5 shadow-[var(--shadow-card)]">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold tracking-tight">Tarefas do RH</h2>
-              <span className="text-[11px] font-medium text-muted-foreground">
-                {tasks.filter((t) => !t.done).length} pendentes
-              </span>
-            </div>
-            <ul className="mt-4 space-y-2.5">
-              {tasks.map((t) => (
-                <li
-                  key={t.t}
-                  className="flex items-start gap-3 rounded-md p-1.5 text-sm transition-colors hover:bg-white/[0.02]"
-                >
-                  {t.done ? (
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  ) : (
-                    <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                  )}
-                  <span className={t.done ? "text-muted-foreground line-through" : "text-foreground"}>
-                    {t.t}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        </div>
+                ))}
+                {recentQ.isLoading && (
+                  <tr>
+                    <td colSpan={4} className="px-5 py-8 text-center text-sm text-muted-foreground">
+                      Carregando…
+                    </td>
+                  </tr>
+                )}
+                {!recentQ.isLoading && (recentQ.data?.length ?? 0) === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-5 py-8 text-center text-sm text-muted-foreground">
+                      Nenhum candidato cadastrado ainda.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       </div>
     </div>
   );

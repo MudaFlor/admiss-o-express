@@ -63,7 +63,7 @@ export const getManagementOverview = createServerFn({ method: "POST" })
         (e) =>
           new Date(e.admission_date) <= startOfMonth &&
           (!e.termination_date || new Date(e.termination_date) >= startOfMonth),
-      ).length || 1;
+      ).length;
 
       const hires = employees.filter((e) => monthKey(new Date(e.admission_date)) === b.key).length;
       const terms = employees.filter(
@@ -73,8 +73,8 @@ export const getManagementOverview = createServerFn({ method: "POST" })
         .filter((a) => monthKey(new Date(a.start_date)) === b.key)
         .reduce((sum, a) => sum + Number(a.hours_lost ?? 0), 0);
 
-      const absenteeism = (hoursLost / (activeStart * 220)) * 100;
-      const turnover = ((hires + terms) / 2 / activeStart) * 100;
+      const absenteeism = activeStart > 0 ? (hoursLost / (activeStart * 220)) * 100 : 0;
+      const turnover = activeStart > 0 ? ((hires + terms) / 2 / activeStart) * 100 : 0;
 
       return {
         month: b.label,
