@@ -105,7 +105,13 @@ export const getCandidateById = createServerFn({ method: "POST" })
       }),
     );
 
-    return { candidate, documents: docsWithUrls };
+    const { data: dependents } = await supabase
+      .from("dependents")
+      .select("*")
+      .eq("candidate_id", data.id)
+      .order("created_at", { ascending: true });
+
+    return { candidate, documents: docsWithUrls, dependents: dependents ?? [] };
   });
 
 export const updateCandidateForm = createServerFn({ method: "POST" })
