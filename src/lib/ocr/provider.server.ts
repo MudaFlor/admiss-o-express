@@ -11,17 +11,32 @@ export interface OcrResult {
   fields: Record<string, string>;
   confidence: number;
   evidences?: Record<string, string>;
+  field_confidences?: Record<string, number>;
   status: "sucesso" | "falha";
   motivo?: string;
 }
 
-// Campos esperados por tipo de documento
+// Campos esperados por tipo de documento. Tipos com lista vazia não passam por OCR.
 const FIELDS_BY_TYPE: Record<DocumentType, string[]> = {
   rg: ["nome", "rg", "cpf", "orgao_emissor", "data_nascimento", "naturalidade", "nome_mae", "nome_pai", "data_emissao", "validade"],
   cpf: ["nome", "cpf", "data_nascimento"],
   cnh: ["nome", "cpf", "numero_registro", "categoria", "data_emissao", "validade", "data_nascimento"],
-  comprovante_residencia: ["titular", "endereco", "bairro", "cidade", "uf", "cep", "emissor", "data_emissao"],
+  comprovante_residencia: ["titular", "logradouro", "numero", "complemento", "bairro", "cidade", "uf", "cep", "emissor", "data_emissao"],
+  titulo_eleitor: ["nome", "inscricao", "zona", "secao", "data_nascimento"],
+  certidao: ["nome", "nome_pai", "nome_mae", "data_nascimento", "estado_civil", "conjuge", "registro", "livro", "folha", "termo"],
+  pis_pasep: ["nome", "pis", "nit"],
+  cartao_sus: ["nome", "numero_sus"],
   curriculo: [],
+  ctps: [],
+  foto_3x4: [],
+  reservista: [],
+  escolaridade: [],
+  certificado_curso: [],
+  vacinacao_covid: [],
+  dependente_certidao: ["nome", "nome_pai", "nome_mae", "data_nascimento", "registro"],
+  dependente_rg_cpf: ["nome", "rg", "cpf", "data_nascimento"],
+  dependente_vacinacao: [],
+  dependente_escolar: [],
 };
 
 const SYSTEM_PROMPT = `Você é um sistema especializado em extração de dados de documentos.
@@ -58,8 +73,9 @@ function buildExtractionTool(type: DocumentType) {
         properties: {
           valor: { type: "string" },
           evidencia: { type: "string" },
+          confianca: { type: "number" },
         },
-        required: ["valor", "evidencia"],
+        required: ["valor", "evidencia", "confianca"],
         additionalProperties: false,
       },
       { type: "null" },
@@ -95,18 +111,33 @@ function buildExtractionTool(type: DocumentType) {
 function userInstruction(type: DocumentType): string {
   const fields = FIELDS_BY_TYPE[type].join(", ");
   const labels: Record<DocumentType, string> = {
-    rg: "Documento de Identidade — RG tradicional OU Carteira de Identidade Nacional (CIN). Aceitar ambos os formatos; na CIN o número do RG pode aparecer como 'Nº' ou estar ausente — nesse caso retorne null para 'rg' e preencha 'cpf'.",
+    rg: "Documento de Identidade — RG tradicional OU Carteira de Identidade Nacional (CIN). Na CIN o número do RG pode aparecer como 'Nº' ou estar ausente — nesse caso retorne null para 'rg' e preencha 'cpf'.",
     cpf: "Cadastro de Pessoa Física (CPF)",
     cnh: "Carteira Nacional de Habilitação (CNH) — modelo antigo ou novo (CNH Digital/e-CNH).",
-    comprovante_residencia: "Comprovante de Residência",
+    comprovante_residencia: "Comprovante de Residência. Separe logradouro, número, complemento, bairro, cidade, UF e CEP quando possível.",
+    titulo_eleitor: "Título de Eleitor — extraia inscrição (apenas dígitos), zona e seção.",
+    certidao: "Certidão de Nascimento ou Casamento — extraia filiação, estado civil, eventual cônjuge e dados do registro (registro, livro, folha, termo).",
+    pis_pasep: "Cartão PIS/PASEP ou NIT — extraia os números encontrados.",
+    cartao_sus: "Cartão Nacional de Saúde (CNS/SUS) — extraia o número do cartão SUS (15 dígitos).",
     curriculo: "Currículo",
+    ctps: "Carteira de Trabalho",
+    foto_3x4: "Foto 3x4",
+    reservista: "Certificado de Reservista ou Alistamento Militar",
+    escolaridade: "Comprovante de Escolaridade",
+    certificado_curso: "Certificado de Curso",
+    vacinacao_covid: "Comprovante de Vacinação Covid",
+    dependente_certidao: "Certidão de Nascimento de dependente",
+    dependente_rg_cpf: "RG ou CPF de dependente",
+    dependente_vacinacao: "Carteira de Vacinação de dependente",
+    dependente_escolar: "Comprovante Escolar de dependente",
   };
   return `Tipo de documento esperado: ${labels[type]}.
 Extraia somente os campos: ${fields}.
 Observações importantes:
-- Documentos brasileiros podem aparecer em formatos diversos (RG antigo, CIN nova, CNH antiga/digital). Identifique o formato e extraia o que estiver visível.
+- Documentos brasileiros podem aparecer em formatos diversos. Identifique o formato e extraia o que estiver visível.
 - "FILIAÇÃO" contém normalmente nome do pai e nome da mãe (em linhas separadas ou separados por vírgula). Extraia cada um quando claramente identificável; do contrário, retorne null.
 - Ignore textos de marca d'água ou rótulos como "MODELO DE TESTE" / "ESPÉCIME" — não são dados do titular.
+- Para cada campo, retorne também "confianca" entre 0 e 1 indicando o quão certo está da extração. Use valor baixo (<0.9) sempre que houver qualquer ambiguidade, borrão ou caractere duvidoso.
 Siga rigorosamente as regras: sem suposições, sem invenções. Para cada campo, retorne null se não houver evidência visível e legível.`;
 }
 
@@ -128,7 +159,8 @@ function validateField(field: string, value: string): string | null {
 }
 
 export async function runOcr(type: DocumentType, storagePath: string): Promise<OcrResult> {
-  if (type === "curriculo") {
+  // Tipos sem OCR: apenas armazenam o arquivo, sem extração.
+  if (FIELDS_BY_TYPE[type].length === 0) {
     return { status: "sucesso", confidence: 0, fields: {} };
   }
 
@@ -195,7 +227,7 @@ export async function runOcr(type: DocumentType, storagePath: string): Promise<O
   type Parsed = {
     status: "sucesso" | "falha";
     motivo: string | null;
-    dados: Record<string, { valor: string; evidencia: string } | null> | null;
+    dados: Record<string, { valor: string; evidencia: string; confianca?: number } | null> | null;
   };
   let parsed: Parsed;
   try {
@@ -216,7 +248,9 @@ export async function runOcr(type: DocumentType, storagePath: string): Promise<O
   const expected = FIELDS_BY_TYPE[type];
   const fields: Record<string, string> = {};
   const evidences: Record<string, string> = {};
+  const fieldConfidences: Record<string, number> = {};
   let filled = 0;
+  let confSum = 0;
   for (const f of expected) {
     const item = parsed.dados[f];
     if (item && typeof item.valor === "string") {
@@ -224,11 +258,14 @@ export async function runOcr(type: DocumentType, storagePath: string): Promise<O
       if (validated !== null) {
         fields[f] = validated;
         if (typeof item.evidencia === "string") evidences[f] = item.evidencia;
+        const c = typeof item.confianca === "number" ? Math.max(0, Math.min(1, item.confianca)) : 0.9;
+        fieldConfidences[f] = c;
+        confSum += c;
         filled += 1;
       }
     }
   }
 
-  const confidence = expected.length === 0 ? 0 : Number((filled / expected.length).toFixed(2));
-  return { status: "sucesso", confidence, fields, evidences };
+  const confidence = filled === 0 ? 0 : Number((confSum / filled).toFixed(2));
+  return { status: "sucesso", confidence, fields, evidences, field_confidences: fieldConfidences };
 }

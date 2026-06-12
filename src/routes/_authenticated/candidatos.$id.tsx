@@ -28,11 +28,33 @@ export const Route = createFileRoute("/_authenticated/candidatos/$id")({
 });
 
 const DOC_LABELS: Record<string, string> = {
-  rg: "RG",
-  cpf: "CPF",
-  cnh: "CNH",
+  rg: "RG", cpf: "CPF", cnh: "CNH",
+  ctps: "Carteira de Trabalho",
+  titulo_eleitor: "Título de Eleitor",
+  foto_3x4: "Foto 3x4",
+  certidao: "Certidão Nascimento/Casamento",
+  reservista: "Reservista",
+  pis_pasep: "PIS/PASEP/NIT",
   comprovante_residencia: "Comprovante de residência",
+  escolaridade: "Escolaridade",
+  certificado_curso: "Certificado de curso",
+  vacinacao_covid: "Vacinação Covid",
+  cartao_sus: "Cartão SUS",
+  curriculo: "Currículo",
+  dependente_certidao: "Dep — Certidão",
+  dependente_rg_cpf: "Dep — RG/CPF",
+  dependente_vacinacao: "Dep — Vacinação",
+  dependente_escolar: "Dep — Escolar",
 };
+
+type OcrShape = { values?: Record<string, string>; confidences?: Record<string, number> };
+function parseOcr(ocr_data: unknown): { values: Record<string, string>; confidences: Record<string, number> } {
+  const raw = (ocr_data ?? {}) as OcrShape & Record<string, unknown>;
+  if (raw && typeof raw === "object" && "values" in raw && raw.values) {
+    return { values: raw.values as Record<string, string>, confidences: (raw.confidences ?? {}) as Record<string, number> };
+  }
+  return { values: raw as Record<string, string>, confidences: {} };
+}
 
 function CandidatoDetailPage() {
   const { id } = Route.useParams();
@@ -77,7 +99,7 @@ function CandidatoDetailPage() {
   useEffect(() => {
     setEditingOcr(false);
     const d = q.data?.documents.find((x) => x.id === activeDoc);
-    setOcrDraft((d?.ocr_data ?? {}) as Record<string, string>);
+    setOcrDraft(parseOcr(d?.ocr_data).values);
   }, [activeDoc, q.data?.documents]);
 
   const doc = q.data?.documents.find((d) => d.id === activeDoc);
@@ -187,6 +209,7 @@ function CandidatoDetailPage() {
         <TabsList>
           <TabsTrigger value="documentos">Documentos & OCR</TabsTrigger>
           <TabsTrigger value="ficha">Ficha cadastral</TabsTrigger>
+          <TabsTrigger value="dependentes">Dependentes</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
 
@@ -242,14 +265,15 @@ function CandidatoDetailPage() {
                 ) : (
                   <div className="flex gap-1">
                     <Button size="sm" variant="ghost" onClick={() => {
-                      setOcrDraft((doc.ocr_data ?? {}) as Record<string, string>);
+                      setOcrDraft(parseOcr(doc.ocr_data).values);
                       setEditingOcr(false);
                     }}>
                       <X className="h-3.5 w-3.5" />
                     </Button>
                     <Button size="sm" onClick={async () => {
                       try {
-                        await updateOcr({ data: { document_id: doc.id, ocr_data: ocrDraft } });
+                        const prev = parseOcr(doc.ocr_data);
+                        await updateOcr({ data: { document_id: doc.id, ocr_data: { values: ocrDraft, confidences: prev.confidences } } });
                         toast.success("OCR salvo");
                         setEditingOcr(false);
                         qc.invalidateQueries({ queryKey: ["candidate", id] });
@@ -267,16 +291,29 @@ function CandidatoDetailPage() {
                   Object.entries(ocrDraft).length === 0 ? (
                     <p className="text-sm text-muted-foreground">Nenhum dado extraído.</p>
                   ) : (
-                    Object.entries(ocrDraft).map(([k, v]) => (
-                      <div key={k} className="space-y-1">
-                        <Label className="text-xs uppercase tracking-wide text-muted-foreground">{k.replace(/_/g, " ")}</Label>
-                        <Input
-                          value={String(v ?? "")}
-                          disabled={!editingOcr}
-                          onChange={(e) => setOcrDraft({ ...ocrDraft, [k]: e.target.value })}
-                        />
-                      </div>
-                    ))
+                    Object.entries(ocrDraft).map(([k, v]) => {
+                      const conf = doc ? parseOcr(doc.ocr_data).confidences[k] : undefined;
+                      const confPct = typeof conf === "number" ? Math.round(conf * 100) : null;
+                      const low = confPct !== null && confPct < 90;
+                      return (
+                        <div key={k} className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs uppercase tracking-wide text-muted-foreground">{k.replace(/_/g, " ")}</Label>
+                            {confPct !== null && (
+                              <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${low ? "bg-amber-100 text-amber-900" : "bg-emerald-100 text-emerald-900"}`}>
+                                {low ? "⚠" : "✓"} {confPct}%
+                              </span>
+                            )}
+                          </div>
+                          <Input
+                            value={String(v ?? "")}
+                            disabled={!editingOcr}
+                            onChange={(e) => setOcrDraft({ ...ocrDraft, [k]: e.target.value })}
+                            className={low ? "border-amber-400" : undefined}
+                          />
+                        </div>
+                      );
+                    })
                   )
                 ) : (
                   <p className="text-sm text-muted-foreground">—</p>
@@ -342,6 +379,43 @@ function CandidatoDetailPage() {
                   qc.invalidateQueries({ queryKey: ["candidate", id] });
                 }}
               />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="dependentes">
+          <Card>
+            <CardContent className="p-4">
+              {(q.data?.dependents?.length ?? 0) === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum dependente cadastrado.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {q.data!.dependents.map((dep) => {
+                    const depDocs = q.data!.documents.filter((d) => d.dependent_id === dep.id);
+                    return (
+                      <li key={dep.id} className="rounded-md border p-3 text-sm">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <div className="font-medium">{dep.full_name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {dep.relationship ?? "—"} {dep.birth_date ? `· nasc. ${new Date(dep.birth_date).toLocaleDateString("pt-BR")}` : ""}
+                          </div>
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          CPF: {dep.cpf ?? "—"} · RG: {dep.rg ?? "—"}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {depDocs.length === 0 && <span className="text-xs text-muted-foreground">Sem documentos.</span>}
+                          {depDocs.map((d) => (
+                            <a key={d.id} href={d.signed_url ?? "#"} target="_blank" rel="noreferrer" className="rounded bg-muted px-2 py-1 text-xs underline">
+                              {DOC_LABELS[d.type] ?? d.type}
+                            </a>
+                          ))}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

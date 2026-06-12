@@ -8,10 +8,25 @@ import { parseResumeFromStorage } from "@/lib/ai/resume-parser.server";
 import type { Database } from "@/integrations/supabase/types";
 
 type DocType = Database["public"]["Enums"]["document_type"];
-const BASE_DOC_TYPES: readonly DocType[] = ["rg", "cpf", "comprovante_residencia"] as const;
-function requiredDocs(position: string | null): readonly DocType[] {
-  return /motorista/i.test(position ?? "") ? [...BASE_DOC_TYPES, "cnh"] : BASE_DOC_TYPES;
-}
+
+const ALL_DOC_TYPES: readonly DocType[] = [
+  "rg", "cpf", "cnh", "ctps", "titulo_eleitor", "foto_3x4", "certidao",
+  "reservista", "pis_pasep", "comprovante_residencia", "escolaridade",
+  "certificado_curso", "vacinacao_covid", "cartao_sus", "curriculo",
+  "dependente_certidao", "dependente_rg_cpf", "dependente_vacinacao", "dependente_escolar",
+] as const;
+const DocTypeEnum = z.enum(ALL_DOC_TYPES as unknown as [DocType, ...DocType[]]);
+
+// Documentos do titular obrigatórios. Reservista é exigido só quando sexo = masculino (validado em submit).
+const REQUIRED_HOLDER_DOCS: readonly DocType[] = [
+  "rg", "cpf", "ctps", "titulo_eleitor", "foto_3x4", "certidao",
+  "pis_pasep", "comprovante_residencia", "escolaridade",
+];
+// Tipos que aceitam múltiplos arquivos (cursos, vacinação extra).
+const MULTI_FILE_TYPES: ReadonlySet<DocType> = new Set<DocType>([
+  "certificado_curso", "vacinacao_covid",
+  "dependente_certidao", "dependente_rg_cpf", "dependente_vacinacao", "dependente_escolar",
+]);
 
 async function loadByToken(token: string) {
   const { data, error } = await supabaseAdmin
@@ -36,7 +51,7 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
     const candidate = await loadByToken(data.token);
     const { data: documents } = await supabaseAdmin
       .from("documents")
-      .select("id, type, status, storage_path, ocr_data, ocr_confidence, uploaded_at")
+      .select("id, type, status, storage_path, ocr_data, ocr_confidence, uploaded_at, dependent_id, label")
       .eq("candidate_id", candidate.id);
 
     const docsWithUrls = await Promise.all(
@@ -48,6 +63,12 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
       }),
     );
 
+    const { data: dependents } = await supabaseAdmin
+      .from("dependents")
+      .select("*")
+      .eq("candidate_id", candidate.id)
+      .order("created_at", { ascending: true });
+
     return {
       candidate: {
         id: candidate.id,
@@ -58,10 +79,14 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
         position: candidate.position,
         status: candidate.status,
         form_data: candidate.form_data,
+        sexo: candidate.sexo,
+        cor_raca: candidate.cor_raca,
+        estado_civil: candidate.estado_civil,
         lgpd_accepted_at: candidate.lgpd_accepted_at,
         deletion_requested_at: candidate.deletion_requested_at,
       },
       documents: docsWithUrls,
+      dependents: dependents ?? [],
     };
   });
 
@@ -101,7 +126,7 @@ export const createDocumentUploadUrl = createServerFn({ method: "POST" })
     z
       .object({
         token: z.string().uuid(),
-        type: z.enum(["rg", "cpf", "cnh", "comprovante_residencia", "curriculo"]),
+        type: DocTypeEnum,
         ext: z.string().regex(/^[a-z0-9]{1,5}$/i),
       })
       .parse(input),
@@ -122,23 +147,36 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
     z
       .object({
         token: z.string().uuid(),
-        type: z.enum(["rg", "cpf", "cnh", "comprovante_residencia", "curriculo"]),
+        type: DocTypeEnum,
         storage_path: z.string().min(3).max(300),
+        dependent_id: z.string().uuid().optional(),
+        label: z.string().trim().max(120).optional(),
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
-    // Run mock OCR
+    // Run OCR (no-op para tipos sem extração)
     const ocr = await runOcr(data.type, data.storage_path);
 
-    // Replace any existing document of same type for this candidate
-    await supabaseAdmin
-      .from("documents")
-      .delete()
-      .eq("candidate_id", candidate.id)
-      .eq("type", data.type);
+    // Tipos single-file: substitui o anterior. Multi-file: mantém histórico.
+    if (!MULTI_FILE_TYPES.has(data.type)) {
+      let del = supabaseAdmin
+        .from("documents")
+        .delete()
+        .eq("candidate_id", candidate.id)
+        .eq("type", data.type);
+      if (data.dependent_id) del = del.eq("dependent_id", data.dependent_id);
+      else del = del.is("dependent_id", null);
+      await del;
+    }
+
+    const ocrPayload = {
+      values: ocr.fields,
+      confidences: ocr.field_confidences ?? {},
+      evidences: ocr.evidences ?? {},
+    };
 
     const { data: doc, error } = await supabaseAdmin
       .from("documents")
@@ -146,11 +184,13 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
         candidate_id: candidate.id,
         type: data.type,
         storage_path: data.storage_path,
-        ocr_data: ocr.fields,
+        ocr_data: ocrPayload as never,
         ocr_confidence: ocr.confidence,
         status: "pendente",
+        dependent_id: data.dependent_id ?? null,
+        label: data.label ?? null,
       })
-      .select("id, type, ocr_data, ocr_confidence, status")
+      .select("id, type, ocr_data, ocr_confidence, status, dependent_id, label")
       .single();
     if (error) throw new Error(error.message);
 
@@ -170,6 +210,9 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
       .object({
         token: z.string().uuid(),
         form_data: z.record(z.string(), z.unknown()),
+        sexo: z.string().optional(),
+        cor_raca: z.string().optional(),
+        estado_civil: z.string().optional(),
       })
       .parse(input),
   )
@@ -177,18 +220,30 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
 
-    // Ensure all 4 documents uploaded
+    // Validação de documentos obrigatórios
     const { data: docs } = await supabaseAdmin
       .from("documents")
-      .select("type")
+      .select("type, dependent_id")
       .eq("candidate_id", candidate.id);
-    const present = new Set((docs ?? []).map((d) => d.type));
-    const missing = requiredDocs(candidate.position).filter((t) => !present.has(t));
+    const holderDocs = new Set((docs ?? []).filter((d) => !d.dependent_id).map((d) => d.type));
+    // RG ou CNH: pelo menos um
+    const hasIdentidade = holderDocs.has("rg") || holderDocs.has("cnh");
+    const missing: string[] = [];
+    for (const t of REQUIRED_HOLDER_DOCS) if (!holderDocs.has(t)) missing.push(t);
+    if (!hasIdentidade && !missing.includes("rg")) missing.push("rg_ou_cnh");
+    const sexo = data.sexo ?? candidate.sexo;
+    if (sexo === "masculino" && !holderDocs.has("reservista")) missing.push("reservista");
     if (missing.length) throw new Error(`Faltam documentos: ${missing.join(", ")}`);
 
     const { error } = await supabaseAdmin
       .from("candidates")
-      .update({ form_data: data.form_data as never, status: "em_analise" })
+      .update({
+        form_data: data.form_data as never,
+        status: "em_analise",
+        sexo: data.sexo ?? candidate.sexo ?? null,
+        cor_raca: data.cor_raca ?? candidate.cor_raca ?? null,
+        estado_civil: data.estado_civil ?? candidate.estado_civil ?? null,
+      })
       .eq("id", candidate.id);
     if (error) throw new Error(error.message);
 
@@ -198,6 +253,78 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
       payload: {},
     });
 
+    return { ok: true };
+  });
+
+// ===== Dependentes =====
+
+export const upsertDependent = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z.object({
+      token: z.string().uuid(),
+      id: z.string().uuid().optional(),
+      full_name: z.string().trim().min(2).max(120),
+      relationship: z.string().trim().max(40).optional(),
+      birth_date: z.string().optional(),
+      cpf: z.string().trim().max(20).optional(),
+      rg: z.string().trim().max(30).optional(),
+    }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const candidate = await loadByToken(data.token);
+    requireConsent(candidate);
+    const payload = {
+      candidate_id: candidate.id,
+      full_name: data.full_name,
+      relationship: data.relationship || null,
+      birth_date: data.birth_date || null,
+      cpf: data.cpf || null,
+      rg: data.rg || null,
+    };
+    if (data.id) {
+      const { data: row, error } = await supabaseAdmin
+        .from("dependents")
+        .update(payload)
+        .eq("id", data.id)
+        .eq("candidate_id", candidate.id)
+        .select("*")
+        .single();
+      if (error) throw new Error(error.message);
+      return row;
+    }
+    const { data: row, error } = await supabaseAdmin
+      .from("dependents")
+      .insert(payload)
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+export const removeDependent = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ token: z.string().uuid(), id: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const candidate = await loadByToken(data.token);
+    requireConsent(candidate);
+    const { error } = await supabaseAdmin
+      .from("dependents")
+      .delete()
+      .eq("id", data.id)
+      .eq("candidate_id", candidate.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteDocument = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ token: z.string().uuid(), id: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const candidate = await loadByToken(data.token);
+    requireConsent(candidate);
+    const { data: doc } = await supabaseAdmin
+      .from("documents").select("storage_path, candidate_id").eq("id", data.id).maybeSingle();
+    if (!doc || doc.candidate_id !== candidate.id) throw new Error("Documento não encontrado");
+    await supabaseAdmin.storage.from("candidate-documents").remove([doc.storage_path]);
+    await supabaseAdmin.from("documents").delete().eq("id", data.id);
     return { ok: true };
   });
 

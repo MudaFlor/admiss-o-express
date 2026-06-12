@@ -20,11 +20,14 @@ import {
 import {
   acceptLgpdConsent,
   createDocumentUploadUrl,
+  deleteDocument,
   finalizeDocumentUpload,
   getCandidateByToken,
   parseResumeForCandidate,
+  removeDependent,
   requestDataDeletion,
   submitCandidateApplication,
+  upsertDependent,
 } from "@/lib/candidate-public.functions";
 
 export const Route = createFileRoute("/c/$token")({
@@ -32,26 +35,43 @@ export const Route = createFileRoute("/c/$token")({
   component: CandidatePage,
 });
 
-type DocType = "rg" | "cpf" | "cnh" | "comprovante_residencia";
-const ALL_DOCS: ReadonlyArray<{ type: DocType; label: string; driverOnly?: boolean }> = [
-  { type: "rg", label: "RG" },
-  { type: "cpf", label: "CPF" },
-  { type: "cnh", label: "CNH", driverOnly: true },
-  { type: "comprovante_residencia", label: "Comprovante de residencia" },
-];
+type DocType =
+  | "rg" | "cpf" | "cnh" | "ctps" | "titulo_eleitor" | "foto_3x4" | "certidao"
+  | "reservista" | "pis_pasep" | "comprovante_residencia" | "escolaridade"
+  | "certificado_curso" | "vacinacao_covid" | "cartao_sus" | "curriculo"
+  | "dependente_certidao" | "dependente_rg_cpf" | "dependente_vacinacao" | "dependente_escolar";
 
-const isDriver = (p?: string | null) => !!p && /motorista/i.test(p);
+type DocDef = { type: DocType; label: string; hint?: string; optional?: boolean; multi?: boolean };
+
+const HOLDER_DOCS: ReadonlyArray<DocDef> = [
+  { type: "rg", label: "RG ou CIN", hint: "Frente e verso, ou envie a CNH no lugar" },
+  { type: "cpf", label: "CPF", hint: "Pode ser foto do cartão CPF ou comprovante" },
+  { type: "cnh", label: "CNH (se tiver)", optional: true, hint: "Substitui o RG se preferir" },
+  { type: "ctps", label: "Carteira de Trabalho Digital", hint: "Print/arquivo da CTPS Digital" },
+  { type: "titulo_eleitor", label: "Título de Eleitor" },
+  { type: "foto_3x4", label: "Foto 3x4", hint: "Pode tirar agora com a câmera" },
+  { type: "certidao", label: "Certidão de Nascimento ou Casamento" },
+  { type: "reservista", label: "Reservista", hint: "Obrigatório se sexo masculino" },
+  { type: "pis_pasep", label: "PIS/PASEP ou NIT" },
+  { type: "comprovante_residencia", label: "Comprovante de residência" },
+  { type: "escolaridade", label: "Comprovante de Escolaridade" },
+  { type: "cartao_sus", label: "Cartão SUS", optional: true },
+  { type: "vacinacao_covid", label: "Vacinação Covid", optional: true, multi: true },
+  { type: "certificado_curso", label: "Certificados de Cursos", optional: true, multi: true },
+];
 
 interface FormState {
   full_name: string; cpf: string; rg: string; rg_emissao: string;
   data_nascimento: string; local_nascimento: string; nome_pai: string; nome_mae: string;
   email: string; telefone: string; endereco: string; linkedin: string;
   formacao: string; experiencias: string; competencias: string;
+  sexo: string; cor_raca: string; estado_civil: string;
 }
 const emptyForm = (): FormState => ({
   full_name: "", cpf: "", rg: "", rg_emissao: "", data_nascimento: "", local_nascimento: "",
   nome_pai: "", nome_mae: "", email: "", telefone: "", endereco: "", linkedin: "",
   formacao: "", experiencias: "", competencias: "",
+  sexo: "", cor_raca: "", estado_civil: "",
 });
 
 function CandidatePage() {
@@ -63,6 +83,9 @@ function CandidatePage() {
   const parseResume = useServerFn(parseResumeForCandidate);
   const submit = useServerFn(submitCandidateApplication);
   const requestDeletion = useServerFn(requestDataDeletion);
+  const saveDependent = useServerFn(upsertDependent);
+  const dropDependent = useServerFn(removeDependent);
+  const dropDoc = useServerFn(deleteDocument);
   const qc = useQueryClient();
 
   const q = useQuery({
@@ -95,10 +118,15 @@ function CandidatePage() {
   if (candidate.status === "aprovado") return <Done title="Admissao aprovada!" desc="Voce recebera os proximos passos por email." />;
   if (candidate.status === "rejeitado") return <Done title="Cadastro encerrado" desc="Entre em contato com o RH para mais informacoes." />;
 
-  const driver = isDriver(candidate.position);
-  const DOCS = ALL_DOCS.filter((d) => !d.driverOnly || driver);
-  const uploadedTypes = new Set(documents.map((d) => d.type));
-  const allUploaded = DOCS.every((d) => uploadedTypes.has(d.type));
+  const sexo = candidate.sexo ?? "";
+  const requireReservista = sexo === "masculino";
+  const DOCS = HOLDER_DOCS;
+  const uploadedTypes = new Set(documents.filter((d) => !d.dependent_id).map((d) => d.type));
+  const hasIdentidade = uploadedTypes.has("rg") || uploadedTypes.has("cnh");
+  const requiredTypes: DocType[] = DOCS
+    .filter((d) => !d.optional && !(d.type === "rg" && uploadedTypes.has("cnh")) && !(d.type === "reservista" && !requireReservista))
+    .map((d) => d.type);
+  const allUploaded = hasIdentidade && requiredTypes.every((t) => uploadedTypes.has(t));
   const totalSteps = 4;
 
   function setField<K extends keyof FormState>(k: K, v: string) {
@@ -154,6 +182,9 @@ function CandidatePage() {
         formacao: (parsed.formacao ?? []).map((f) => `${f.curso} - ${f.instituicao} (${f.periodo})`).join("\n"),
         experiencias: (parsed.experiencias ?? []).map((e) => `${e.cargo} @ ${e.empresa} (${e.periodo})\n${e.descricao}`).join("\n\n"),
         competencias: (parsed.competencias ?? []).join(", "),
+        sexo: candidate.sexo ?? "",
+        cor_raca: candidate.cor_raca ?? "",
+        estado_civil: candidate.estado_civil ?? "",
       };
       setForm(mapped);
       setAutoFilled(new Set(Object.entries(mapped).filter(([, v]) => v && String(v).trim()).map(([k]) => k as keyof FormState)));
@@ -177,14 +208,15 @@ function CandidatePage() {
     setStep(2);
   }
 
-  async function uploadDoc(type: DocType, file: File) {
-    setUploading(type);
+  async function uploadDoc(type: DocType, file: File, opts?: { dependent_id?: string; label?: string }) {
+    const key = `${type}:${opts?.dependent_id ?? ""}`;
+    setUploading(key);
     try {
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const sig = await createUpload({ data: { token, type, ext } });
       const up = await fetch(sig.signedUrl, { method: "PUT", body: file, headers: { "content-type": file.type } });
       if (!up.ok) throw new Error("Upload falhou");
-      await finalize({ data: { token, type, storage_path: sig.path } });
+      await finalize({ data: { token, type, storage_path: sig.path, dependent_id: opts?.dependent_id, label: opts?.label } });
       toast.success("Documento enviado!");
       qc.invalidateQueries({ queryKey: ["c", token] });
     } catch (err) {
@@ -196,7 +228,13 @@ function CandidatePage() {
 
   async function handleSubmit() {
     try {
-      await submit({ data: { token, form_data: form as unknown as Record<string, unknown> } });
+      await submit({ data: {
+        token,
+        form_data: form as unknown as Record<string, unknown>,
+        sexo: form.sexo || undefined,
+        cor_raca: form.cor_raca || undefined,
+        estado_civil: form.estado_civil || undefined,
+      } });
       toast.success("Cadastro enviado!");
       qc.invalidateQueries({ queryKey: ["c", token] });
       setStep(4);
@@ -345,6 +383,42 @@ function CandidatePage() {
                 <SmartArea label="Competencias" k="competencias" form={form} setField={setField} autoFilled={autoFilled} rows={2} placeholder="Separe por virgula" />
               </Section>
 
+              <Section title="Informações complementares">
+                <Grid2>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Sexo</Label>
+                    <select className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={form.sexo} onChange={(e) => setField("sexo", e.target.value)}>
+                      <option value="">Selecione</option>
+                      <option value="masculino">Masculino</option>
+                      <option value="feminino">Feminino</option>
+                      <option value="outro">Outro</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Estado civil</Label>
+                    <select className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={form.estado_civil} onChange={(e) => setField("estado_civil", e.target.value)}>
+                      <option value="">Selecione</option>
+                      <option value="solteiro">Solteiro(a)</option>
+                      <option value="casado">Casado(a)</option>
+                      <option value="uniao_estavel">União estável</option>
+                      <option value="divorciado">Divorciado(a)</option>
+                      <option value="viuvo">Viúvo(a)</option>
+                    </select>
+                  </div>
+                </Grid2>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Cor/Raça (autodeclaração — IBGE)</Label>
+                  <select className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={form.cor_raca} onChange={(e) => setField("cor_raca", e.target.value)}>
+                    <option value="">Selecione</option>
+                    <option value="branca">Branca</option>
+                    <option value="parda">Parda</option>
+                    <option value="amarela">Amarela</option>
+                    <option value="preta">Preta</option>
+                    <option value="indigena">Indígena</option>
+                  </select>
+                </div>
+              </Section>
+
               <Button className="w-full" onClick={() => setStep(3)} disabled={!form.full_name || !form.cpf}>
                 Continuar para documentos
               </Button>
@@ -360,9 +434,11 @@ function CandidatePage() {
             </div>
             <div className="space-y-2">
               {DOCS.map((d) => {
-                const uploaded = documents.find((x) => x.type === d.type);
+                const isOptional = d.optional || (d.type === "rg" && uploadedTypes.has("cnh")) || (d.type === "reservista" && !requireReservista);
+                const uploaded = documents.find((x) => x.type === d.type && !x.dependent_id);
                 const done = !!uploaded;
                 const isPdf = uploaded?.storage_path ? /\.pdf$/i.test(uploaded.storage_path) : false;
+                const uploadKey = `${d.type}:`;
                 return (
                   <Card key={d.type}>
                     <CardContent className="flex items-center justify-between gap-3 p-4">
@@ -381,7 +457,11 @@ function CandidatePage() {
                           </div>
                         )}
                         <div>
-                          <div className="text-sm font-medium">{d.label}</div>
+                          <div className="text-sm font-medium">
+                            {d.label}
+                            {isOptional && <span className="ml-1 text-[10px] uppercase text-muted-foreground">(opcional)</span>}
+                          </div>
+                          {d.hint && <div className="text-[11px] text-muted-foreground">{d.hint}</div>}
                           <div className="text-xs text-muted-foreground">
                             {done ? (
                               uploaded?.signed_url ? (
@@ -399,14 +479,14 @@ function CandidatePage() {
                           accept="image/*,application/pdf"
                           capture="environment"
                           className="hidden"
-                          disabled={uploading === d.type}
+                          disabled={uploading === uploadKey}
                           onChange={(e) => {
                             const f = e.target.files?.[0];
                             if (f) uploadDoc(d.type, f);
                           }}
                         />
                         <span className="inline-flex h-9 cursor-pointer items-center gap-1 rounded-md border bg-background px-3 text-sm hover:bg-accent">
-                          {uploading === d.type ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                          {uploading === uploadKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                           {done ? "Trocar" : "Enviar"}
                         </span>
                       </label>
@@ -415,6 +495,19 @@ function CandidatePage() {
                 );
               })}
             </div>
+
+            <DependentsBlock
+              token={token}
+              dependents={q.data!.dependents}
+              documents={documents}
+              uploadDoc={uploadDoc}
+              uploading={uploading}
+              saveDependent={saveDependent}
+              dropDependent={dropDependent}
+              dropDoc={dropDoc}
+              onChange={() => qc.invalidateQueries({ queryKey: ["c", token] })}
+            />
+
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>Voltar</Button>
               <Button className="flex-1" disabled={!allUploaded} onClick={handleSubmit}>
@@ -517,6 +610,151 @@ function SmartArea<K extends keyof FormState>(props: {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="flex min-h-screen items-center justify-center">{children}</div>;
+}
+
+type DependentRow = { id: string; full_name: string; relationship: string | null; birth_date: string | null; cpf: string | null; rg: string | null };
+type DocRow = { id: string; type: string; storage_path: string; signed_url: string | null; dependent_id: string | null };
+
+function DependentsBlock(props: {
+  token: string;
+  dependents: DependentRow[];
+  documents: DocRow[];
+  uploadDoc: (type: DocType, file: File, opts?: { dependent_id?: string; label?: string }) => Promise<void>;
+  uploading: string | null;
+  saveDependent: (args: { data: { token: string; id?: string; full_name: string; relationship?: string; birth_date?: string; cpf?: string; rg?: string } }) => Promise<DependentRow>;
+  dropDependent: (args: { data: { token: string; id: string } }) => Promise<{ ok: boolean }>;
+  dropDoc: (args: { data: { token: string; id: string } }) => Promise<{ ok: boolean }>;
+  onChange: () => void;
+}) {
+  const { token, dependents, documents, uploadDoc, uploading, saveDependent, dropDependent, dropDoc, onChange } = props;
+  const [hasDeps, setHasDeps] = useState<"sim" | "nao" | null>(dependents.length > 0 ? "sim" : null);
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState({ full_name: "", relationship: "filho", birth_date: "", cpf: "", rg: "" });
+
+  async function addDep() {
+    if (!draft.full_name.trim()) return toast.error("Informe o nome");
+    try {
+      await saveDependent({ data: { token, ...draft } });
+      toast.success("Dependente adicionado");
+      setDraft({ full_name: "", relationship: "filho", birth_date: "", cpf: "", rg: "" });
+      setAdding(false);
+      onChange();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    }
+  }
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold">Dependentes ou filhos</div>
+            <div className="text-xs text-muted-foreground">Possui filhos ou dependentes?</div>
+          </div>
+          <div className="flex gap-1">
+            <Button size="sm" variant={hasDeps === "sim" ? "default" : "outline"} onClick={() => setHasDeps("sim")}>Sim</Button>
+            <Button size="sm" variant={hasDeps === "nao" ? "default" : "outline"} onClick={() => setHasDeps("nao")}>Não</Button>
+          </div>
+        </div>
+
+        {hasDeps === "sim" && (
+          <div className="space-y-2">
+            {dependents.map((dep) => {
+              const depDocs = documents.filter((d) => d.dependent_id === dep.id);
+              const age = dep.birth_date ? Math.floor((Date.now() - new Date(dep.birth_date).getTime()) / (365.25 * 24 * 3600 * 1000)) : null;
+              const needsRgCpf = age !== null && age >= 21;
+              const needsVacina = age !== null && age < 7;
+              const depDocList: Array<{ type: DocType; label: string; required: boolean }> = [
+                { type: "dependente_certidao", label: "Certidão de nascimento", required: true },
+                { type: "dependente_rg_cpf", label: "RG e CPF", required: needsRgCpf },
+                { type: "dependente_vacinacao", label: "Carteira de vacinação", required: needsVacina },
+                { type: "dependente_escolar", label: "Comprovante escolar", required: false },
+              ];
+              return (
+                <div key={dep.id} className="rounded-md border p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="text-sm font-medium">{dep.full_name}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {dep.relationship ?? "—"} {age !== null ? `· ${age} anos` : ""}
+                      </div>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={async () => {
+                      if (!confirm("Remover este dependente?")) return;
+                      await dropDependent({ data: { token, id: dep.id } });
+                      onChange();
+                    }}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <div className="mt-2 space-y-1">
+                    {depDocList.map((dd) => {
+                      const files = depDocs.filter((x) => x.type === dd.type);
+                      const key = `${dd.type}:${dep.id}`;
+                      return (
+                        <div key={dd.type} className="flex items-center justify-between gap-2 text-xs">
+                          <div className="flex-1">
+                            <span className="font-medium">{dd.label}</span>
+                            {dd.required && <span className="ml-1 text-rose-600">*</span>}
+                            <div className="text-[11px] text-muted-foreground">
+                              {files.length === 0 ? "Nenhum arquivo" : `${files.length} arquivo(s)`}
+                              {files.map((f) => (
+                                <span key={f.id} className="ml-1">
+                                  · <a href={f.signed_url ?? "#"} target="_blank" rel="noreferrer" className="text-primary underline">ver</a>
+                                  <button className="ml-1 text-rose-600" onClick={async () => { await dropDoc({ data: { token, id: f.id } }); onChange(); }}>×</button>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <label className="cursor-pointer">
+                            <input type="file" accept="image/*,application/pdf" capture="environment" className="hidden"
+                              disabled={uploading === key}
+                              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(dd.type, f, { dependent_id: dep.id }); }}
+                            />
+                            <span className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border bg-background px-2 text-xs hover:bg-accent">
+                              {uploading === key ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                              Enviar
+                            </span>
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            {adding ? (
+              <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+                <Input placeholder="Nome completo" value={draft.full_name} onChange={(e) => setDraft({ ...draft, full_name: e.target.value })} />
+                <Grid2>
+                  <select className="h-9 rounded-md border bg-background px-2 text-sm" value={draft.relationship} onChange={(e) => setDraft({ ...draft, relationship: e.target.value })}>
+                    <option value="filho">Filho(a)</option>
+                    <option value="conjuge">Cônjuge</option>
+                    <option value="outro">Outro</option>
+                  </select>
+                  <Input type="date" value={draft.birth_date} onChange={(e) => setDraft({ ...draft, birth_date: e.target.value })} />
+                </Grid2>
+                <Grid2>
+                  <Input placeholder="CPF (opcional)" value={draft.cpf} onChange={(e) => setDraft({ ...draft, cpf: e.target.value })} />
+                  <Input placeholder="RG (opcional)" value={draft.rg} onChange={(e) => setDraft({ ...draft, rg: e.target.value })} />
+                </Grid2>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="ghost" className="flex-1" onClick={() => setAdding(false)}>Cancelar</Button>
+                  <Button size="sm" className="flex-1" onClick={addDep}>Adicionar</Button>
+                </div>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" className="w-full" onClick={() => setAdding(true)}>
+                + Adicionar dependente
+              </Button>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 function Done({ title, desc }: { title: string; desc: string }) {

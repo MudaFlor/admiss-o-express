@@ -64,11 +64,13 @@ export type Database = {
       candidates: {
         Row: {
           access_token: string
+          cor_raca: string | null
           cpf: string | null
           created_at: string
           created_by: string
           deletion_requested_at: string | null
           email: string | null
+          estado_civil: string | null
           form_data: Json
           full_name: string
           id: string
@@ -78,17 +80,20 @@ export type Database = {
           rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          sexo: string | null
           status: Database["public"]["Enums"]["candidate_status"]
           token_expires_at: string
           updated_at: string
         }
         Insert: {
           access_token?: string
+          cor_raca?: string | null
           cpf?: string | null
           created_at?: string
           created_by: string
           deletion_requested_at?: string | null
           email?: string | null
+          estado_civil?: string | null
           form_data?: Json
           full_name: string
           id?: string
@@ -98,17 +103,20 @@ export type Database = {
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          sexo?: string | null
           status?: Database["public"]["Enums"]["candidate_status"]
           token_expires_at?: string
           updated_at?: string
         }
         Update: {
           access_token?: string
+          cor_raca?: string | null
           cpf?: string | null
           created_at?: string
           created_by?: string
           deletion_requested_at?: string | null
           email?: string | null
+          estado_civil?: string | null
           form_data?: Json
           full_name?: string
           id?: string
@@ -118,16 +126,63 @@ export type Database = {
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          sexo?: string | null
           status?: Database["public"]["Enums"]["candidate_status"]
           token_expires_at?: string
           updated_at?: string
         }
         Relationships: []
       }
+      dependents: {
+        Row: {
+          birth_date: string | null
+          candidate_id: string
+          cpf: string | null
+          created_at: string
+          full_name: string
+          id: string
+          relationship: string | null
+          rg: string | null
+          updated_at: string
+        }
+        Insert: {
+          birth_date?: string | null
+          candidate_id: string
+          cpf?: string | null
+          created_at?: string
+          full_name: string
+          id?: string
+          relationship?: string | null
+          rg?: string | null
+          updated_at?: string
+        }
+        Update: {
+          birth_date?: string | null
+          candidate_id?: string
+          cpf?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          relationship?: string | null
+          rg?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dependents_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           candidate_id: string
+          dependent_id: string | null
           id: string
+          label: string | null
           ocr_confidence: number | null
           ocr_data: Json | null
           status: Database["public"]["Enums"]["document_status"]
@@ -137,7 +192,9 @@ export type Database = {
         }
         Insert: {
           candidate_id: string
+          dependent_id?: string | null
           id?: string
+          label?: string | null
           ocr_confidence?: number | null
           ocr_data?: Json | null
           status?: Database["public"]["Enums"]["document_status"]
@@ -147,7 +204,9 @@ export type Database = {
         }
         Update: {
           candidate_id?: string
+          dependent_id?: string | null
           id?: string
+          label?: string | null
           ocr_confidence?: number | null
           ocr_data?: Json | null
           status?: Database["public"]["Enums"]["document_status"]
@@ -161,6 +220,13 @@ export type Database = {
             columns: ["candidate_id"]
             isOneToOne: false
             referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_dependent_id_fkey"
+            columns: ["dependent_id"]
+            isOneToOne: false
+            referencedRelation: "dependents"
             referencedColumns: ["id"]
           },
         ]
@@ -361,6 +427,20 @@ export type Database = {
         | "cnh"
         | "comprovante_residencia"
         | "curriculo"
+        | "ctps"
+        | "titulo_eleitor"
+        | "foto_3x4"
+        | "certidao"
+        | "reservista"
+        | "pis_pasep"
+        | "cartao_sus"
+        | "escolaridade"
+        | "certificado_curso"
+        | "vacinacao_covid"
+        | "dependente_certidao"
+        | "dependente_rg_cpf"
+        | "dependente_vacinacao"
+        | "dependente_escolar"
       termination_reason:
         | "pedido_demissao"
         | "sem_justa_causa"
@@ -509,6 +589,20 @@ export const Constants = {
         "cnh",
         "comprovante_residencia",
         "curriculo",
+        "ctps",
+        "titulo_eleitor",
+        "foto_3x4",
+        "certidao",
+        "reservista",
+        "pis_pasep",
+        "cartao_sus",
+        "escolaridade",
+        "certificado_curso",
+        "vacinacao_covid",
+        "dependente_certidao",
+        "dependente_rg_cpf",
+        "dependente_vacinacao",
+        "dependente_escolar",
       ],
       termination_reason: [
         "pedido_demissao",
