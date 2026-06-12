@@ -113,10 +113,15 @@ function CandidatePage() {
   if (candidate.status === "aprovado") return <Done title="Admissao aprovada!" desc="Voce recebera os proximos passos por email." />;
   if (candidate.status === "rejeitado") return <Done title="Cadastro encerrado" desc="Entre em contato com o RH para mais informacoes." />;
 
-  const driver = isDriver(candidate.position);
-  const DOCS = ALL_DOCS.filter((d) => !d.driverOnly || driver);
-  const uploadedTypes = new Set(documents.map((d) => d.type));
-  const allUploaded = DOCS.every((d) => uploadedTypes.has(d.type));
+  const sexo = candidate.sexo ?? "";
+  const requireReservista = sexo === "masculino";
+  const DOCS = HOLDER_DOCS;
+  const uploadedTypes = new Set(documents.filter((d) => !d.dependent_id).map((d) => d.type));
+  const hasIdentidade = uploadedTypes.has("rg") || uploadedTypes.has("cnh");
+  const requiredTypes: DocType[] = DOCS
+    .filter((d) => !d.optional && !(d.type === "rg" && uploadedTypes.has("cnh")) && !(d.type === "reservista" && !requireReservista))
+    .map((d) => d.type);
+  const allUploaded = hasIdentidade && requiredTypes.every((t) => uploadedTypes.has(t));
   const totalSteps = 4;
 
   function setField<K extends keyof FormState>(k: K, v: string) {
