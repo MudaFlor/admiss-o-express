@@ -20,11 +20,14 @@ import {
 import {
   acceptLgpdConsent,
   createDocumentUploadUrl,
+  deleteDocument,
   finalizeDocumentUpload,
   getCandidateByToken,
   parseResumeForCandidate,
+  removeDependent,
   requestDataDeletion,
   submitCandidateApplication,
+  upsertDependent,
 } from "@/lib/candidate-public.functions";
 
 export const Route = createFileRoute("/c/$token")({
@@ -32,15 +35,30 @@ export const Route = createFileRoute("/c/$token")({
   component: CandidatePage,
 });
 
-type DocType = "rg" | "cpf" | "cnh" | "comprovante_residencia";
-const ALL_DOCS: ReadonlyArray<{ type: DocType; label: string; driverOnly?: boolean }> = [
-  { type: "rg", label: "RG" },
-  { type: "cpf", label: "CPF" },
-  { type: "cnh", label: "CNH", driverOnly: true },
-  { type: "comprovante_residencia", label: "Comprovante de residencia" },
-];
+type DocType =
+  | "rg" | "cpf" | "cnh" | "ctps" | "titulo_eleitor" | "foto_3x4" | "certidao"
+  | "reservista" | "pis_pasep" | "comprovante_residencia" | "escolaridade"
+  | "certificado_curso" | "vacinacao_covid" | "cartao_sus" | "curriculo"
+  | "dependente_certidao" | "dependente_rg_cpf" | "dependente_vacinacao" | "dependente_escolar";
 
-const isDriver = (p?: string | null) => !!p && /motorista/i.test(p);
+type DocDef = { type: DocType; label: string; hint?: string; optional?: boolean; multi?: boolean };
+
+const HOLDER_DOCS: ReadonlyArray<DocDef> = [
+  { type: "rg", label: "RG ou CIN", hint: "Frente e verso, ou envie a CNH no lugar" },
+  { type: "cpf", label: "CPF", hint: "Pode ser foto do cartão CPF ou comprovante" },
+  { type: "cnh", label: "CNH (se tiver)", optional: true, hint: "Substitui o RG se preferir" },
+  { type: "ctps", label: "Carteira de Trabalho Digital", hint: "Print/arquivo da CTPS Digital" },
+  { type: "titulo_eleitor", label: "Título de Eleitor" },
+  { type: "foto_3x4", label: "Foto 3x4", hint: "Pode tirar agora com a câmera" },
+  { type: "certidao", label: "Certidão de Nascimento ou Casamento" },
+  { type: "reservista", label: "Reservista", hint: "Obrigatório se sexo masculino" },
+  { type: "pis_pasep", label: "PIS/PASEP ou NIT" },
+  { type: "comprovante_residencia", label: "Comprovante de residência" },
+  { type: "escolaridade", label: "Comprovante de Escolaridade" },
+  { type: "cartao_sus", label: "Cartão SUS", optional: true },
+  { type: "vacinacao_covid", label: "Vacinação Covid", optional: true, multi: true },
+  { type: "certificado_curso", label: "Certificados de Cursos", optional: true, multi: true },
+];
 
 interface FormState {
   full_name: string; cpf: string; rg: string; rg_emissao: string;
