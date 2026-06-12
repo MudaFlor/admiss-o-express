@@ -99,7 +99,7 @@ function CandidatoDetailPage() {
   useEffect(() => {
     setEditingOcr(false);
     const d = q.data?.documents.find((x) => x.id === activeDoc);
-    setOcrDraft((d?.ocr_data ?? {}) as Record<string, string>);
+    setOcrDraft(parseOcr(d?.ocr_data).values);
   }, [activeDoc, q.data?.documents]);
 
   const doc = q.data?.documents.find((d) => d.id === activeDoc);
@@ -264,14 +264,15 @@ function CandidatoDetailPage() {
                 ) : (
                   <div className="flex gap-1">
                     <Button size="sm" variant="ghost" onClick={() => {
-                      setOcrDraft((doc.ocr_data ?? {}) as Record<string, string>);
+                      setOcrDraft(parseOcr(doc.ocr_data).values);
                       setEditingOcr(false);
                     }}>
                       <X className="h-3.5 w-3.5" />
                     </Button>
                     <Button size="sm" onClick={async () => {
                       try {
-                        await updateOcr({ data: { document_id: doc.id, ocr_data: ocrDraft } });
+                        const prev = parseOcr(doc.ocr_data);
+                        await updateOcr({ data: { document_id: doc.id, ocr_data: { values: ocrDraft, confidences: prev.confidences } } });
                         toast.success("OCR salvo");
                         setEditingOcr(false);
                         qc.invalidateQueries({ queryKey: ["candidate", id] });
