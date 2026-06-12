@@ -383,6 +383,42 @@ function CandidatePage() {
                 <SmartArea label="Competencias" k="competencias" form={form} setField={setField} autoFilled={autoFilled} rows={2} placeholder="Separe por virgula" />
               </Section>
 
+              <Section title="Informações complementares">
+                <Grid2>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Sexo</Label>
+                    <select className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={form.sexo} onChange={(e) => setField("sexo", e.target.value)}>
+                      <option value="">Selecione</option>
+                      <option value="masculino">Masculino</option>
+                      <option value="feminino">Feminino</option>
+                      <option value="outro">Outro</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Estado civil</Label>
+                    <select className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={form.estado_civil} onChange={(e) => setField("estado_civil", e.target.value)}>
+                      <option value="">Selecione</option>
+                      <option value="solteiro">Solteiro(a)</option>
+                      <option value="casado">Casado(a)</option>
+                      <option value="uniao_estavel">União estável</option>
+                      <option value="divorciado">Divorciado(a)</option>
+                      <option value="viuvo">Viúvo(a)</option>
+                    </select>
+                  </div>
+                </Grid2>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Cor/Raça (autodeclaração — IBGE)</Label>
+                  <select className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={form.cor_raca} onChange={(e) => setField("cor_raca", e.target.value)}>
+                    <option value="">Selecione</option>
+                    <option value="branca">Branca</option>
+                    <option value="parda">Parda</option>
+                    <option value="amarela">Amarela</option>
+                    <option value="preta">Preta</option>
+                    <option value="indigena">Indígena</option>
+                  </select>
+                </div>
+              </Section>
+
               <Button className="w-full" onClick={() => setStep(3)} disabled={!form.full_name || !form.cpf}>
                 Continuar para documentos
               </Button>
