@@ -383,8 +383,44 @@ function CandidatoDetailPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="dependentes">
+          <Card>
+            <CardContent className="p-4">
+              {(q.data?.dependents?.length ?? 0) === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum dependente cadastrado.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {q.data!.dependents.map((dep) => {
+                    const depDocs = q.data!.documents.filter((d) => d.dependent_id === dep.id);
+                    return (
+                      <li key={dep.id} className="rounded-md border p-3 text-sm">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <div className="font-medium">{dep.full_name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {dep.relationship ?? "—"} {dep.birth_date ? `· nasc. ${new Date(dep.birth_date).toLocaleDateString("pt-BR")}` : ""}
+                          </div>
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          CPF: {dep.cpf ?? "—"} · RG: {dep.rg ?? "—"}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {depDocs.length === 0 && <span className="text-xs text-muted-foreground">Sem documentos.</span>}
+                          {depDocs.map((d) => (
+                            <a key={d.id} href={d.signed_url ?? "#"} target="_blank" rel="noreferrer" className="rounded bg-muted px-2 py-1 text-xs underline">
+                              {DOC_LABELS[d.type] ?? d.type}
+                            </a>
+                          ))}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="historico">
-          {null}
           <Card>
             <CardContent className="p-4">
               {(notifQ.data?.length ?? 0) === 0 ? (
