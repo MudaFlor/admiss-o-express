@@ -290,16 +290,29 @@ function CandidatoDetailPage() {
                   Object.entries(ocrDraft).length === 0 ? (
                     <p className="text-sm text-muted-foreground">Nenhum dado extraído.</p>
                   ) : (
-                    Object.entries(ocrDraft).map(([k, v]) => (
-                      <div key={k} className="space-y-1">
-                        <Label className="text-xs uppercase tracking-wide text-muted-foreground">{k.replace(/_/g, " ")}</Label>
-                        <Input
-                          value={String(v ?? "")}
-                          disabled={!editingOcr}
-                          onChange={(e) => setOcrDraft({ ...ocrDraft, [k]: e.target.value })}
-                        />
-                      </div>
-                    ))
+                    Object.entries(ocrDraft).map(([k, v]) => {
+                      const conf = doc ? parseOcr(doc.ocr_data).confidences[k] : undefined;
+                      const confPct = typeof conf === "number" ? Math.round(conf * 100) : null;
+                      const low = confPct !== null && confPct < 90;
+                      return (
+                        <div key={k} className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs uppercase tracking-wide text-muted-foreground">{k.replace(/_/g, " ")}</Label>
+                            {confPct !== null && (
+                              <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${low ? "bg-amber-100 text-amber-900" : "bg-emerald-100 text-emerald-900"}`}>
+                                {low ? "⚠" : "✓"} {confPct}%
+                              </span>
+                            )}
+                          </div>
+                          <Input
+                            value={String(v ?? "")}
+                            disabled={!editingOcr}
+                            onChange={(e) => setOcrDraft({ ...ocrDraft, [k]: e.target.value })}
+                            className={low ? "border-amber-400" : undefined}
+                          />
+                        </div>
+                      );
+                    })
                   )
                 ) : (
                   <p className="text-sm text-muted-foreground">—</p>
