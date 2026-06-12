@@ -434,9 +434,11 @@ function CandidatePage() {
             </div>
             <div className="space-y-2">
               {DOCS.map((d) => {
-                const uploaded = documents.find((x) => x.type === d.type);
+                const isOptional = d.optional || (d.type === "rg" && uploadedTypes.has("cnh")) || (d.type === "reservista" && !requireReservista);
+                const uploaded = documents.find((x) => x.type === d.type && !x.dependent_id);
                 const done = !!uploaded;
                 const isPdf = uploaded?.storage_path ? /\.pdf$/i.test(uploaded.storage_path) : false;
+                const uploadKey = `${d.type}:`;
                 return (
                   <Card key={d.type}>
                     <CardContent className="flex items-center justify-between gap-3 p-4">
@@ -455,7 +457,11 @@ function CandidatePage() {
                           </div>
                         )}
                         <div>
-                          <div className="text-sm font-medium">{d.label}</div>
+                          <div className="text-sm font-medium">
+                            {d.label}
+                            {isOptional && <span className="ml-1 text-[10px] uppercase text-muted-foreground">(opcional)</span>}
+                          </div>
+                          {d.hint && <div className="text-[11px] text-muted-foreground">{d.hint}</div>}
                           <div className="text-xs text-muted-foreground">
                             {done ? (
                               uploaded?.signed_url ? (
@@ -473,14 +479,14 @@ function CandidatePage() {
                           accept="image/*,application/pdf"
                           capture="environment"
                           className="hidden"
-                          disabled={uploading === d.type}
+                          disabled={uploading === uploadKey}
                           onChange={(e) => {
                             const f = e.target.files?.[0];
                             if (f) uploadDoc(d.type, f);
                           }}
                         />
                         <span className="inline-flex h-9 cursor-pointer items-center gap-1 rounded-md border bg-background px-3 text-sm hover:bg-accent">
-                          {uploading === d.type ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                          {uploading === uploadKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                           {done ? "Trocar" : "Enviar"}
                         </span>
                       </label>
@@ -489,6 +495,19 @@ function CandidatePage() {
                 );
               })}
             </div>
+
+            <DependentsBlock
+              token={token}
+              dependents={q.data!.dependents}
+              documents={documents}
+              uploadDoc={uploadDoc}
+              uploading={uploading}
+              saveDependent={saveDependent}
+              dropDependent={dropDependent}
+              dropDoc={dropDoc}
+              onChange={() => qc.invalidateQueries({ queryKey: ["c", token] })}
+            />
+
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>Voltar</Button>
               <Button className="flex-1" disabled={!allUploaded} onClick={handleSubmit}>
