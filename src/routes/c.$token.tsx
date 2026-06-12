@@ -182,6 +182,9 @@ function CandidatePage() {
         formacao: (parsed.formacao ?? []).map((f) => `${f.curso} - ${f.instituicao} (${f.periodo})`).join("\n"),
         experiencias: (parsed.experiencias ?? []).map((e) => `${e.cargo} @ ${e.empresa} (${e.periodo})\n${e.descricao}`).join("\n\n"),
         competencias: (parsed.competencias ?? []).join(", "),
+        sexo: candidate.sexo ?? "",
+        cor_raca: candidate.cor_raca ?? "",
+        estado_civil: candidate.estado_civil ?? "",
       };
       setForm(mapped);
       setAutoFilled(new Set(Object.entries(mapped).filter(([, v]) => v && String(v).trim()).map(([k]) => k as keyof FormState)));
