@@ -209,6 +209,7 @@ function CandidatoDetailPage() {
         <TabsList>
           <TabsTrigger value="documentos">Documentos & OCR</TabsTrigger>
           <TabsTrigger value="ficha">Ficha cadastral</TabsTrigger>
+          <TabsTrigger value="dependentes">Dependentes</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
 
@@ -383,6 +384,7 @@ function CandidatoDetailPage() {
         </TabsContent>
 
         <TabsContent value="historico">
+          {null}
           <Card>
             <CardContent className="p-4">
               {(notifQ.data?.length ?? 0) === 0 ? (
