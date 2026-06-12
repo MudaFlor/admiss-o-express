@@ -65,11 +65,13 @@ interface FormState {
   data_nascimento: string; local_nascimento: string; nome_pai: string; nome_mae: string;
   email: string; telefone: string; endereco: string; linkedin: string;
   formacao: string; experiencias: string; competencias: string;
+  sexo: string; cor_raca: string; estado_civil: string;
 }
 const emptyForm = (): FormState => ({
   full_name: "", cpf: "", rg: "", rg_emissao: "", data_nascimento: "", local_nascimento: "",
   nome_pai: "", nome_mae: "", email: "", telefone: "", endereco: "", linkedin: "",
   formacao: "", experiencias: "", competencias: "",
+  sexo: "", cor_raca: "", estado_civil: "",
 });
 
 function CandidatePage() {
@@ -81,6 +83,9 @@ function CandidatePage() {
   const parseResume = useServerFn(parseResumeForCandidate);
   const submit = useServerFn(submitCandidateApplication);
   const requestDeletion = useServerFn(requestDataDeletion);
+  const saveDependent = useServerFn(upsertDependent);
+  const dropDependent = useServerFn(removeDependent);
+  const dropDoc = useServerFn(deleteDocument);
   const qc = useQueryClient();
 
   const q = useQuery({
@@ -200,14 +205,15 @@ function CandidatePage() {
     setStep(2);
   }
 
-  async function uploadDoc(type: DocType, file: File) {
-    setUploading(type);
+  async function uploadDoc(type: DocType, file: File, opts?: { dependent_id?: string; label?: string }) {
+    const key = `${type}:${opts?.dependent_id ?? ""}`;
+    setUploading(key);
     try {
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const sig = await createUpload({ data: { token, type, ext } });
       const up = await fetch(sig.signedUrl, { method: "PUT", body: file, headers: { "content-type": file.type } });
       if (!up.ok) throw new Error("Upload falhou");
-      await finalize({ data: { token, type, storage_path: sig.path } });
+      await finalize({ data: { token, type, storage_path: sig.path, dependent_id: opts?.dependent_id, label: opts?.label } });
       toast.success("Documento enviado!");
       qc.invalidateQueries({ queryKey: ["c", token] });
     } catch (err) {
@@ -219,7 +225,13 @@ function CandidatePage() {
 
   async function handleSubmit() {
     try {
-      await submit({ data: { token, form_data: form as unknown as Record<string, unknown> } });
+      await submit({ data: {
+        token,
+        form_data: form as unknown as Record<string, unknown>,
+        sexo: form.sexo || undefined,
+        cor_raca: form.cor_raca || undefined,
+        estado_civil: form.estado_civil || undefined,
+      } });
       toast.success("Cadastro enviado!");
       qc.invalidateQueries({ queryKey: ["c", token] });
       setStep(4);
