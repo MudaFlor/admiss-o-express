@@ -28,11 +28,33 @@ export const Route = createFileRoute("/_authenticated/candidatos/$id")({
 });
 
 const DOC_LABELS: Record<string, string> = {
-  rg: "RG",
-  cpf: "CPF",
-  cnh: "CNH",
+  rg: "RG", cpf: "CPF", cnh: "CNH",
+  ctps: "Carteira de Trabalho",
+  titulo_eleitor: "Título de Eleitor",
+  foto_3x4: "Foto 3x4",
+  certidao: "Certidão Nascimento/Casamento",
+  reservista: "Reservista",
+  pis_pasep: "PIS/PASEP/NIT",
   comprovante_residencia: "Comprovante de residência",
+  escolaridade: "Escolaridade",
+  certificado_curso: "Certificado de curso",
+  vacinacao_covid: "Vacinação Covid",
+  cartao_sus: "Cartão SUS",
+  curriculo: "Currículo",
+  dependente_certidao: "Dep — Certidão",
+  dependente_rg_cpf: "Dep — RG/CPF",
+  dependente_vacinacao: "Dep — Vacinação",
+  dependente_escolar: "Dep — Escolar",
 };
+
+type OcrShape = { values?: Record<string, string>; confidences?: Record<string, number> };
+function parseOcr(ocr_data: unknown): { values: Record<string, string>; confidences: Record<string, number> } {
+  const raw = (ocr_data ?? {}) as OcrShape & Record<string, unknown>;
+  if (raw && typeof raw === "object" && "values" in raw && raw.values) {
+    return { values: raw.values as Record<string, string>, confidences: (raw.confidences ?? {}) as Record<string, number> };
+  }
+  return { values: raw as Record<string, string>, confidences: {} };
+}
 
 function CandidatoDetailPage() {
   const { id } = Route.useParams();
