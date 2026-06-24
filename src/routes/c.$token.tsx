@@ -29,6 +29,8 @@ import {
   submitCandidateApplication,
   upsertDependent,
 } from "@/lib/candidate-public.functions";
+import { crossCheckCandidate, extractDeclaredFromFormData } from "@/lib/validation/cross-check";
+import { AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/c/$token")({
   head: () => ({ meta: [{ title: "Sua admissao digital" }] }),
@@ -128,6 +130,16 @@ function CandidatePage() {
     .map((d) => d.type);
   const allUploaded = hasIdentidade && requiredTypes.every((t) => uploadedTypes.has(t));
   const totalSteps = 4;
+
+  // ---- Validação cruzada (UI) ----
+  const crossCheck = crossCheckCandidate({
+    declared: extractDeclaredFromFormData(form as unknown as Record<string, unknown>, {
+      full_name: candidate.full_name,
+      cpf: candidate.cpf,
+    }),
+    documents: documents.map((d) => ({ type: d.type, dependent_id: d.dependent_id, ocr_data: (d as { ocr_data?: unknown }).ocr_data })),
+  });
+  const hasDivergence = crossCheck.summary.divergente > 0;
 
   function setField<K extends keyof FormState>(k: K, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -510,10 +522,15 @@ function CandidatePage() {
 
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>Voltar</Button>
-              <Button className="flex-1" disabled={!allUploaded} onClick={handleSubmit}>
+              <Button className="flex-1" disabled={!allUploaded || hasDivergence} onClick={handleSubmit}>
                 Enviar cadastro
               </Button>
             </div>
+            {hasDivergence && (
+              <p className="text-center text-[11px] text-amber-700">
+                Existem divergências entre seus documentos. Corrija antes de enviar.
+              </p>
+            )}
           </>
         )}
 
