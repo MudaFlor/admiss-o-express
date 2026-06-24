@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X, RotateCcw } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X, RotateCcw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CandidateStatusBadge } from "@/components/CandidateStatusBadge";
+import { crossCheckCandidate, extractDeclaredFromFormData, type CrossCheckResult } from "@/lib/validation/cross-check";
 import {
   approveCandidate,
   getCandidateById,
@@ -209,6 +210,7 @@ function CandidatoDetailPage() {
         <TabsList>
           <TabsTrigger value="documentos">Documentos & OCR</TabsTrigger>
           <TabsTrigger value="ficha">Ficha cadastral</TabsTrigger>
+          <TabsTrigger value="conferencia">Conferência cruzada</TabsTrigger>
           <TabsTrigger value="dependentes">Dependentes</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
@@ -383,6 +385,18 @@ function CandidatoDetailPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="conferencia">
+          <CrossCheckCard
+            result={crossCheckCandidate({
+              declared: extractDeclaredFromFormData(candidate.form_data as Record<string, unknown>, {
+                full_name: candidate.full_name,
+                cpf: candidate.cpf,
+              }),
+              documents: q.data!.documents.map((d) => ({ type: d.type, dependent_id: d.dependent_id, ocr_data: d.ocr_data })),
+            })}
+          />
+        </TabsContent>
+
         <TabsContent value="dependentes">
           <Card>
             <CardContent className="p-4">
@@ -492,5 +506,55 @@ function FichaForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+function CrossCheckCard({ result }: { result: CrossCheckResult }) {
+  const { fields, summary } = result;
+  const statusColor = (s: string) =>
+    s === "ok" ? "bg-emerald-100 text-emerald-900" : s === "divergente" ? "bg-amber-100 text-amber-900" : "bg-muted text-muted-foreground";
+  const statusLabel = (s: string) => (s === "ok" ? "OK" : s === "divergente" ? "Divergente" : "Ausente");
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-sm">Conferência entre documentos</CardTitle>
+        <div className="flex items-center gap-1 text-xs">
+          <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-emerald-900">OK {summary.ok}</span>
+          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-900">Diverg. {summary.divergente}</span>
+          <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">Ausente {summary.ausente}</span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {fields.map((f) => (
+          <div key={f.campo} className="rounded-md border p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-sm font-medium">{f.label}</div>
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusColor(f.status)}`}>
+                {f.status === "divergente" && <AlertTriangle className="h-3 w-3" />}
+                {f.status === "ok" && <CheckCircle2 className="h-3 w-3" />}
+                {statusLabel(f.status)}
+              </span>
+            </div>
+            {f.valores.length === 0 ? (
+              <p className="mt-1 text-xs text-muted-foreground">Nenhum documento traz esse campo ainda.</p>
+            ) : (
+              <ul className="mt-2 space-y-1 text-xs">
+                {f.valores.map((v) => (
+                  <li key={`${f.campo}-${v.origem}`} className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">
+                      {v.origem_label}
+                      {typeof v.confianca === "number" && (
+                        <span className="ml-1 text-[10px] text-muted-foreground/70">({Math.round(v.confianca * 100)}%)</span>
+                      )}
+                    </span>
+                    <span className="font-mono">{v.valor}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

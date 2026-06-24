@@ -29,6 +29,8 @@ import {
   submitCandidateApplication,
   upsertDependent,
 } from "@/lib/candidate-public.functions";
+import { crossCheckCandidate, extractDeclaredFromFormData } from "@/lib/validation/cross-check";
+import { AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/c/$token")({
   head: () => ({ meta: [{ title: "Sua admissao digital" }] }),
@@ -128,6 +130,16 @@ function CandidatePage() {
     .map((d) => d.type);
   const allUploaded = hasIdentidade && requiredTypes.every((t) => uploadedTypes.has(t));
   const totalSteps = 4;
+
+  // ---- Validação cruzada (UI) ----
+  const crossCheck = crossCheckCandidate({
+    declared: extractDeclaredFromFormData(form as unknown as Record<string, unknown>, {
+      full_name: candidate.full_name,
+      cpf: candidate.cpf,
+    }),
+    documents: documents.map((d) => ({ type: d.type, dependent_id: d.dependent_id, ocr_data: (d as { ocr_data?: unknown }).ocr_data })),
+  });
+  const hasDivergence = crossCheck.summary.divergente > 0;
 
   function setField<K extends keyof FormState>(k: K, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -508,12 +520,19 @@ function CandidatePage() {
               onChange={() => qc.invalidateQueries({ queryKey: ["c", token] })}
             />
 
+            <CrossCheckPanel result={crossCheck} onEdit={() => setStep(2)} />
+
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>Voltar</Button>
-              <Button className="flex-1" disabled={!allUploaded} onClick={handleSubmit}>
+              <Button className="flex-1" disabled={!allUploaded || hasDivergence} onClick={handleSubmit}>
                 Enviar cadastro
               </Button>
             </div>
+            {hasDivergence && (
+              <p className="text-center text-[11px] text-amber-700">
+                Existem divergências entre seus documentos. Corrija antes de enviar.
+              </p>
+            )}
           </>
         )}
 
@@ -610,6 +629,57 @@ function SmartArea<K extends keyof FormState>(props: {
 
 function Center({ children }: { children: React.ReactNode }) {
   return <div className="flex min-h-screen items-center justify-center">{children}</div>;
+}
+
+function CrossCheckPanel({ result, onEdit }: { result: ReturnType<typeof crossCheckCandidate>; onEdit: () => void }) {
+  const { fields, summary } = result;
+  const hasAny = fields.some((f) => f.valores.length > 0);
+  if (!hasAny) return null;
+  const divergentes = fields.filter((f) => f.status === "divergente");
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div className="text-sm font-semibold">Conferência cruzada</div>
+            <div className="text-[11px] text-muted-foreground">
+              Comparamos os dados dos seus documentos para evitar erros de cadastro.
+            </div>
+          </div>
+          {summary.divergente > 0 ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-900">
+              <AlertTriangle className="h-3 w-3" /> {summary.divergente} divergente(s)
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-900">
+              <CheckCircle2 className="h-3 w-3" /> Tudo confere
+            </span>
+          )}
+        </div>
+
+        {divergentes.length > 0 && (
+          <div className="space-y-2">
+            {divergentes.map((f) => (
+              <div key={f.campo} className="rounded-md border border-amber-300 bg-amber-50 p-3">
+                <div className="text-xs font-semibold text-amber-900">{f.label}</div>
+                <ul className="mt-1 space-y-0.5 text-[11px] text-amber-900">
+                  {f.valores.map((v) => (
+                    <li key={`${f.campo}-${v.origem}`} className="flex justify-between gap-2">
+                      <span className="text-amber-900/70">{v.origem_label}</span>
+                      <span className="font-mono">{v.valor}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+            <Button variant="outline" size="sm" className="w-full" onClick={onEdit}>
+              Revisar ficha cadastral
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 type DependentRow = { id: string; full_name: string; relationship: string | null; birth_date: string | null; cpf: string | null; rg: string | null };
