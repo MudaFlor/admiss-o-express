@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X, RotateCcw } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X, RotateCcw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CandidateStatusBadge } from "@/components/CandidateStatusBadge";
+import { crossCheckCandidate, extractDeclaredFromFormData, type CrossCheckResult } from "@/lib/validation/cross-check";
 import {
   approveCandidate,
   getCandidateById,
@@ -209,6 +210,7 @@ function CandidatoDetailPage() {
         <TabsList>
           <TabsTrigger value="documentos">Documentos & OCR</TabsTrigger>
           <TabsTrigger value="ficha">Ficha cadastral</TabsTrigger>
+          <TabsTrigger value="conferencia">Conferência cruzada</TabsTrigger>
           <TabsTrigger value="dependentes">Dependentes</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
@@ -381,6 +383,18 @@ function CandidatoDetailPage() {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="conferencia">
+          <CrossCheckCard
+            result={crossCheckCandidate({
+              declared: extractDeclaredFromFormData(candidate.form_data as Record<string, unknown>, {
+                full_name: candidate.full_name,
+                cpf: candidate.cpf,
+              }),
+              documents: q.data!.documents.map((d) => ({ type: d.type, dependent_id: d.dependent_id, ocr_data: d.ocr_data })),
+            })}
+          />
         </TabsContent>
 
         <TabsContent value="dependentes">
