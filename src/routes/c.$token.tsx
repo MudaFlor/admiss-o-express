@@ -520,6 +520,8 @@ function CandidatePage() {
               onChange={() => qc.invalidateQueries({ queryKey: ["c", token] })}
             />
 
+            <CrossCheckPanel result={crossCheck} onEdit={() => setStep(2)} />
+
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>Voltar</Button>
               <Button className="flex-1" disabled={!allUploaded || hasDivergence} onClick={handleSubmit}>
