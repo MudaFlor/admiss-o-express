@@ -496,6 +496,94 @@ function CandidatoDetailPage() {
         </TabsContent>
 
         <TabsContent value="historico">
+          {/* fall-through */}
+        </TabsContent>
+        <TabsContent value="lixeira">
+          <Card>
+            <CardContent className="p-4">
+              {(q.data?.trash?.length ?? 0) === 0 ? (
+                <p className="text-sm text-muted-foreground">A lixeira está vazia.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {q.data!.trash!.map((d) => {
+                    const deletedAt = d.deleted_at ? new Date(d.deleted_at) : null;
+                    const expiresAt = deletedAt ? new Date(deletedAt.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
+                    const daysLeft = expiresAt
+                      ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000)))
+                      : 0;
+                    return (
+                      <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <div className="font-medium">{DOC_LABELS[d.type] ?? d.type}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              Excluído em {deletedAt?.toLocaleString("pt-BR")} · expira em {daysLeft} dia(s)
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {d.signed_url && (
+                            <Button asChild size="sm" variant="ghost">
+                              <a href={d.signed_url} target="_blank" rel="noreferrer">Visualizar</a>
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              try {
+                                await restoreDoc({ data: { document_id: d.id } });
+                                toast.success("Documento restaurado");
+                                qc.invalidateQueries({ queryKey: ["candidate", id] });
+                              } catch (e) {
+                                toast.error(e instanceof Error ? e.message : "Erro");
+                              }
+                            }}
+                          >
+                            <Undo2 className="h-3.5 w-3.5" /> Restaurar
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost" className="text-rose-600 hover:text-rose-700">
+                                <Trash2 className="h-3.5 w-3.5" /> Excluir agora
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir permanentemente?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação não pode ser desfeita. O arquivo será removido do armazenamento.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={async () => {
+                                    try {
+                                      await purgeDoc({ data: { document_id: d.id } });
+                                      toast.success("Documento excluído permanentemente");
+                                      qc.invalidateQueries({ queryKey: ["candidate", id] });
+                                    } catch (e) {
+                                      toast.error(e instanceof Error ? e.message : "Erro");
+                                    }
+                                  }}
+                                >
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="historico-real">
           <Card>
             <CardContent className="p-4">
               {(notifQ.data?.length ?? 0) === 0 ? (
