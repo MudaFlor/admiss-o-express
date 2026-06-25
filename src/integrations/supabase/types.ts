@@ -180,6 +180,8 @@ export type Database = {
       documents: {
         Row: {
           candidate_id: string
+          deleted_at: string | null
+          deleted_by: string | null
           dependent_id: string | null
           id: string
           label: string | null
@@ -192,6 +194,8 @@ export type Database = {
         }
         Insert: {
           candidate_id: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           dependent_id?: string | null
           id?: string
           label?: string | null
@@ -204,6 +208,8 @@ export type Database = {
         }
         Update: {
           candidate_id?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           dependent_id?: string | null
           id?: string
           label?: string | null
