@@ -495,9 +495,6 @@ function CandidatoDetailPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="historico">
-          {/* fall-through */}
-        </TabsContent>
         <TabsContent value="lixeira">
           <Card>
             <CardContent className="p-4">
@@ -583,7 +580,7 @@ function CandidatoDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="historico-real">
+        <TabsContent value="historico">
           <Card>
             <CardContent className="p-4">
               {(notifQ.data?.length ?? 0) === 0 ? (
