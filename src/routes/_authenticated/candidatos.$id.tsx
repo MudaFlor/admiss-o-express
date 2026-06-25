@@ -3,13 +3,24 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X, RotateCcw, AlertTriangle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X, RotateCcw, AlertTriangle, Trash2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { CandidateStatusBadge } from "@/components/CandidateStatusBadge";
 import { crossCheckCandidate, extractDeclaredFromFormData, type CrossCheckResult } from "@/lib/validation/cross-check";
 import {
@@ -21,6 +32,9 @@ import {
   updateCandidateBasicsRH,
   updateDocumentOcr,
   updateCandidateForm,
+  softDeleteDocumentRH,
+  restoreDocumentRH,
+  purgeDocumentRH,
 } from "@/lib/candidates.functions";
 
 export const Route = createFileRoute("/_authenticated/candidatos/$id")({
@@ -67,6 +81,9 @@ function CandidatoDetailPage() {
   const updateBasics = useServerFn(updateCandidateBasicsRH);
   const updateOcr = useServerFn(updateDocumentOcr);
   const getNotif = useServerFn(getCandidateNotifications);
+  const softDelete = useServerFn(softDeleteDocumentRH);
+  const restoreDoc = useServerFn(restoreDocumentRH);
+  const purgeDoc = useServerFn(purgeDocumentRH);
   const qc = useQueryClient();
 
   const q = useQuery({ queryKey: ["candidate", id], queryFn: () => get({ data: { id } }) });
@@ -212,6 +229,9 @@ function CandidatoDetailPage() {
           <TabsTrigger value="ficha">Ficha cadastral</TabsTrigger>
           <TabsTrigger value="conferencia">Conferência cruzada</TabsTrigger>
           <TabsTrigger value="dependentes">Dependentes</TabsTrigger>
+          <TabsTrigger value="lixeira">
+            Lixeira{q.data?.trash?.length ? ` (${q.data.trash.length})` : ""}
+          </TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
         </TabsList>
 
@@ -224,21 +244,62 @@ function CandidatoDetailPage() {
                   <p className="px-2 py-3 text-xs text-muted-foreground">Nenhum documento ainda.</p>
                 )}
                 {q.data!.documents.map((d) => (
-                  <button
+                  <div
                     key={d.id}
-                    onClick={() => setActiveDoc(d.id)}
-                    className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm ${
+                    className={`flex w-full items-center gap-1 rounded-md pr-1 text-sm ${
                       activeDoc === d.id ? "bg-accent text-accent-foreground" : "hover:bg-muted"
                     }`}
                   >
-                    <FileText className="h-4 w-4" />
-                    <div className="flex-1">
-                      <div className="font-medium">{DOC_LABELS[d.type] ?? d.type}</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        Confiança: {Math.round((d.ocr_confidence ?? 0) * 100)}%
+                    <button
+                      onClick={() => setActiveDoc(d.id)}
+                      className="flex flex-1 items-center gap-2 px-2 py-2 text-left"
+                    >
+                      <FileText className="h-4 w-4" />
+                      <div className="flex-1">
+                        <div className="font-medium">{DOC_LABELS[d.type] ?? d.type}</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          Confiança: {Math.round((d.ocr_confidence ?? 0) * 100)}%
+                        </div>
                       </div>
-                    </div>
-                  </button>
+                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-muted-foreground hover:text-rose-600"
+                          aria-label="Excluir documento"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Tem certeza de que deseja excluir esse arquivo?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            O arquivo <strong>{DOC_LABELS[d.type] ?? d.type}</strong> será movido para a lixeira e ficará disponível para restauração por <strong>30 dias</strong> antes de ser excluído permanentemente.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={async () => {
+                              try {
+                                await softDelete({ data: { document_id: d.id } });
+                                toast.success("Documento movido para a lixeira");
+                                if (activeDoc === d.id) setActiveDoc(null);
+                                qc.invalidateQueries({ queryKey: ["candidate", id] });
+                              } catch (e) {
+                                toast.error(e instanceof Error ? e.message : "Erro");
+                              }
+                            }}
+                          >
+                            Mover para lixeira
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 ))}
               </CardContent>
             </Card>
@@ -434,6 +495,91 @@ function CandidatoDetailPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="lixeira">
+          <Card>
+            <CardContent className="p-4">
+              {(q.data?.trash?.length ?? 0) === 0 ? (
+                <p className="text-sm text-muted-foreground">A lixeira está vazia.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {q.data!.trash!.map((d) => {
+                    const deletedAt = d.deleted_at ? new Date(d.deleted_at) : null;
+                    const expiresAt = deletedAt ? new Date(deletedAt.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
+                    const daysLeft = expiresAt
+                      ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000)))
+                      : 0;
+                    return (
+                      <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <div className="font-medium">{DOC_LABELS[d.type] ?? d.type}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              Excluído em {deletedAt?.toLocaleString("pt-BR")} · expira em {daysLeft} dia(s)
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {d.signed_url && (
+                            <Button asChild size="sm" variant="ghost">
+                              <a href={d.signed_url} target="_blank" rel="noreferrer">Visualizar</a>
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              try {
+                                await restoreDoc({ data: { document_id: d.id } });
+                                toast.success("Documento restaurado");
+                                qc.invalidateQueries({ queryKey: ["candidate", id] });
+                              } catch (e) {
+                                toast.error(e instanceof Error ? e.message : "Erro");
+                              }
+                            }}
+                          >
+                            <Undo2 className="h-3.5 w-3.5" /> Restaurar
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost" className="text-rose-600 hover:text-rose-700">
+                                <Trash2 className="h-3.5 w-3.5" /> Excluir agora
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir permanentemente?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação não pode ser desfeita. O arquivo será removido do armazenamento.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={async () => {
+                                    try {
+                                      await purgeDoc({ data: { document_id: d.id } });
+                                      toast.success("Documento excluído permanentemente");
+                                      qc.invalidateQueries({ queryKey: ["candidate", id] });
+                                    } catch (e) {
+                                      toast.error(e instanceof Error ? e.message : "Erro");
+                                    }
+                                  }}
+                                >
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
         <TabsContent value="historico">
           <Card>
             <CardContent className="p-4">

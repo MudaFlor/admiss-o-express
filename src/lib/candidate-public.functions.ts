@@ -52,7 +52,8 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
     const { data: documents } = await supabaseAdmin
       .from("documents")
       .select("id, type, status, storage_path, ocr_data, ocr_confidence, uploaded_at, dependent_id, label")
-      .eq("candidate_id", candidate.id);
+      .eq("candidate_id", candidate.id)
+      .is("deleted_at", null);
 
     const docsWithUrls = await Promise.all(
       (documents ?? []).map(async (d) => {
@@ -323,8 +324,10 @@ export const deleteDocument = createServerFn({ method: "POST" })
     const { data: doc } = await supabaseAdmin
       .from("documents").select("storage_path, candidate_id").eq("id", data.id).maybeSingle();
     if (!doc || doc.candidate_id !== candidate.id) throw new Error("Documento não encontrado");
-    await supabaseAdmin.storage.from("candidate-documents").remove([doc.storage_path]);
-    await supabaseAdmin.from("documents").delete().eq("id", data.id);
+    await supabaseAdmin
+      .from("documents")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", data.id);
     return { ok: true };
   });
 

@@ -94,6 +94,7 @@ export const getCandidateById = createServerFn({ method: "POST" })
       .from("documents")
       .select("*")
       .eq("candidate_id", data.id)
+      .is("deleted_at", null)
       .order("uploaded_at", { ascending: true });
 
     const docsWithUrls = await Promise.all(
@@ -111,7 +112,23 @@ export const getCandidateById = createServerFn({ method: "POST" })
       .eq("candidate_id", data.id)
       .order("created_at", { ascending: true });
 
-    return { candidate, documents: docsWithUrls, dependents: dependents ?? [] };
+    const { data: trashed } = await supabase
+      .from("documents")
+      .select("*")
+      .eq("candidate_id", data.id)
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false });
+
+    const trashWithUrls = await Promise.all(
+      (trashed ?? []).map(async (d) => {
+        const { data: signed } = await supabaseAdmin.storage
+          .from("candidate-documents")
+          .createSignedUrl(d.storage_path, 60 * 10);
+        return { ...d, signed_url: signed?.signedUrl ?? null };
+      }),
+    );
+
+    return { candidate, documents: docsWithUrls, dependents: dependents ?? [], trash: trashWithUrls };
   });
 
 export const updateCandidateForm = createServerFn({ method: "POST" })
@@ -262,4 +279,49 @@ export const getCandidateNotifications = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return rows ?? [];
+  });
+
+export const softDeleteDocumentRH = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ document_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("documents")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
+      .eq("id", data.document_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const restoreDocumentRH = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ document_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("documents")
+      .update({ deleted_at: null, deleted_by: null })
+      .eq("id", data.document_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const purgeDocumentRH = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ document_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: doc, error: selErr } = await supabase
+      .from("documents")
+      .select("id, storage_path, deleted_at")
+      .eq("id", data.document_id)
+      .maybeSingle();
+    if (selErr) throw new Error(selErr.message);
+    if (!doc) throw new Error("Documento não encontrado");
+    if (!doc.deleted_at) throw new Error("Documento não está na lixeira");
+    await supabaseAdmin.storage.from("candidate-documents").remove([doc.storage_path]);
+    const { error } = await supabaseAdmin.from("documents").delete().eq("id", doc.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
