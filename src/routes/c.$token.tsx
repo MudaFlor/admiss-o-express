@@ -299,24 +299,23 @@ function CandidatePage() {
     }
     if (writes.length === 0) return 0;
 
+    // Usa o snapshot atual (closure) para decidir e contar; setState em seguida.
+    const nextForm = { ...form };
+    const nextAuto = new Set(autoFilled);
     let count = 0;
-    setAutoFilled((prevAuto) => {
-      const nextAuto = new Set(prevAuto);
-      setForm((prevForm) => {
-        const nextForm = { ...prevForm };
-        for (const { k, v } of writes) {
-          const current = nextForm[k];
-          const canWrite = !current || prevAuto.has(k);
-          if (canWrite && v !== current) {
-            nextForm[k] = v;
-            nextAuto.add(k);
-            count += 1;
-          }
-        }
-        return nextForm;
-      });
-      return nextAuto;
-    });
+    for (const { k, v } of writes) {
+      const current = nextForm[k];
+      const canWrite = !current || autoFilled.has(k);
+      if (canWrite && v !== current) {
+        nextForm[k] = v;
+        nextAuto.add(k);
+        count += 1;
+      }
+    }
+    if (count > 0) {
+      setForm(nextForm);
+      setAutoFilled(nextAuto);
+    }
     return count;
   }
 
