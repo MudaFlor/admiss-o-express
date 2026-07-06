@@ -76,6 +76,36 @@ const emptyForm = (): FormState => ({
   sexo: "", cor_raca: "", estado_civil: "",
 });
 
+// Mapeamento OCR (campo do documento) -> campo do FormState.
+// Só campos aplicáveis ao formulário do candidato.
+const OCR_TO_FORM: Partial<Record<DocType, Partial<Record<string, keyof FormState>>>> = {
+  rg: {
+    nome: "full_name", rg: "rg", cpf: "cpf",
+    data_emissao: "rg_emissao", data_nascimento: "data_nascimento",
+    naturalidade: "local_nascimento", nome_pai: "nome_pai", nome_mae: "nome_mae",
+  },
+  cpf: { nome: "full_name", cpf: "cpf", data_nascimento: "data_nascimento" },
+  cnh: {
+    nome: "full_name", cpf: "cpf",
+    data_emissao: "rg_emissao", data_nascimento: "data_nascimento",
+  },
+  certidao: {
+    nome: "full_name", nome_pai: "nome_pai", nome_mae: "nome_mae",
+    data_nascimento: "data_nascimento",
+  },
+  comprovante_residencia: {},
+};
+const DOC_LABEL: Partial<Record<DocType, string>> = {
+  rg: "RG/CIN", cpf: "CPF", cnh: "CNH", certidao: "certidão",
+  comprovante_residencia: "comprovante de residência",
+};
+function buildEndereco(fields: Record<string, string>): string | null {
+  const { logradouro, numero, complemento, bairro, cidade, uf, cep } = fields;
+  const linha1 = [logradouro, numero].filter(Boolean).join(", ");
+  const parts = [linha1, complemento, bairro, [cidade, uf].filter(Boolean).join("/"), cep].filter(Boolean);
+  return parts.length ? parts.join(" — ") : null;
+}
+
 function CandidatePage() {
   const { token } = Route.useParams();
   const get = useServerFn(getCandidateByToken);
