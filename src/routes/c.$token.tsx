@@ -76,6 +76,36 @@ const emptyForm = (): FormState => ({
   sexo: "", cor_raca: "", estado_civil: "",
 });
 
+// Mapeamento OCR (campo do documento) -> campo do FormState.
+// Só campos aplicáveis ao formulário do candidato.
+const OCR_TO_FORM: Partial<Record<DocType, Partial<Record<string, keyof FormState>>>> = {
+  rg: {
+    nome: "full_name", rg: "rg", cpf: "cpf",
+    data_emissao: "rg_emissao", data_nascimento: "data_nascimento",
+    naturalidade: "local_nascimento", nome_pai: "nome_pai", nome_mae: "nome_mae",
+  },
+  cpf: { nome: "full_name", cpf: "cpf", data_nascimento: "data_nascimento" },
+  cnh: {
+    nome: "full_name", cpf: "cpf",
+    data_emissao: "rg_emissao", data_nascimento: "data_nascimento",
+  },
+  certidao: {
+    nome: "full_name", nome_pai: "nome_pai", nome_mae: "nome_mae",
+    data_nascimento: "data_nascimento",
+  },
+  comprovante_residencia: {},
+};
+const DOC_LABEL: Partial<Record<DocType, string>> = {
+  rg: "RG/CIN", cpf: "CPF", cnh: "CNH", certidao: "certidão",
+  comprovante_residencia: "comprovante de residência",
+};
+function buildEndereco(fields: Record<string, string>): string | null {
+  const { logradouro, numero, complemento, bairro, cidade, uf, cep } = fields;
+  const linha1 = [logradouro, numero].filter(Boolean).join(", ");
+  const parts = [linha1, complemento, bairro, [cidade, uf].filter(Boolean).join("/"), cep].filter(Boolean);
+  return parts.length ? parts.join(" — ") : null;
+}
+
 function CandidatePage() {
   const { token } = Route.useParams();
   const get = useServerFn(getCandidateByToken);
@@ -228,14 +258,65 @@ function CandidatePage() {
       const sig = await createUpload({ data: { token, type, ext } });
       const up = await fetch(sig.signedUrl, { method: "PUT", body: file, headers: { "content-type": file.type } });
       if (!up.ok) throw new Error("Upload falhou");
-      await finalize({ data: { token, type, storage_path: sig.path, dependent_id: opts?.dependent_id, label: opts?.label } });
-      toast.success("Documento enviado!");
+      const result = await finalize({ data: { token, type, storage_path: sig.path, dependent_id: opts?.dependent_id, label: opts?.label } });
+      // Pré-preenchimento do formulário com os campos extraídos por OCR do documento.
+      // Só para documentos do titular (não dependente).
+      if (!opts?.dependent_id) {
+        const filled = mergeOcrIntoForm(type, (result as { ocr_fields?: Record<string, string> }).ocr_fields ?? {});
+        if (filled > 0) {
+          toast.success(`Documento enviado. ${filled} campo(s) preenchido(s) pelo ${DOC_LABEL[type] ?? "documento"}.`);
+        } else {
+          toast.success("Documento enviado!");
+        }
+      } else {
+        toast.success("Documento enviado!");
+      }
       qc.invalidateQueries({ queryKey: ["c", token] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro no upload");
     } finally {
       setUploading(null);
     }
+  }
+
+  // Merge OCR -> form respeitando o trabalho do candidato:
+  // preenche apenas campos vazios ou que ainda estão marcados como autoFilled.
+  function mergeOcrIntoForm(type: DocType, ocrFields: Record<string, string>): number {
+    const map = OCR_TO_FORM[type];
+    if (!map && type !== "comprovante_residencia") return 0;
+    // Monta a lista de writes a partir do mapeamento + endereço agregado
+    const writes: Array<{ k: keyof FormState; v: string }> = [];
+    if (map) {
+      for (const [ocrKey, formKey] of Object.entries(map)) {
+        if (!formKey) continue;
+        const v = ocrFields[ocrKey];
+        if (v) writes.push({ k: formKey, v });
+      }
+    }
+    if (type === "comprovante_residencia") {
+      const endereco = buildEndereco(ocrFields);
+      if (endereco) writes.push({ k: "endereco", v: endereco });
+    }
+    if (writes.length === 0) return 0;
+
+    // Usa o snapshot atual (closure) para decidir e contar; setState em seguida.
+    const nextForm = { ...form };
+    const nextAuto = new Set(autoFilled);
+    let count = 0;
+    for (const { k, v } of writes) {
+      const current = nextForm[k];
+      const canWrite = !current || autoFilled.has(k);
+      if (canWrite && v !== current) {
+        nextForm[k] = v;
+        nextAuto.add(k);
+        count += 1;
+      }
+    }
+    if (count > 0) {
+      setForm(nextForm);
+      setAutoFilled(nextAuto);
+    }
+    return count;
   }
 
   async function handleSubmit() {
