@@ -202,7 +202,7 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
         .eq("id", candidate.id);
     }
 
-    return doc;
+    return { ...doc, ocr_fields: ocr.fields };
   });
 
 export const submitCandidateApplication = createServerFn({ method: "POST" })
