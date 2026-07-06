@@ -251,7 +251,7 @@ function CandidatoDetailPage() {
         </TabsList>
 
         <TabsContent value="documentos" className="space-y-3">
-          <div className="grid gap-4 lg:grid-cols-[280px_1fr_360px]">
+          <div className={`grid gap-4 ${hasSubmitted ? "lg:grid-cols-[280px_1fr_360px]" : "lg:grid-cols-[280px_1fr]"}`}>
             <Card>
               <CardHeader><CardTitle className="text-sm">Documentos enviados</CardTitle></CardHeader>
               <CardContent className="space-y-1 p-2">
@@ -333,9 +333,10 @@ function CandidatoDetailPage() {
               </CardContent>
             </Card>
 
+            {hasSubmitted && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-sm">Dados extraídos (OCR)</CardTitle>
+                <CardTitle className="text-sm">Dados extraídos (OCR) — avançado</CardTitle>
                 {doc && (!editingOcr ? (
                   <Button size="sm" variant="outline" onClick={() => setEditingOcr(true)}>
                     <Pencil className="h-3.5 w-3.5" /> Editar
@@ -398,6 +399,7 @@ function CandidatoDetailPage() {
                 )}
               </CardContent>
             </Card>
+            )}
           </div>
 
           {candidate.status !== "aprovado" && candidate.status !== "rejeitado" && (
