@@ -258,14 +258,64 @@ function CandidatePage() {
       const sig = await createUpload({ data: { token, type, ext } });
       const up = await fetch(sig.signedUrl, { method: "PUT", body: file, headers: { "content-type": file.type } });
       if (!up.ok) throw new Error("Upload falhou");
-      await finalize({ data: { token, type, storage_path: sig.path, dependent_id: opts?.dependent_id, label: opts?.label } });
-      toast.success("Documento enviado!");
+      const result = await finalize({ data: { token, type, storage_path: sig.path, dependent_id: opts?.dependent_id, label: opts?.label } });
+      // Pré-preenchimento do formulário com os campos extraídos por OCR do documento.
+      // Só para documentos do titular (não dependente).
+      if (!opts?.dependent_id) {
+        const filled = mergeOcrIntoForm(type, (result as { ocr_fields?: Record<string, string> }).ocr_fields ?? {});
+        if (filled > 0) {
+          toast.success(`Documento enviado. ${filled} campo(s) preenchido(s) pelo ${DOC_LABEL[type] ?? "documento"}.`);
+        } else {
+          toast.success("Documento enviado!");
+        }
+      } else {
+        toast.success("Documento enviado!");
+      }
       qc.invalidateQueries({ queryKey: ["c", token] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro no upload");
     } finally {
       setUploading(null);
     }
+  }
+
+  // Merge OCR -> form respeitando o trabalho do candidato:
+  // preenche apenas campos vazios ou que ainda estão marcados como autoFilled.
+  function mergeOcrIntoForm(type: DocType, ocrFields: Record<string, string>): number {
+    const map = OCR_TO_FORM[type];
+    if (!map && type !== "comprovante_residencia") return 0;
+    let count = 0;
+    setForm((prevForm) => {
+      setAutoFilled((prevAuto) => {
+        const nextAuto = new Set(prevAuto);
+        const nextForm = { ...prevForm };
+        const apply = (k: keyof FormState, value: string) => {
+          const current = nextForm[k];
+          const canWrite = !current || nextAuto.has(k);
+          if (canWrite && value && value !== current) {
+            nextForm[k] = value;
+            nextAuto.add(k);
+            count += 1;
+          }
+        };
+        if (map) {
+          for (const [ocrKey, formKey] of Object.entries(map)) {
+            if (!formKey) continue;
+            const v = ocrFields[ocrKey];
+            if (v) apply(formKey, v);
+          }
+        }
+        if (type === "comprovante_residencia") {
+          const endereco = buildEndereco(ocrFields);
+          if (endereco) apply("endereco", endereco);
+        }
+        // Aplica mutação em cascata via setForm callback
+        setForm(nextForm);
+        return nextAuto;
+      });
+      return prevForm; // será sobrescrito pelo setForm interno acima
+    });
+    return count;
   }
 
   async function handleSubmit() {
