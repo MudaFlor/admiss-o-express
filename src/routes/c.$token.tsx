@@ -284,36 +284,38 @@ function CandidatePage() {
   function mergeOcrIntoForm(type: DocType, ocrFields: Record<string, string>): number {
     const map = OCR_TO_FORM[type];
     if (!map && type !== "comprovante_residencia") return 0;
+    // Monta a lista de writes a partir do mapeamento + endereço agregado
+    const writes: Array<{ k: keyof FormState; v: string }> = [];
+    if (map) {
+      for (const [ocrKey, formKey] of Object.entries(map)) {
+        if (!formKey) continue;
+        const v = ocrFields[ocrKey];
+        if (v) writes.push({ k: formKey, v });
+      }
+    }
+    if (type === "comprovante_residencia") {
+      const endereco = buildEndereco(ocrFields);
+      if (endereco) writes.push({ k: "endereco", v: endereco });
+    }
+    if (writes.length === 0) return 0;
+
     let count = 0;
-    setForm((prevForm) => {
-      setAutoFilled((prevAuto) => {
-        const nextAuto = new Set(prevAuto);
+    setAutoFilled((prevAuto) => {
+      const nextAuto = new Set(prevAuto);
+      setForm((prevForm) => {
         const nextForm = { ...prevForm };
-        const apply = (k: keyof FormState, value: string) => {
+        for (const { k, v } of writes) {
           const current = nextForm[k];
-          const canWrite = !current || nextAuto.has(k);
-          if (canWrite && value && value !== current) {
-            nextForm[k] = value;
+          const canWrite = !current || prevAuto.has(k);
+          if (canWrite && v !== current) {
+            nextForm[k] = v;
             nextAuto.add(k);
             count += 1;
           }
-        };
-        if (map) {
-          for (const [ocrKey, formKey] of Object.entries(map)) {
-            if (!formKey) continue;
-            const v = ocrFields[ocrKey];
-            if (v) apply(formKey, v);
-          }
         }
-        if (type === "comprovante_residencia") {
-          const endereco = buildEndereco(ocrFields);
-          if (endereco) apply("endereco", endereco);
-        }
-        // Aplica mutação em cascata via setForm callback
-        setForm(nextForm);
-        return nextAuto;
+        return nextForm;
       });
-      return prevForm; // será sobrescrito pelo setForm interno acima
+      return nextAuto;
     });
     return count;
   }
