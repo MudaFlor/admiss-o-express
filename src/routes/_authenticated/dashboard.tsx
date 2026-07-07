@@ -62,14 +62,15 @@ function DashboardPage() {
     (statsQ.data?.counts.rejeitado ?? 0);
 
   const kpis = [
-    { label: "Colaboradores ativos", value: k?.active_employees ?? 0, icon: Users },
-    { label: "Candidatos no pipeline", value: candCount, icon: Briefcase },
-    { label: "Admissões no período", value: k?.period_admissions ?? 0, icon: UserPlus },
-    { label: "Documentos pendentes", value: statsQ.data?.counts.pendente ?? 0, icon: FileText },
+    { label: "Colaboradores ativos", value: k?.active_employees ?? 0, icon: Users, to: "/colaboradores" as const },
+    { label: "Candidatos no pipeline", value: candCount, icon: Briefcase, to: "/candidatos" as const },
+    { label: "Admissões no período", value: k?.period_admissions ?? 0, icon: UserPlus, to: "/gestao" as const },
+    { label: "Documentos pendentes", value: statsQ.data?.counts.pendente ?? 0, icon: FileText, to: "/documentos" as const },
     {
       label: "Absenteísmo (mês)",
       value: `${(k?.absenteeism_rate ?? 0).toFixed(2)}%`,
       icon: TrendingDown,
+      to: "/gestao/absenteismo" as const,
     },
   ];
 
@@ -121,20 +122,23 @@ function DashboardPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.04, duration: 0.3 }}
           >
-            <Card className="group relative overflow-hidden border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-white/15">
-              <div className="flex items-start justify-between">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
-                  <kp.icon className="h-4 w-4" />
+            <Link to={kp.to} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl">
+              <Card className="group relative overflow-hidden border-border bg-card p-5 shadow-[var(--shadow-card)] transition-colors hover:border-white/15 cursor-pointer">
+                <div className="flex items-start justify-between">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
+                    <kp.icon className="h-4 w-4" />
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 text-muted-foreground/40 transition-colors group-hover:text-foreground" />
                 </div>
-              </div>
-              <div className="mt-5">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  {kp.label}
-                </p>
-                <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{kp.value}</p>
-              </div>
-              <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/[0.04] blur-2xl transition-opacity group-hover:opacity-100" />
-            </Card>
+                <div className="mt-5">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    {kp.label}
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{kp.value}</p>
+                </div>
+                <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/[0.04] blur-2xl transition-opacity group-hover:opacity-100" />
+              </Card>
+            </Link>
           </motion.div>
         ))}
       </div>
