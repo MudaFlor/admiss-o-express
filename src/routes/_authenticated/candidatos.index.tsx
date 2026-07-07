@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search, Copy, MessageCircle } from "lucide-react";
+import { Plus, Search, Copy, MessageCircle, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +34,7 @@ function CandidatosPage() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [created, setCreated] = useState<{ link: string; name: string; phone: string } | null>(null);
+  const [testing, setTesting] = useState(false);
 
   const q = useQuery({
     queryKey: ["candidates", search],
@@ -67,6 +68,30 @@ function CandidatosPage() {
     toast.success("Link copiado!");
   }
 
+  async function testAsCandidate() {
+    setTesting(true);
+    try {
+      const stamp = new Date().toLocaleString("pt-BR");
+      const res = await create({
+        data: {
+          full_name: `Candidato Teste ${stamp}`,
+          email: "",
+          phone: "",
+          position: "Teste do portal",
+          cpf: "",
+        },
+      });
+      const link = `${window.location.origin}/c/${res.access_token}`;
+      qc.invalidateQueries({ queryKey: ["candidates"] });
+      window.open(link, "_blank", "noopener");
+      toast.success("Portal do candidato aberto em nova aba.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao criar teste");
+    } finally {
+      setTesting(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -74,6 +99,10 @@ function CandidatosPage() {
           <h1 className="text-2xl font-semibold">Candidatos</h1>
           <p className="text-sm text-muted-foreground">Gerencie convites, documentos e aprovações.</p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" onClick={testAsCandidate} disabled={testing}>
+          <FlaskConical className="h-4 w-4" /> {testing ? "Criando…" : "Testar como candidato"}
+        </Button>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setCreated(null); }}>
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4" /> Novo candidato</Button>
@@ -135,6 +164,7 @@ function CandidatosPage() {
             )}
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>
