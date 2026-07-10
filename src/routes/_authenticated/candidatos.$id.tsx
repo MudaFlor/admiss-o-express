@@ -85,10 +85,12 @@ function CandidatoDetailPage() {
   const softDelete = useServerFn(softDeleteDocumentRH);
   const restoreDoc = useServerFn(restoreDocumentRH);
   const purgeDoc = useServerFn(purgeDocumentRH);
+  const getConsents = useServerFn(listLgpdConsentsForCandidate);
   const qc = useQueryClient();
 
   const q = useQuery({ queryKey: ["candidate", id], queryFn: () => get({ data: { id } }) });
   const notifQ = useQuery({ queryKey: ["candidate-notif", id], queryFn: () => getNotif({ data: { id } }) });
+  const consentsQ = useQuery({ queryKey: ["candidate-lgpd", id], queryFn: () => getConsents({ data: { candidate_id: id } }) });
 
   const [activeDoc, setActiveDoc] = useState<string | null>(null);
   const [editing, setEditing] = useState<Record<string, string>>({});
