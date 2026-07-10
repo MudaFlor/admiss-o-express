@@ -31,6 +31,36 @@ import {
 } from "@/lib/candidate-public.functions";
 import { crossCheckCandidate, extractDeclaredFromFormData } from "@/lib/validation/cross-check";
 import { AlertTriangle } from "lucide-react";
+import { LGPD_TERMS_TEXT, LGPD_TERMS_VERSION } from "@/lib/lgpd/terms";
+
+type SignatureDeviceInfo = {
+  user_agent?: string; platform?: string; language?: string; timezone?: string;
+  screen?: { w: number; h: number }; device_type?: "mobile" | "tablet" | "desktop";
+};
+function collectDeviceInfo(): SignatureDeviceInfo {
+  if (typeof window === "undefined") return {};
+  const ua = navigator.userAgent;
+  const isMobile = /Mobi|Android|iPhone/i.test(ua);
+  const isTablet = /iPad|Tablet/i.test(ua);
+  return {
+    user_agent: ua.slice(0, 500),
+    platform: (navigator as Navigator & { platform?: string }).platform,
+    language: navigator.language,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    screen: { w: window.screen.width, h: window.screen.height },
+    device_type: isTablet ? "tablet" : isMobile ? "mobile" : "desktop",
+  };
+}
+function requestGeolocation(): Promise<{ lat: number; lng: number; accuracy?: number } | null> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+      () => resolve(null),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 },
+    );
+  });
+}
 
 export const Route = createFileRoute("/c/$token")({
   head: () => ({ meta: [{ title: "Sua admissao digital" }] }),
@@ -128,6 +158,9 @@ function CandidatePage() {
 
   const [consent, setConsent] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [sigName, setSigName] = useState("");
+  const [sigCpf, setSigCpf] = useState("");
+  const [geoConsent, setGeoConsent] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
@@ -181,10 +214,23 @@ function CandidatePage() {
 
   async function handleAcceptLgpd() {
     if (!consent) return toast.error("Confirme o aceite do termo");
+    if (sigName.trim().length < 2) return toast.error("Digite seu nome completo");
+    if (sigCpf.replace(/\D/g, "").length !== 11) return toast.error("Confirme seu CPF");
     setAccepting(true);
     try {
-      await accept({ data: { token } });
-      toast.success("Termo aceito");
+      const device_info = collectDeviceInfo();
+      const geolocation = geoConsent ? await requestGeolocation() : null;
+      await accept({
+        data: {
+          token,
+          signature_name: sigName,
+          signature_cpf: sigCpf,
+          device_info,
+          geo_consent: geoConsent && !!geolocation,
+          geolocation: geolocation ?? undefined,
+        },
+      });
+      toast.success("Termo assinado e registrado");
       await qc.invalidateQueries({ queryKey: ["c", token] });
       setStep(1);
     } catch (err) {
@@ -374,22 +420,43 @@ function CandidatePage() {
             <CardContent className="space-y-4 p-5">
               <div className="flex items-center gap-2">
                 <Lock className="h-5 w-5 text-primary" />
-                <h1 className="text-lg font-semibold">Termo de consentimento - LGPD</h1>
+                <h1 className="text-lg font-semibold">Termo de consentimento — LGPD</h1>
               </div>
-              <div className="max-h-72 overflow-y-auto rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
-                <p className="mb-2"><strong className="text-foreground">Tratamento de dados pessoais.</strong> Em conformidade com a Lei n 13.709/2018 (LGPD), autorizo a coleta, o armazenamento e o tratamento dos meus dados pessoais e documentos enviados nesta plataforma.</p>
-                <p className="mb-2"><strong className="text-foreground">Finalidade.</strong> Os dados serao utilizados <strong>exclusivamente</strong> para fins de recrutamento e selecao, incluindo analise de perfil, contato e formalizacao de contratacao.</p>
-                <p className="mb-2"><strong className="text-foreground">Compartilhamento.</strong> Os dados nao serao compartilhados com terceiros sem minha autorizacao, exceto quando exigido por lei.</p>
-                <p className="mb-2"><strong className="text-foreground">Seguranca.</strong> A empresa adota medidas tecnicas e administrativas de seguranca, incluindo armazenamento criptografado e controle de acesso restrito.</p>
-                <p className="mb-2"><strong className="text-foreground">Direitos do titular.</strong> Posso solicitar a qualquer momento a confirmacao, acesso, correcao ou exclusao dos meus dados, conforme art. 18 da LGPD.</p>
-                <p><strong className="text-foreground">Registro do aceite.</strong> Data, hora, IP e identificacao do dispositivo serao registrados como prova do consentimento.</p>
+              <div className="text-[11px] text-muted-foreground">Versão do termo: <span className="font-mono">{LGPD_TERMS_VERSION}</span></div>
+              <div className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
+                {LGPD_TERMS_TEXT}
               </div>
+
               <label className="flex cursor-pointer items-start gap-3 rounded-md border bg-background p-3">
                 <Checkbox checked={consent} onCheckedChange={(v) => setConsent(v === true)} className="mt-0.5" />
                 <span className="text-sm">Li e <strong>aceito</strong> os termos de tratamento dos meus dados pessoais conforme a LGPD.</span>
               </label>
+
+              <div className="space-y-2 rounded-md border bg-background p-3">
+                <div className="text-xs font-medium text-foreground">Assinatura eletrônica</div>
+                <div className="space-y-1">
+                  <Label htmlFor="sig-name" className="text-xs">Nome completo (como no cadastro)</Label>
+                  <Input id="sig-name" value={sigName} onChange={(e) => setSigName(e.target.value)} placeholder={candidate.full_name} autoComplete="off" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="sig-cpf" className="text-xs">Confirme seu CPF</Label>
+                  <Input id="sig-cpf" inputMode="numeric" value={sigCpf} onChange={(e) => setSigCpf(e.target.value)} placeholder="000.000.000-00" autoComplete="off" />
+                </div>
+              </div>
+
+              <label className="flex cursor-pointer items-start gap-3 rounded-md border bg-background p-3">
+                <Checkbox checked={geoConsent} onCheckedChange={(v) => setGeoConsent(v === true)} className="mt-0.5" />
+                <span className="text-xs text-muted-foreground">
+                  Autorizo registrar minha <strong className="text-foreground">localização aproximada</strong> como evidência adicional do aceite (opcional). O navegador pedirá permissão.
+                </span>
+              </label>
+
+              <div className="rounded-md bg-muted/40 p-2 text-[11px] leading-relaxed text-muted-foreground">
+                Ao continuar, serão registrados: data e hora (servidor), IP, informações técnicas do seu dispositivo e o texto exato do termo com um código de verificação (hash SHA-256).
+              </div>
+
               <Button className="w-full" disabled={!consent || accepting} onClick={handleAcceptLgpd}>
-                {accepting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Aceitar e continuar"}
+                {accepting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Assinar e continuar"}
               </Button>
             </CardContent>
           </Card>

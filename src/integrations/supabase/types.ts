@@ -297,24 +297,48 @@ export type Database = {
         Row: {
           accepted_at: string
           candidate_id: string
+          device_info: Json | null
+          geo_consent: boolean
+          geolocation: Json | null
           id: string
           ip_address: string | null
+          revoked_at: string | null
+          signature_cpf: string | null
+          signature_name: string | null
+          terms_hash: string | null
+          terms_text: string | null
           terms_version: string
           user_agent: string | null
         }
         Insert: {
           accepted_at?: string
           candidate_id: string
+          device_info?: Json | null
+          geo_consent?: boolean
+          geolocation?: Json | null
           id?: string
           ip_address?: string | null
+          revoked_at?: string | null
+          signature_cpf?: string | null
+          signature_name?: string | null
+          terms_hash?: string | null
+          terms_text?: string | null
           terms_version?: string
           user_agent?: string | null
         }
         Update: {
           accepted_at?: string
           candidate_id?: string
+          device_info?: Json | null
+          geo_consent?: boolean
+          geolocation?: Json | null
           id?: string
           ip_address?: string | null
+          revoked_at?: string | null
+          signature_cpf?: string | null
+          signature_name?: string | null
+          terms_hash?: string | null
+          terms_text?: string | null
           terms_version?: string
           user_agent?: string | null
         }
