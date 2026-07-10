@@ -31,6 +31,36 @@ import {
 } from "@/lib/candidate-public.functions";
 import { crossCheckCandidate, extractDeclaredFromFormData } from "@/lib/validation/cross-check";
 import { AlertTriangle } from "lucide-react";
+import { LGPD_TERMS_TEXT, LGPD_TERMS_VERSION } from "@/lib/lgpd/terms";
+
+type SignatureDeviceInfo = {
+  user_agent?: string; platform?: string; language?: string; timezone?: string;
+  screen?: { w: number; h: number }; device_type?: "mobile" | "tablet" | "desktop";
+};
+function collectDeviceInfo(): SignatureDeviceInfo {
+  if (typeof window === "undefined") return {};
+  const ua = navigator.userAgent;
+  const isMobile = /Mobi|Android|iPhone/i.test(ua);
+  const isTablet = /iPad|Tablet/i.test(ua);
+  return {
+    user_agent: ua.slice(0, 500),
+    platform: (navigator as Navigator & { platform?: string }).platform,
+    language: navigator.language,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    screen: { w: window.screen.width, h: window.screen.height },
+    device_type: isTablet ? "tablet" : isMobile ? "mobile" : "desktop",
+  };
+}
+function requestGeolocation(): Promise<{ lat: number; lng: number; accuracy?: number } | null> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+      () => resolve(null),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 },
+    );
+  });
+}
 
 export const Route = createFileRoute("/c/$token")({
   head: () => ({ meta: [{ title: "Sua admissao digital" }] }),
@@ -128,6 +158,9 @@ function CandidatePage() {
 
   const [consent, setConsent] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [sigName, setSigName] = useState("");
+  const [sigCpf, setSigCpf] = useState("");
+  const [geoConsent, setGeoConsent] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
@@ -181,10 +214,23 @@ function CandidatePage() {
 
   async function handleAcceptLgpd() {
     if (!consent) return toast.error("Confirme o aceite do termo");
+    if (sigName.trim().length < 2) return toast.error("Digite seu nome completo");
+    if (sigCpf.replace(/\D/g, "").length !== 11) return toast.error("Confirme seu CPF");
     setAccepting(true);
     try {
-      await accept({ data: { token } });
-      toast.success("Termo aceito");
+      const device_info = collectDeviceInfo();
+      const geolocation = geoConsent ? await requestGeolocation() : null;
+      await accept({
+        data: {
+          token,
+          signature_name: sigName,
+          signature_cpf: sigCpf,
+          device_info,
+          geo_consent: geoConsent && !!geolocation,
+          geolocation: geolocation ?? undefined,
+        },
+      });
+      toast.success("Termo assinado e registrado");
       await qc.invalidateQueries({ queryKey: ["c", token] });
       setStep(1);
     } catch (err) {
