@@ -4,6 +4,26 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 
+export const listLgpdConsentsForCandidate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ candidate_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    // RLS já limita ao RH que gerencia o candidato
+    const { error: chkErr, count } = await supabase
+      .from("candidates").select("id", { count: "exact", head: true }).eq("id", data.candidate_id);
+    if (chkErr) throw new Error(chkErr.message);
+    if (!count) throw new Error("Candidato não encontrado");
+
+    const { data: rows, error } = await supabaseAdmin
+      .from("lgpd_consents")
+      .select("*")
+      .eq("candidate_id", data.candidate_id)
+      .order("accepted_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
 const createSchema = z.object({
   full_name: z.string().trim().min(2).max(120),
   email: z.string().trim().email().max(255).optional().or(z.literal("")),
