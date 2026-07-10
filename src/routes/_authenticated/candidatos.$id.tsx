@@ -35,6 +35,7 @@ import {
   softDeleteDocumentRH,
   restoreDocumentRH,
   purgeDocumentRH,
+  listLgpdConsentsForCandidate,
 } from "@/lib/candidates.functions";
 
 export const Route = createFileRoute("/_authenticated/candidatos/$id")({
@@ -248,6 +249,7 @@ function CandidatoDetailPage() {
             Lixeira{q.data?.trash?.length ? ` (${q.data.trash.length})` : ""}
           </TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
+          <TabsTrigger value="lgpd">Termo LGPD</TabsTrigger>
         </TabsList>
 
         <TabsContent value="documentos" className="space-y-3">
