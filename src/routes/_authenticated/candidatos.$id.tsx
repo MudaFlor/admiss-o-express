@@ -619,7 +619,76 @@ function CandidatoDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="lgpd">
+          <Card>
+            <CardContent className="space-y-3 p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">Registros de aceite do termo LGPD</div>
+                <div className="text-xs text-muted-foreground">{consentsQ.data?.length ?? 0} registro(s)</div>
+              </div>
+              {consentsQ.isLoading && <p className="text-xs text-muted-foreground">Carregando…</p>}
+              {consentsQ.data && consentsQ.data.length === 0 && (
+                <p className="text-xs text-muted-foreground">Nenhum aceite registrado até o momento.</p>
+              )}
+              <ul className="space-y-3">
+                {consentsQ.data?.map((c) => {
+                  const dev = (c.device_info ?? {}) as Record<string, unknown>;
+                  const geo = c.geolocation as { lat?: number; lng?: number; accuracy?: number } | null;
+                  return (
+                    <li key={c.id} className="rounded-md border p-3 text-xs">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <span className="rounded bg-emerald-100 px-2 py-0.5 font-medium text-emerald-800">Assinado</span>
+                        <span className="text-muted-foreground">
+                          {new Date(c.accepted_at).toLocaleString("pt-BR", { dateStyle: "medium", timeStyle: "medium" })}
+                        </span>
+                        <span className="text-muted-foreground">• Versão {c.terms_version}</span>
+                        {c.revoked_at && <span className="rounded bg-rose-100 px-2 py-0.5 font-medium text-rose-800">Revogado</span>}
+                      </div>
+                      <div className="grid gap-2 md:grid-cols-2">
+                        <Field label="Nome assinado" value={c.signature_name ?? "—"} />
+                        <Field label="CPF confirmado" value={c.signature_cpf ?? "—"} />
+                        <Field label="IP" value={c.ip_address ?? "—"} />
+                        <Field label="Dispositivo" value={String(dev.device_type ?? "—")} />
+                        <Field label="Plataforma" value={String(dev.platform ?? "—")} />
+                        <Field label="Idioma" value={String(dev.language ?? "—")} />
+                        <Field label="Fuso horário" value={String(dev.timezone ?? "—")} />
+                        <Field label="Tela" value={dev.screen ? `${(dev.screen as {w:number;h:number}).w}×${(dev.screen as {w:number;h:number}).h}` : "—"} />
+                        <Field
+                          label="Localização"
+                          value={
+                            geo && typeof geo.lat === "number" && typeof geo.lng === "number"
+                              ? `${geo.lat.toFixed(5)}, ${geo.lng.toFixed(5)}${geo.accuracy ? ` (±${Math.round(geo.accuracy)}m)` : ""}`
+                              : c.geo_consent ? "Autorizada — não capturada" : "Não autorizada"
+                          }
+                        />
+                        <Field label="Hash do termo (SHA-256)" value={c.terms_hash ? c.terms_hash.slice(0, 24) + "…" : "—"} />
+                      </div>
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">Ver User-Agent completo e texto do termo</summary>
+                        <div className="mt-2 space-y-2">
+                          <div className="rounded bg-muted/50 p-2 text-[11px] font-mono break-all">{c.user_agent ?? "—"}</div>
+                          <div className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded bg-muted/40 p-2 text-[11px] text-muted-foreground">
+                            {c.terms_text ?? "—"}
+                          </div>
+                        </div>
+                      </details>
+                    </li>
+                  );
+                })}
+              </ul>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="truncate text-xs text-foreground">{value}</div>
     </div>
   );
 }
