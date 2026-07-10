@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import { runOcr } from "@/lib/ocr/provider.server";
 import { parseResumeFromStorage } from "@/lib/ai/resume-parser.server";
+import { LGPD_TERMS_TEXT, LGPD_TERMS_VERSION, hashTerms } from "@/lib/lgpd/terms";
 import type { Database } from "@/integrations/supabase/types";
 
 type DocType = Database["public"]["Enums"]["document_type"];
@@ -332,11 +333,39 @@ export const deleteDocument = createServerFn({ method: "POST" })
   });
 
 export const acceptLgpdConsent = createServerFn({ method: "POST" })
-  .inputValidator((input) => z.object({ token: z.string().uuid() }).parse(input))
+  .inputValidator((input) =>
+    z
+      .object({
+        token: z.string().uuid(),
+        signature_name: z.string().trim().min(2).max(160),
+        signature_cpf: z.string().trim().min(11).max(20),
+        device_info: z
+          .object({
+            user_agent: z.string().max(500).optional(),
+            platform: z.string().max(80).optional(),
+            language: z.string().max(40).optional(),
+            timezone: z.string().max(80).optional(),
+            screen: z.object({ w: z.number().int(), h: z.number().int() }).optional(),
+            device_type: z.enum(["mobile", "tablet", "desktop"]).optional(),
+          })
+          .partial()
+          .optional(),
+        geo_consent: z.boolean(),
+        geolocation: z
+          .object({
+            lat: z.number(),
+            lng: z.number(),
+            accuracy: z.number().optional(),
+            source: z.enum(["gps", "ip"]).default("gps"),
+          })
+          .optional(),
+      })
+      .parse(input),
+  )
   .handler(async ({ data }) => {
     const { data: candidate, error } = await supabaseAdmin
       .from("candidates")
-      .select("id, token_expires_at, deletion_requested_at, lgpd_accepted_at")
+      .select("id, token_expires_at, deletion_requested_at, lgpd_accepted_at, full_name, cpf")
       .eq("access_token", data.token)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -344,14 +373,34 @@ export const acceptLgpdConsent = createServerFn({ method: "POST" })
     if (new Date(candidate.token_expires_at) < new Date()) throw new Error("Link expirado");
     if (candidate.deletion_requested_at) throw new Error("Cadastro encerrado");
 
+    // Validar assinatura
+    const cpfNorm = normalizeCpf(data.signature_cpf);
+    if (!isValidCpf(cpfNorm)) throw new Error("CPF inválido");
+    if (candidate.cpf && normalizeCpf(candidate.cpf) !== cpfNorm) {
+      throw new Error("CPF não confere com o cadastro");
+    }
+    const nameA = data.signature_name.trim().toLowerCase().replace(/\s+/g, " ");
+    const nameB = (candidate.full_name || "").trim().toLowerCase().replace(/\s+/g, " ");
+    if (nameA !== nameB) {
+      throw new Error("Nome digitado não confere com o cadastro");
+    }
+
     const ip = getRequestIP({ xForwardedFor: true }) ?? null;
     const ua = getRequestHeader("user-agent") ?? null;
+    const termsHash = await hashTerms(LGPD_TERMS_TEXT, LGPD_TERMS_VERSION);
 
     await supabaseAdmin.from("lgpd_consents").insert({
       candidate_id: candidate.id,
       ip_address: ip,
       user_agent: ua,
-      terms_version: "v1",
+      terms_version: LGPD_TERMS_VERSION,
+      terms_text: LGPD_TERMS_TEXT,
+      terms_hash: termsHash,
+      signature_name: data.signature_name.trim(),
+      signature_cpf: cpfNorm,
+      device_info: (data.device_info ?? {}) as never,
+      geolocation: (data.geo_consent && data.geolocation ? data.geolocation : null) as never,
+      geo_consent: data.geo_consent,
     });
 
     if (!candidate.lgpd_accepted_at) {
@@ -360,7 +409,7 @@ export const acceptLgpdConsent = createServerFn({ method: "POST" })
         .update({ lgpd_accepted_at: new Date().toISOString() })
         .eq("id", candidate.id);
     }
-    return { ok: true };
+    return { ok: true, terms_version: LGPD_TERMS_VERSION, terms_hash: termsHash };
   });
 
 export const parseResumeForCandidate = createServerFn({ method: "POST" })
