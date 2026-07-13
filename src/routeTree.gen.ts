@@ -28,6 +28,7 @@ import { Route as AuthenticatedGestaoPipelineRouteImport } from './routes/_authe
 import { Route as AuthenticatedGestaoAbsenteismoRouteImport } from './routes/_authenticated/gestao.absenteismo'
 import { Route as AuthenticatedCandidatosIdRouteImport } from './routes/_authenticated/candidatos.$id'
 import { Route as ApiPublicHooksPurgeTrashRouteImport } from './routes/api/public/hooks/purge-trash'
+import { Route as ApiPublicConsentReceiptIdRouteImport } from './routes/api/public/consent-receipt.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -133,6 +134,12 @@ const ApiPublicHooksPurgeTrashRoute =
     path: '/api/public/hooks/purge-trash',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicConsentReceiptIdRoute =
+  ApiPublicConsentReceiptIdRouteImport.update({
+    id: '/api/public/consent-receipt/$id',
+    path: '/api/public/consent-receipt/$id',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/candidatos/': typeof AuthenticatedCandidatosIndexRoute
   '/gestao/': typeof AuthenticatedGestaoIndexRoute
+  '/api/public/consent-receipt/$id': typeof ApiPublicConsentReceiptIdRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
 }
 export interface FileRoutesByTo {
@@ -171,6 +179,7 @@ export interface FileRoutesByTo {
   '/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/candidatos': typeof AuthenticatedCandidatosIndexRoute
   '/gestao': typeof AuthenticatedGestaoIndexRoute
+  '/api/public/consent-receipt/$id': typeof ApiPublicConsentReceiptIdRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
 }
 export interface FileRoutesById {
@@ -193,6 +202,7 @@ export interface FileRoutesById {
   '/_authenticated/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/_authenticated/candidatos/': typeof AuthenticatedCandidatosIndexRoute
   '/_authenticated/gestao/': typeof AuthenticatedGestaoIndexRoute
+  '/api/public/consent-receipt/$id': typeof ApiPublicConsentReceiptIdRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
 }
 export interface FileRouteTypes {
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/gestao/rotatividade'
     | '/candidatos/'
     | '/gestao/'
+    | '/api/public/consent-receipt/$id'
     | '/api/public/hooks/purge-trash'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/gestao/rotatividade'
     | '/candidatos'
     | '/gestao'
+    | '/api/public/consent-receipt/$id'
     | '/api/public/hooks/purge-trash'
   id:
     | '__root__'
@@ -255,6 +267,7 @@ export interface FileRouteTypes {
     | '/_authenticated/gestao/rotatividade'
     | '/_authenticated/candidatos/'
     | '/_authenticated/gestao/'
+    | '/api/public/consent-receipt/$id'
     | '/api/public/hooks/purge-trash'
   fileRoutesById: FileRoutesById
 }
@@ -264,6 +277,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   CTokenRoute: typeof CTokenRoute
+  ApiPublicConsentReceiptIdRoute: typeof ApiPublicConsentReceiptIdRoute
   ApiPublicHooksPurgeTrashRoute: typeof ApiPublicHooksPurgeTrashRoute
 }
 
@@ -402,6 +416,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksPurgeTrashRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/consent-receipt/$id': {
+      id: '/api/public/consent-receipt/$id'
+      path: '/api/public/consent-receipt/$id'
+      fullPath: '/api/public/consent-receipt/$id'
+      preLoaderRoute: typeof ApiPublicConsentReceiptIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -456,6 +477,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   CTokenRoute: CTokenRoute,
+  ApiPublicConsentReceiptIdRoute: ApiPublicConsentReceiptIdRoute,
   ApiPublicHooksPurgeTrashRoute: ApiPublicHooksPurgeTrashRoute,
 }
 export const routeTree = rootRouteImport

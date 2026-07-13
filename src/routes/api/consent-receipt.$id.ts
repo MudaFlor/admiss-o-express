@@ -8,7 +8,7 @@ function esc(v: unknown): string {
     .replace(/"/g, "&quot;");
 }
 
-export const Route = createFileRoute("/api/public/consent-receipt/$id")({
+export const Route = createFileRoute("/api/consent-receipt/$id")({
   server: {
     handlers: {
       GET: async ({ params }) => {
