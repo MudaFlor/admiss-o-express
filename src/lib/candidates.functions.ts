@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
+import { logAudit } from "@/lib/audit.server";
 
 export const listLgpdConsentsForCandidate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -21,6 +22,12 @@ export const listLgpdConsentsForCandidate = createServerFn({ method: "POST" })
       .eq("candidate_id", data.candidate_id)
       .order("accepted_at", { ascending: false });
     if (error) throw new Error(error.message);
+    await logAudit({
+      actor_user_id: context.userId,
+      action: "view_lgpd_consent",
+      entity: "candidate",
+      entity_id: data.candidate_id,
+    });
     return rows ?? [];
   });
 
