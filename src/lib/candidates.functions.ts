@@ -155,6 +155,12 @@ export const getCandidateById = createServerFn({ method: "POST" })
       }),
     );
 
+    await logAudit({
+      actor_user_id: context.userId,
+      action: "view_candidate",
+      entity: "candidate",
+      entity_id: data.id,
+    });
     return { candidate, documents: docsWithUrls, dependents: dependents ?? [], trash: trashWithUrls };
   });
 
@@ -175,6 +181,7 @@ export const updateCandidateForm = createServerFn({ method: "POST" })
       .update({ form_data: data.form_data as never })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+    await logAudit({ actor_user_id: context.userId, action: "edit_form", entity: "candidate", entity_id: data.id });
     return { ok: true };
   });
 
@@ -205,6 +212,7 @@ export const updateCandidateBasicsRH = createServerFn({ method: "POST" })
       })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+    await logAudit({ actor_user_id: context.userId, action: "edit_basics", entity: "candidate", entity_id: data.id });
     return { ok: true };
   });
 
@@ -225,6 +233,7 @@ export const updateDocumentOcr = createServerFn({ method: "POST" })
       .update({ ocr_data: data.ocr_data as never })
       .eq("id", data.document_id);
     if (error) throw new Error(error.message);
+    await logAudit({ actor_user_id: context.userId, action: "edit_ocr", entity: "document", entity_id: data.document_id });
     return { ok: true };
   });
 
@@ -243,6 +252,7 @@ export const approveCandidate = createServerFn({ method: "POST" })
       event: "candidate.approved",
       payload: { by: userId },
     });
+    await logAudit({ actor_user_id: userId, action: "approve", entity: "candidate", entity_id: data.id });
     return { ok: true };
   });
 
@@ -268,6 +278,7 @@ export const rejectCandidate = createServerFn({ method: "POST" })
       event: "candidate.rejected",
       payload: { by: userId, reason: data.reason },
     });
+    await logAudit({ actor_user_id: userId, action: "reject", entity: "candidate", entity_id: data.id, metadata: { reason: data.reason } });
     return { ok: true };
   });
 
@@ -291,6 +302,7 @@ export const reopenCandidate = createServerFn({ method: "POST" })
       event: "candidate.reopened",
       payload: { by: userId },
     });
+    await logAudit({ actor_user_id: userId, action: "reopen", entity: "candidate", entity_id: data.id });
     return { ok: true };
   });
 
@@ -318,6 +330,7 @@ export const softDeleteDocumentRH = createServerFn({ method: "POST" })
       .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
       .eq("id", data.document_id);
     if (error) throw new Error(error.message);
+    await logAudit({ actor_user_id: userId, action: "soft_delete_doc", entity: "document", entity_id: data.document_id });
     return { ok: true };
   });
 
@@ -331,6 +344,7 @@ export const restoreDocumentRH = createServerFn({ method: "POST" })
       .update({ deleted_at: null, deleted_by: null })
       .eq("id", data.document_id);
     if (error) throw new Error(error.message);
+    await logAudit({ actor_user_id: context.userId, action: "restore_doc", entity: "document", entity_id: data.document_id });
     return { ok: true };
   });
 
@@ -350,5 +364,6 @@ export const purgeDocumentRH = createServerFn({ method: "POST" })
     await supabaseAdmin.storage.from("candidate-documents").remove([doc.storage_path]);
     const { error } = await supabaseAdmin.from("documents").delete().eq("id", doc.id);
     if (error) throw new Error(error.message);
+    await logAudit({ actor_user_id: context.userId, action: "purge_doc", entity: "document", entity_id: doc.id });
     return { ok: true };
   });
