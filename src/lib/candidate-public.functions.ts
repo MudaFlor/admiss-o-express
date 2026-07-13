@@ -59,6 +59,7 @@ function requireConsent(candidate: { lgpd_accepted_at: string | null; deletion_r
 export const getCandidateByToken = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ token: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
+    assertRateLimit(`portal:read:${clientIp()}`, LIMIT_READ);
     const candidate = await loadByToken(data.token);
     const { data: documents } = await supabaseAdmin
       .from("documents")
@@ -115,6 +116,7 @@ export const updateCandidateBasics = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
+    assertRateLimit(`portal:write:${clientIp()}`, LIMIT_WRITE);
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
     const cpf = normalizeCpf(data.cpf);
@@ -144,6 +146,7 @@ export const createDocumentUploadUrl = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
+    assertRateLimit(`portal:upload:${clientIp()}`, LIMIT_UPLOAD);
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
     const path = `${candidate.id}/${data.type}-${crypto.randomUUID()}.${data.ext.toLowerCase()}`;
@@ -167,6 +170,7 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
+    assertRateLimit(`portal:upload:${clientIp()}`, LIMIT_UPLOAD);
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
     // Run OCR (no-op para tipos sem extração)
@@ -373,6 +377,7 @@ export const acceptLgpdConsent = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
+    assertRateLimit(`portal:consent:${clientIp()}`, LIMIT_CONSENT);
     const { data: candidate, error } = await supabaseAdmin
       .from("candidates")
       .select("id, token_expires_at, deletion_requested_at, lgpd_accepted_at, full_name, cpf")
