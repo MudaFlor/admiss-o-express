@@ -6,7 +6,17 @@ import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import { runOcr } from "@/lib/ocr/provider.server";
 import { parseResumeFromStorage } from "@/lib/ai/resume-parser.server";
 import { LGPD_TERMS_TEXT, LGPD_TERMS_VERSION, hashTerms } from "@/lib/lgpd/terms";
+import { assertRateLimit } from "@/lib/rate-limit.server";
 import type { Database } from "@/integrations/supabase/types";
+
+function clientIp(): string {
+  return getRequestIP({ xForwardedFor: true }) ?? "unknown";
+}
+// Limites por IP para bloquear brute-force de tokens no portal público.
+const LIMIT_READ = { limit: 60, windowMs: 60_000 };      // 60 leituras/min
+const LIMIT_WRITE = { limit: 30, windowMs: 60_000 };     // 30 gravações/min
+const LIMIT_UPLOAD = { limit: 20, windowMs: 60_000 };    // 20 uploads/min
+const LIMIT_CONSENT = { limit: 5, windowMs: 60_000 };    // 5 tentativas de assinatura/min
 
 type DocType = Database["public"]["Enums"]["document_type"];
 
