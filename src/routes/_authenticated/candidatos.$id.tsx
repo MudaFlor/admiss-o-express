@@ -663,6 +663,16 @@ function CandidatoDetailPage() {
                         />
                         <Field label="Hash do termo (SHA-256)" value={c.terms_hash ? c.terms_hash.slice(0, 24) + "…" : "—"} />
                       </div>
+                      <div className="mt-3">
+                        <a
+                          href={`/api/consent-receipt/${c.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-primary underline-offset-2 hover:underline"
+                        >
+                          <FileText className="h-3.5 w-3.5" /> Baixar comprovante (PDF)
+                        </a>
+                      </div>
                       <details className="mt-2">
                         <summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">Ver User-Agent completo e texto do termo</summary>
                         <div className="mt-2 space-y-2">
