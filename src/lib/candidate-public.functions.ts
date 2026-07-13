@@ -6,7 +6,17 @@ import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import { runOcr } from "@/lib/ocr/provider.server";
 import { parseResumeFromStorage } from "@/lib/ai/resume-parser.server";
 import { LGPD_TERMS_TEXT, LGPD_TERMS_VERSION, hashTerms } from "@/lib/lgpd/terms";
+import { assertRateLimit } from "@/lib/rate-limit.server";
 import type { Database } from "@/integrations/supabase/types";
+
+function clientIp(): string {
+  return getRequestIP({ xForwardedFor: true }) ?? "unknown";
+}
+// Limites por IP para bloquear brute-force de tokens no portal público.
+const LIMIT_READ = { limit: 60, windowMs: 60_000 };      // 60 leituras/min
+const LIMIT_WRITE = { limit: 30, windowMs: 60_000 };     // 30 gravações/min
+const LIMIT_UPLOAD = { limit: 20, windowMs: 60_000 };    // 20 uploads/min
+const LIMIT_CONSENT = { limit: 5, windowMs: 60_000 };    // 5 tentativas de assinatura/min
 
 type DocType = Database["public"]["Enums"]["document_type"];
 
@@ -49,6 +59,7 @@ function requireConsent(candidate: { lgpd_accepted_at: string | null; deletion_r
 export const getCandidateByToken = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ token: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
+    assertRateLimit(`portal:read:${clientIp()}`, LIMIT_READ);
     const candidate = await loadByToken(data.token);
     const { data: documents } = await supabaseAdmin
       .from("documents")
@@ -105,6 +116,7 @@ export const updateCandidateBasics = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
+    assertRateLimit(`portal:write:${clientIp()}`, LIMIT_WRITE);
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
     const cpf = normalizeCpf(data.cpf);
@@ -134,6 +146,7 @@ export const createDocumentUploadUrl = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
+    assertRateLimit(`portal:upload:${clientIp()}`, LIMIT_UPLOAD);
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
     const path = `${candidate.id}/${data.type}-${crypto.randomUUID()}.${data.ext.toLowerCase()}`;
@@ -157,6 +170,7 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
+    assertRateLimit(`portal:upload:${clientIp()}`, LIMIT_UPLOAD);
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
     // Run OCR (no-op para tipos sem extração)
@@ -363,6 +377,7 @@ export const acceptLgpdConsent = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
+    assertRateLimit(`portal:consent:${clientIp()}`, LIMIT_CONSENT);
     const { data: candidate, error } = await supabaseAdmin
       .from("candidates")
       .select("id, token_expires_at, deletion_requested_at, lgpd_accepted_at, full_name, cpf")
