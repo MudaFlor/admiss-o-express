@@ -23,12 +23,12 @@ import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authen
 import { Route as AuthenticatedColaboradoresRouteImport } from './routes/_authenticated/colaboradores'
 import { Route as AuthenticatedGestaoIndexRouteImport } from './routes/_authenticated/gestao.index'
 import { Route as AuthenticatedCandidatosIndexRouteImport } from './routes/_authenticated/candidatos.index'
+import { Route as ApiConsentReceiptIdRouteImport } from './routes/api/consent-receipt.$id'
 import { Route as AuthenticatedGestaoRotatividadeRouteImport } from './routes/_authenticated/gestao.rotatividade'
 import { Route as AuthenticatedGestaoPipelineRouteImport } from './routes/_authenticated/gestao.pipeline'
 import { Route as AuthenticatedGestaoAbsenteismoRouteImport } from './routes/_authenticated/gestao.absenteismo'
 import { Route as AuthenticatedCandidatosIdRouteImport } from './routes/_authenticated/candidatos.$id'
 import { Route as ApiPublicHooksPurgeTrashRouteImport } from './routes/api/public/hooks/purge-trash'
-import { Route as ApiPublicConsentReceiptIdRouteImport } from './routes/api/public/consent-receipt.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -104,6 +104,11 @@ const AuthenticatedCandidatosIndexRoute =
     path: '/candidatos/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const ApiConsentReceiptIdRoute = ApiConsentReceiptIdRouteImport.update({
+  id: '/api/consent-receipt/$id',
+  path: '/api/consent-receipt/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedGestaoRotatividadeRoute =
   AuthenticatedGestaoRotatividadeRouteImport.update({
     id: '/rotatividade',
@@ -134,12 +139,6 @@ const ApiPublicHooksPurgeTrashRoute =
     path: '/api/public/hooks/purge-trash',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicConsentReceiptIdRoute =
-  ApiPublicConsentReceiptIdRouteImport.update({
-    id: '/api/public/consent-receipt/$id',
-    path: '/api/public/consent-receipt/$id',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -157,9 +156,9 @@ export interface FileRoutesByFullPath {
   '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
   '/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
+  '/api/consent-receipt/$id': typeof ApiConsentReceiptIdRoute
   '/candidatos/': typeof AuthenticatedCandidatosIndexRoute
   '/gestao/': typeof AuthenticatedGestaoIndexRoute
-  '/api/public/consent-receipt/$id': typeof ApiPublicConsentReceiptIdRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
 }
 export interface FileRoutesByTo {
@@ -177,9 +176,9 @@ export interface FileRoutesByTo {
   '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
   '/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
+  '/api/consent-receipt/$id': typeof ApiConsentReceiptIdRoute
   '/candidatos': typeof AuthenticatedCandidatosIndexRoute
   '/gestao': typeof AuthenticatedGestaoIndexRoute
-  '/api/public/consent-receipt/$id': typeof ApiPublicConsentReceiptIdRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
 }
 export interface FileRoutesById {
@@ -200,9 +199,9 @@ export interface FileRoutesById {
   '/_authenticated/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/_authenticated/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
   '/_authenticated/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
+  '/api/consent-receipt/$id': typeof ApiConsentReceiptIdRoute
   '/_authenticated/candidatos/': typeof AuthenticatedCandidatosIndexRoute
   '/_authenticated/gestao/': typeof AuthenticatedGestaoIndexRoute
-  '/api/public/consent-receipt/$id': typeof ApiPublicConsentReceiptIdRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
 }
 export interface FileRouteTypes {
@@ -223,9 +222,9 @@ export interface FileRouteTypes {
     | '/gestao/absenteismo'
     | '/gestao/pipeline'
     | '/gestao/rotatividade'
+    | '/api/consent-receipt/$id'
     | '/candidatos/'
     | '/gestao/'
-    | '/api/public/consent-receipt/$id'
     | '/api/public/hooks/purge-trash'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -243,9 +242,9 @@ export interface FileRouteTypes {
     | '/gestao/absenteismo'
     | '/gestao/pipeline'
     | '/gestao/rotatividade'
+    | '/api/consent-receipt/$id'
     | '/candidatos'
     | '/gestao'
-    | '/api/public/consent-receipt/$id'
     | '/api/public/hooks/purge-trash'
   id:
     | '__root__'
@@ -265,9 +264,9 @@ export interface FileRouteTypes {
     | '/_authenticated/gestao/absenteismo'
     | '/_authenticated/gestao/pipeline'
     | '/_authenticated/gestao/rotatividade'
+    | '/api/consent-receipt/$id'
     | '/_authenticated/candidatos/'
     | '/_authenticated/gestao/'
-    | '/api/public/consent-receipt/$id'
     | '/api/public/hooks/purge-trash'
   fileRoutesById: FileRoutesById
 }
@@ -277,7 +276,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   CTokenRoute: typeof CTokenRoute
-  ApiPublicConsentReceiptIdRoute: typeof ApiPublicConsentReceiptIdRoute
+  ApiConsentReceiptIdRoute: typeof ApiConsentReceiptIdRoute
   ApiPublicHooksPurgeTrashRoute: typeof ApiPublicHooksPurgeTrashRoute
 }
 
@@ -381,6 +380,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCandidatosIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/consent-receipt/$id': {
+      id: '/api/consent-receipt/$id'
+      path: '/api/consent-receipt/$id'
+      fullPath: '/api/consent-receipt/$id'
+      preLoaderRoute: typeof ApiConsentReceiptIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/gestao/rotatividade': {
       id: '/_authenticated/gestao/rotatividade'
       path: '/rotatividade'
@@ -414,13 +420,6 @@ declare module '@tanstack/react-router' {
       path: '/api/public/hooks/purge-trash'
       fullPath: '/api/public/hooks/purge-trash'
       preLoaderRoute: typeof ApiPublicHooksPurgeTrashRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/consent-receipt/$id': {
-      id: '/api/public/consent-receipt/$id'
-      path: '/api/public/consent-receipt/$id'
-      fullPath: '/api/public/consent-receipt/$id'
-      preLoaderRoute: typeof ApiPublicConsentReceiptIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -477,7 +476,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   CTokenRoute: CTokenRoute,
-  ApiPublicConsentReceiptIdRoute: ApiPublicConsentReceiptIdRoute,
+  ApiConsentReceiptIdRoute: ApiConsentReceiptIdRoute,
   ApiPublicHooksPurgeTrashRoute: ApiPublicHooksPurgeTrashRoute,
 }
 export const routeTree = rootRouteImport
