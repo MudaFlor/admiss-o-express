@@ -100,6 +100,44 @@ export type Database = {
         }
         Relationships: []
       }
+      candidate_stage_history: {
+        Row: {
+          actor_user_id: string | null
+          candidate_id: string
+          created_at: string
+          from_stage: Database["public"]["Enums"]["candidate_stage"] | null
+          id: string
+          note: string | null
+          to_stage: Database["public"]["Enums"]["candidate_stage"]
+        }
+        Insert: {
+          actor_user_id?: string | null
+          candidate_id: string
+          created_at?: string
+          from_stage?: Database["public"]["Enums"]["candidate_stage"] | null
+          id?: string
+          note?: string | null
+          to_stage: Database["public"]["Enums"]["candidate_stage"]
+        }
+        Update: {
+          actor_user_id?: string | null
+          candidate_id?: string
+          created_at?: string
+          from_stage?: Database["public"]["Enums"]["candidate_stage"] | null
+          id?: string
+          note?: string | null
+          to_stage?: Database["public"]["Enums"]["candidate_stage"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_stage_history_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       candidates: {
         Row: {
           access_token: string
@@ -120,6 +158,10 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           sexo: string | null
+          stage: Database["public"]["Enums"]["candidate_stage"]
+          stage_note: string | null
+          stage_updated_at: string
+          stage_updated_by: string | null
           status: Database["public"]["Enums"]["candidate_status"]
           token_expires_at: string
           updated_at: string
@@ -143,6 +185,10 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           sexo?: string | null
+          stage?: Database["public"]["Enums"]["candidate_stage"]
+          stage_note?: string | null
+          stage_updated_at?: string
+          stage_updated_by?: string | null
           status?: Database["public"]["Enums"]["candidate_status"]
           token_expires_at?: string
           updated_at?: string
@@ -166,6 +212,10 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           sexo?: string | null
+          stage?: Database["public"]["Enums"]["candidate_stage"]
+          stage_note?: string | null
+          stage_updated_at?: string
+          stage_updated_by?: string | null
           status?: Database["public"]["Enums"]["candidate_status"]
           token_expires_at?: string
           updated_at?: string
@@ -215,6 +265,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      document_requirements: {
+        Row: {
+          company_id: string | null
+          condition: Json
+          created_at: string
+          document_type: Database["public"]["Enums"]["document_type"]
+          id: string
+          is_active: boolean
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          condition?: Json
+          created_at?: string
+          document_type: Database["public"]["Enums"]["document_type"]
+          id?: string
+          is_active?: boolean
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          condition?: Json
+          created_at?: string
+          document_type?: Database["public"]["Enums"]["document_type"]
+          id?: string
+          is_active?: boolean
+          label?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       documents: {
         Row: {
@@ -391,6 +474,86 @@ export type Database = {
           },
         ]
       }
+      message_templates: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          id: string
+          is_active: boolean
+          kind: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          channel: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      messages_log: {
+        Row: {
+          candidate_id: string | null
+          channel: string
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          payload: Json | null
+          recipient: string
+          sent_by: string | null
+          status: string
+        }
+        Insert: {
+          candidate_id?: string | null
+          channel: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind: string
+          payload?: Json | null
+          recipient: string
+          sent_by?: string | null
+          status?: string
+        }
+        Update: {
+          candidate_id?: string | null
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          payload?: Json | null
+          recipient?: string
+          sent_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_log_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           candidate_id: string | null
@@ -488,6 +651,18 @@ export type Database = {
         | "falta_injustificada"
         | "licenca"
       app_role: "admin" | "rh"
+      candidate_stage:
+        | "cadastro_iniciado"
+        | "aceite_lgpd"
+        | "curriculo_enviado"
+        | "documentos_enviados"
+        | "ocr_concluido"
+        | "em_analise"
+        | "pendencia_documental"
+        | "correcao_solicitada"
+        | "aguardando_aprovacao"
+        | "aprovado"
+        | "admitido"
       candidate_status: "pendente" | "em_analise" | "aprovado" | "rejeitado"
       document_status: "pendente" | "processado" | "aprovado" | "rejeitado"
       document_type:
@@ -650,6 +825,19 @@ export const Constants = {
         "licenca",
       ],
       app_role: ["admin", "rh"],
+      candidate_stage: [
+        "cadastro_iniciado",
+        "aceite_lgpd",
+        "curriculo_enviado",
+        "documentos_enviados",
+        "ocr_concluido",
+        "em_analise",
+        "pendencia_documental",
+        "correcao_solicitada",
+        "aguardando_aprovacao",
+        "aprovado",
+        "admitido",
+      ],
       candidate_status: ["pendente", "em_analise", "aprovado", "rejeitado"],
       document_status: ["pendente", "processado", "aprovado", "rejeitado"],
       document_type: [
