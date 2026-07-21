@@ -8,6 +8,9 @@ import { parseResumeFromStorage } from "@/lib/ai/resume-parser.server";
 import { LGPD_TERMS_TEXT, LGPD_TERMS_VERSION, hashTerms } from "@/lib/lgpd/terms";
 import { assertRateLimit } from "@/lib/rate-limit.server";
 import type { Database } from "@/integrations/supabase/types";
+import { advanceStage } from "@/lib/workflow/stage.server";
+import { requiredDocumentsFor, missingDocs } from "@/lib/requirements/requirements.server";
+import { lookupCep, checkDuplicateCpf } from "@/lib/validation/field-checks";
 
 function clientIp(): string {
   return getRequestIP({ xForwardedFor: true }) ?? "unknown";
@@ -424,6 +427,7 @@ export const acceptLgpdConsent = createServerFn({ method: "POST" })
         .update({ lgpd_accepted_at: new Date().toISOString() })
         .eq("id", candidate.id);
     }
+    await advanceStage(candidate.id, "aceite_lgpd", { note: "Aceite LGPD registrado" });
     return { ok: true, terms_version: LGPD_TERMS_VERSION, terms_hash: termsHash };
   });
 
