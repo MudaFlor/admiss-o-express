@@ -1,109 +1,98 @@
-## Objetivo
+## Fase 1 — Admissão Inteligente (produção)
 
-Deixar o sistema pronto para receber **dados reais** com segurança e registrar o **aceite do termo LGPD** como assinatura digital rastreável (quando, de onde, em qual aparelho, com qual texto do termo e hash de integridade).
-
----
-
-## Parte 1 — Assinatura digital do termo LGPD
-
-### 1.1 Ampliar `lgpd_consents` (migration)
-
-Novos campos na tabela existente:
-
-- `terms_text` (text, not null) — corpo do termo exibido no momento do aceite.
-- `terms_hash` (text, not null) — SHA-256 do `terms_text + terms_version` (integridade).
-- `signature_name` (text, not null) — nome digitado pelo candidato como assinatura.
-- `signature_cpf` (text, not null) — CPF confirmado na assinatura (validado).
-- `accepted_at` (já existe) — timestamp servidor (fonte da verdade da hora).
-- `ip_address` (já existe) — IP capturado no servidor.
-- `user_agent` (já existe) — UA capturado no servidor.
-- `device_info` (jsonb) — plataforma, idioma, timezone, tela, tipo (mobile/desktop) — coletados no cliente.
-- `geolocation` (jsonb, nullable) — `{lat, lng, accuracy, source: "gps"|"ip"}` — só se o candidato **autorizar** (Geolocation API); nunca obrigatório.
-- `geo_consent` (boolean) — se o candidato autorizou capturar localização.
-- `revoked_at` (timestamptz, null) — para direito de revogação LGPD.
-
-RLS: mantém insert via service role (server fn). Nenhum acesso anônimo. RH lê via política já existente.
-
-### 1.2 Fluxo de assinatura no portal (`c.$token.tsx`)
-
-Substituir o simples checkbox atual por uma **etapa de assinatura**:
-
-1. Exibir o termo LGPD completo (rolável, com versão visível).
-2. Campo "Digite seu nome completo" (deve bater com `full_name`).
-3. Campo "Confirme seu CPF" (validado com `isValidCpf`).
-4. Toggle opcional: "Permitir registro de localização para maior segurança jurídica" → dispara `navigator.geolocation.getCurrentPosition` (permissão do navegador).
-5. Coletar `device_info` do cliente: `navigator.userAgent`, `platform`, `language`, `screen.{width,height}`, `Intl.DateTimeFormat().resolvedOptions().timeZone`.
-6. Botão "Assinar e aceitar" → chama `acceptLgpdConsent` com esses dados.
-
-Sem localização = aceite válido, apenas sem esse dado (LGPD não exige geo).
-
-### 1.3 `acceptLgpdConsent` (server fn)
-
-- Recebe: `token`, `signature_name`, `signature_cpf`, `device_info`, `geolocation?`, `geo_consent`.
-- Valida nome/CPF contra `candidates.full_name` / `candidates.cpf`.
-- Captura server-side: `accepted_at = now()`, `ip_address` (via `getRequestIP`), `user_agent` (via `getRequestHeader`).
-- Monta `terms_text` (constante versionada em `src/lib/lgpd/terms.ts`) + `terms_hash` (SHA-256 no servidor).
-- Insere em `lgpd_consents` (nunca sobrescreve — cada aceite gera nova linha auditável).
-- Atualiza `candidates.lgpd_accepted_at` apenas na primeira vez.
-
-### 1.4 Visualização para o RH (`candidatos.$id.tsx`)
-
-Nova aba/seção **"Termo LGPD assinado"** mostrando:
-- Nome/CPF assinados, data/hora, IP, UA, dispositivo, geolocalização (se houver).
-- Versão + hash do termo.
-- Botão "Baixar comprovante (PDF)" — gerado server-side com todos os campos.
+Objetivo: eliminar trabalho manual, aumentar confiabilidade do OCR, validar automaticamente cada dado, comparar documentos entre si, guiar candidato e RH por um workflow claro e registrar tudo em auditoria. Nada existente é removido; tudo é aditivo.
 
 ---
 
-## Parte 2 — Hardening para dados reais
+### 1. OCR inteligente com auto-detecção de tipo
 
-### 2.1 Endurecer RLS e permissões
+Hoje o OCR só roda para o `document_type` escolhido pelo candidato. Vamos torná-lo tolerante à ordem e ao rótulo.
 
-- Revisar todas as policies das tabelas (`candidates`, `documents`, `dependents`, `lgpd_consents`, `employees`, `notifications`) para garantir:
-  - Nenhum `TO anon` SELECT em dados pessoais.
-  - RH só vê o que tem role adequada (via `has_role`).
-  - Bucket `candidate-documents` continua privado; acesso só via signed URL curta (10 min já é o padrão).
+- `src/lib/ocr/classifier.server.ts` (novo): 1ª chamada Gemini Vision devolve `{ detected_type, confidence, orientation_hint }`. Se `detected_type ≠ type_escolhido` e confiança > 0.85, o backend usa o tipo detectado e devolve aviso ao candidato ("Detectamos que este é um RG, não um CPF — deseja confirmar?").
+- `provider.server.ts`: adicionar pré-processamento — se `orientation_hint` indicar rotação, girar via `sharp`… **NÃO usar sharp (Node-only no Worker)**. Alternativa: pedir ao próprio Gemini para tratar rotação/recorte no prompt (ele já faz internamente) e apenas logar o hint.
+- Expandir `FIELDS_BY_TYPE` para cobrir todos os campos pedidos: `nacionalidade`, `escolaridade`, `profissao`, `orgao_emissor` (já tem), separação de endereço (já tem em comprovante). Adicionar a **Carteira de Trabalho Digital (CTPS)** como tipo com OCR (hoje é `[]`).
+- Regra dos 90%: já implementada por campo. Ajustar UI para nunca **pré-preencher** um campo com confiança < 0.9 — deixar vazio + badge "revisar".
+- Guardar `detected_type`, `orientation_hint` e `quality_flags` (blurry/cropped/low-res) em `documents.ocr_data.meta`.
 
-### 2.2 Retenção e direito ao esquecimento
+### 2. Validação inteligente por campo
 
-- Cron já existe para lixeira de documentos (30 dias). Adicionar cron para:
-  - Purga automática de candidatos com `deletion_requested_at` > 30 dias (dados + documentos + dependentes; consents ficam por 5 anos anonimizados como prova legal).
+Novo módulo `src/lib/validation/field-checks.ts` (puro, isomórfico):
+- CPF válido (dígito), CEP existente (ViaCEP via fetch server-side), e-mail (regex razoável), telefone BR, datas coerentes (nascimento no passado, > 14 anos), CNH vencida, documento vencido, comprovante de residência < 90 dias, **CPF duplicado** (query em `candidates` + `employees`).
+- Server fn `validateCandidateData(candidateId)` roda tudo e devolve `Array<{ field, level: "ok"|"warn"|"error", message }>`.
+- UI: componente `ValidationBadge` (🟢🟡🔴) reutilizável no portal e na ficha RH; painel "Validações automáticas" na ficha.
 
-### 2.3 Auditoria
+### 3. Conferência cruzada (evolução do existente)
 
-Nova tabela `audit_logs`:
-- `actor_user_id`, `actor_role`, `action` (`view_candidate`, `edit_form`, `edit_ocr`, `delete_doc`, `restore_doc`, `approve`, `reject`, `export`), `entity`, `entity_id`, `metadata`, `ip`, `ua`, `created_at`.
-- Server fns do RH gravam log em cada operação sensível.
-- Aba "Auditoria" na ficha do candidato para o RH admin.
+Já existe `src/lib/validation/cross-check.ts`. Ampliar comparações:
+- Endereço declarado × comprovante (normalizar rua/número/CEP).
+- Filiação entre RG, CNH e certidões.
+- Data de nascimento entre RG/CNH/CPF/título.
 
-### 2.4 Rate limiting no portal público
+Nunca sobrescreve; só sinaliza. Já há painel no portal e aba no RH — apenas estender o conjunto de regras.
 
-- Limitar `getCandidateByToken` e `finalizeDocumentUpload` por IP (janela deslizante em memória Cloudflare Workers via `Map` + TTL; suficiente para MVP).
-- Bloquear brute-force de tokens.
+### 4. Checklist inteligente por perfil + config por empresa
 
-### 2.5 Verificações operacionais (checklist entregue ao usuário, não código)
+- Nova tabela `document_requirements` (por empresa/cargo): `{ id, company_id?, role_pattern text, document_type, condition jsonb }` onde `condition` cobre `gender=male`, `marital_status=married`, `has_dependents=true`, `role_contains=motorista`.
+- Server fn `getRequiredDocuments(candidateId)` devolve a lista dinâmica; substitui a checagem hardcoded de "CNH só para motorista" e adiciona "reservista para homem", "certidão de casamento se casado", etc.
+- Tela `/configuracoes` ganha aba **"Documentos obrigatórios"** para o RH editar as regras (CRUD simples).
 
-- Publicar em domínio próprio com HTTPS.
-- Rotacionar `SUPABASE_SERVICE_ROLE_KEY` se já compartilhada.
-- Backup: usar Cloud → Advanced settings → Export data periodicamente.
-- Nomear DPO e publicar política de privacidade pública.
-- Testar fluxo ponta-a-ponta com dados sintéticos antes de abrir para candidatos reais.
+### 5. Workflow visual com status estendido
+
+- Novo enum `candidate_stage` com as 11 etapas pedidas (cadastro_iniciado … admitido). Mantém o `status` legado (`em_analise`/`aprovado`/`rejeitado`) por compatibilidade — o `stage` é derivado/complementar.
+- Coluna `candidates.stage`, `candidates.stage_updated_at`, `candidates.stage_updated_by`, `candidates.stage_note`.
+- Nova tabela `candidate_stage_history` (id, candidate_id, from_stage, to_stage, actor_user_id, note, created_at) — trilha completa.
+- Server fn `advanceCandidateStage(id, to, note)` + botões na ficha RH. Portal do candidato mostra badge do estágio atual.
+- Componente `StageTimeline` (horizontal em desktop, vertical em mobile) na ficha e no portal.
+
+### 6. Comunicação automática (WhatsApp + e-mail)
+
+- Nova tabela `message_templates` (`kind`, `channel`, `subject`, `body`, variáveis `{{nome}}`, `{{link}}`, `{{motivo}}`).
+- Seed dos modelos: convite, solicitação de docs, pendência, correção, aprovação, reprovação, confirmação de recebimento.
+- Novo módulo `src/lib/messaging.server.ts`: `sendCandidateMessage(candidateId, kind, extra?)` — resolve template, dispara via `whatsapp.ts` existente + e-mail (Resend). Registra em nova tabela `messages_log`.
+- Triggers automáticos: ao gerar link (convite), ao mudar stage (pendência/aprovação/reprovação/admitido), ao finalizar upload (confirmação).
+- Aba **"Comunicação"** na ficha do candidato mostra histórico.
+- Requer secret `RESEND_API_KEY` (`add_secret`) — pergunto ao usuário no momento do build se quer habilitar e-mail agora ou só WhatsApp.
+
+### 7. Experiência do candidato
+
+Enriquecer `/c/$token` (mobile-first, já é):
+- **Barra de progresso** por seções (Aceite → Currículo → Ficha → Documentos → Dependentes → Envio) com percentual.
+- **Checklist lateral/topo** de documentos pendentes (usa `getRequiredDocuments`).
+- **Feedback de qualidade**: após upload, o classificador devolve `quality_flags`; se `blurry/cropped/low_res`, mostrar aviso "Imagem pouco legível — deseja reenviar?" sem bloquear.
+- **Substituir documento** antes do envio final: botão "Reenviar" faz soft-delete + upload novo (já temos a base).
+- **Auto-save**: já persistimos ficha/dependentes em cada blur. Adicionar indicador "Rascunho salvo há X min" + resumo restaurado ao reabrir o link.
+- Pré-visualização de imagens/PDF (já existe) — expandir para dependentes.
+
+### 8. Auditoria universal
+
+Já existe `audit_logs` + `logAudit`. Ampliar cobertura:
+- Wrappers em todas as server fns sensíveis: upload/exclusão/restauração de doc, edição de básicos/ficha/OCR, validação, mudança de stage, envio de mensagens, aceite LGPD, divergências detectadas.
+- Nova aba **"Auditoria"** na ficha do candidato (lista paginada por data, com actor, ação, IP, UA, metadata).
+- Portal público continua sem PII em `/api/public/*`.
 
 ---
 
-## Ordem de execução
+### Ordem de execução (build)
 
-1. Migration: expandir `lgpd_consents` + criar `audit_logs` (+ GRANTs + RLS).
-2. `src/lib/lgpd/terms.ts` — texto do termo v1 + função `hashTerms`.
-3. Reescrever `acceptLgpdConsent` para receber a assinatura completa.
-4. Nova etapa de assinatura em `c.$token.tsx` (substitui checkbox).
-5. Server fn `getLgpdConsent(candidateId)` + seção "Termo assinado" em `candidatos.$id.tsx`.
-6. Server fn `generateLgpdReceipt` (PDF simples via HTML→string, download).
-7. Wrappers de auditoria nas server fns sensíveis do RH.
-8. Cron de purga de candidatos com deleção solicitada.
+1. Migration: `candidate_stage` enum + colunas + `candidate_stage_history` + `document_requirements` + `message_templates` + `messages_log`; GRANTs + RLS.
+2. OCR: classificador + expansão de campos + CTPS + `quality_flags`.
+3. Módulo `field-checks` + server fn `validateCandidateData` + `ValidationBadge`.
+4. Ampliar `cross-check` (endereço, filiação, nascimento).
+5. Checklist dinâmico (`getRequiredDocuments`) + tela de config.
+6. Stage/workflow + timeline + botões.
+7. Messaging (templates + envio + gatilhos + aba histórico).
+8. Portal: progresso, checklist, qualidade, auto-save UX, substituir doc.
+9. Wrappers de auditoria + aba Auditoria.
 
-## O que **não** muda
+### Fora do escopo desta fase (fica para próxima)
 
-- Schema de candidatos/documentos/dependentes.
-- Fluxo de OCR e pré-preenchimento (já implementado).
-- Design, layout, tipografia.
+- Integração com folha/eSocial.
+- Assinatura eletrônica de contrato.
+- Onboarding pós-admissão.
+- App nativo.
+
+### Perguntas antes de executar
+
+1. **E-mail**: habilito envio agora via Resend (peço a chave) ou só WhatsApp nesta fase?
+2. **Config por empresa**: hoje o sistema é single-tenant — as regras de documentos ficam globais (para o RH da Mudaflor) ou já preparo por `company_id`?
+3. **Templates**: seed em português-BR padrão e o RH edita depois, ok?
