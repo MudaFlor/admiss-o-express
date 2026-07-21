@@ -220,6 +220,15 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
         .eq("id", candidate.id);
     }
 
+    if (data.type === "curriculo") {
+      await advanceStage(candidate.id, "curriculo_enviado", { note: "Currículo recebido" });
+    } else {
+      await advanceStage(candidate.id, "documentos_enviados", { note: `Documento enviado: ${data.type}` });
+      if (ocr.status === "sucesso" && Object.keys(ocr.fields).length > 0) {
+        await advanceStage(candidate.id, "ocr_concluido", { note: `OCR concluído: ${data.type}` });
+      }
+    }
+
     return { ...doc, ocr_fields: ocr.fields };
   });
 
@@ -254,6 +263,18 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
     if (sexo === "masculino" && !holderDocs.has("reservista")) missing.push("reservista");
     if (missing.length) throw new Error(`Faltam documentos: ${missing.join(", ")}`);
 
+    // Checagem por requisitos dinâmicos (configuráveis pelo RH)
+    const rules = await requiredDocumentsFor({
+      position: candidate.position,
+      sexo: data.sexo ?? candidate.sexo,
+      estado_civil: data.estado_civil ?? candidate.estado_civil,
+    });
+    const present = Array.from(holderDocs) as DocType[];
+    const dynMissing = missingDocs(rules, present);
+    if (dynMissing.length) {
+      throw new Error(`Faltam documentos: ${dynMissing.map((r) => r.label).join(", ")}`);
+    }
+
     const { error } = await supabaseAdmin
       .from("candidates")
       .update({
@@ -272,7 +293,40 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
       payload: {},
     });
 
+    await advanceStage(candidate.id, "aguardando_aprovacao", { note: "Envio finalizado pelo candidato" });
+
     return { ok: true };
+  });
+
+// ===== Validações auxiliares expostas ao portal =====
+
+export const lookupCepPublic = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ token: z.string().uuid(), cep: z.string().min(8).max(10) }).parse(input))
+  .handler(async ({ data }) => {
+    assertRateLimit(`portal:read:${clientIp()}`, LIMIT_READ);
+    await loadByToken(data.token); // valida token
+    return await lookupCep(data.cep);
+  });
+
+export const checkCpfDuplicate = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ token: z.string().uuid(), cpf: z.string().min(11).max(20) }).parse(input))
+  .handler(async ({ data }) => {
+    assertRateLimit(`portal:read:${clientIp()}`, LIMIT_READ);
+    const candidate = await loadByToken(data.token);
+    return await checkDuplicateCpf(data.cpf, candidate.id);
+  });
+
+export const getRequiredDocuments = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ token: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    assertRateLimit(`portal:read:${clientIp()}`, LIMIT_READ);
+    const candidate = await loadByToken(data.token);
+    const rules = await requiredDocumentsFor({
+      position: candidate.position,
+      sexo: candidate.sexo,
+      estado_civil: candidate.estado_civil,
+    });
+    return rules.map((r) => ({ document_type: r.document_type, label: r.label }));
   });
 
 // ===== Dependentes =====
