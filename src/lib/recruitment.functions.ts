@@ -61,10 +61,10 @@ export const createCandidateFromProfile = createServerFn({ method: "POST" })
 
     await logAudit({
       actor_user_id: userId,
-      action: "create_candidate",
+      action: "edit_basics",
       entity: "candidates",
       entity_id: created.id,
-      metadata: { origem: "recrutamento" },
+      metadata: { origem: "recrutamento", criado: true },
     });
     return created;
   });
