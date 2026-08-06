@@ -56,6 +56,21 @@ function ConfiguracoesPage() {
 }
 
 type Cond = { role_contains?: string; sexo?: string; estado_civil?: string };
+type RequirementInput = {
+  id?: string;
+  document_type: string;
+  label: string;
+  condition: Record<string, unknown>;
+  is_active: boolean;
+};
+type TemplateInput = {
+  id?: string;
+  kind: string;
+  channel: "whatsapp" | "email" | "both";
+  subject?: string;
+  body: string;
+  is_active: boolean;
+};
 
 function RequirementsTab() {
   const qc = useQueryClient();
@@ -67,7 +82,7 @@ function RequirementsTab() {
   const [draft, setDraft] = useState({ document_type: "rg", label: "", role_contains: "", sexo: "", estado_civil: "" });
 
   const save = useMutation({
-    mutationFn: (vars: Parameters<typeof upsert>[0]["data"]) => upsert({ data: vars }),
+    mutationFn: (vars: RequirementInput) => upsert({ data: vars }),
     onSuccess: () => { toast.success("Regra salva"); qc.invalidateQueries({ queryKey: ["doc-requirements"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -191,7 +206,7 @@ function TemplatesTab() {
   const [edits, setEdits] = useState<Record<string, { subject: string; body: string }>>({});
 
   const save = useMutation({
-    mutationFn: (vars: Parameters<typeof upsert>[0]["data"]) => upsert({ data: vars }),
+    mutationFn: (vars: TemplateInput) => upsert({ data: vars }),
     onSuccess: () => { toast.success("Modelo salvo"); qc.invalidateQueries({ queryKey: ["msg-templates"] }); },
     onError: (e: Error) => toast.error(e.message),
   });

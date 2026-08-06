@@ -7,6 +7,7 @@ import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X, RotateCcw,
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CandidateStageCard } from "@/components/CandidateStageCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
