@@ -28,6 +28,7 @@ import {
   requestDataDeletion,
   submitCandidateApplication,
   upsertDependent,
+  getRequiredDocuments,
 } from "@/lib/candidate-public.functions";
 import { crossCheckCandidate, extractDeclaredFromFormData } from "@/lib/validation/cross-check";
 import { AlertTriangle } from "lucide-react";
@@ -156,6 +157,13 @@ function CandidatePage() {
     retry: false,
   });
 
+  const getRequired = useServerFn(getRequiredDocuments);
+  const requiredQ = useQuery({
+    queryKey: ["c-required", token],
+    queryFn: () => getRequired({ data: { token } }),
+    retry: false,
+  });
+
   const [consent, setConsent] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [sigName, setSigName] = useState("");
@@ -188,9 +196,23 @@ function CandidatePage() {
   const DOCS = HOLDER_DOCS;
   const uploadedTypes = new Set(documents.filter((d) => !d.dependent_id).map((d) => d.type));
   const hasIdentidade = uploadedTypes.has("rg") || uploadedTypes.has("cnh");
-  const requiredTypes: DocType[] = DOCS
-    .filter((d) => !d.optional && !(d.type === "rg" && uploadedTypes.has("cnh")) && !(d.type === "reservista" && !requireReservista))
-    .map((d) => d.type);
+  // Checklist dinâmico configurado pelo RH (cargo, sexo, estado civil). Se não houver
+  // regras cadastradas, mantém a lista padrão.
+  const dynamicRules = requiredQ.data ?? [];
+  const dynamicRequired = new Set(dynamicRules.map((r) => r.document_type as DocType));
+  const hasDynamic = dynamicRequired.size > 0;
+  const isRequired = (t: DocType) => {
+    if (t === "rg" && uploadedTypes.has("cnh")) return false;
+    if (hasDynamic) return dynamicRequired.has(t);
+    const def = DOCS.find((d) => d.type === t);
+    if (!def || def.optional) return false;
+    if (t === "reservista" && !requireReservista) return false;
+    return true;
+  };
+  const requiredTypes: DocType[] = hasDynamic
+    ? [...dynamicRequired].filter((t) => isRequired(t))
+    : DOCS.filter((d) => isRequired(d.type)).map((d) => d.type);
+  const pendingRequired = requiredTypes.filter((t) => !uploadedTypes.has(t));
   const allUploaded = hasIdentidade && requiredTypes.every((t) => uploadedTypes.has(t));
   const totalSteps = 4;
 
@@ -592,9 +614,32 @@ function CandidatePage() {
               <h1 className="text-lg font-semibold">Envie seus documentos</h1>
               <p className="mt-1 text-sm text-muted-foreground">Tire fotos nitidas. Aceitamos JPG, PNG e PDF.</p>
             </div>
+            <Card>
+              <CardContent className="space-y-2 p-4">
+                <div className="flex items-center justify-between text-sm font-medium">
+                  <span>Checklist do seu perfil</span>
+                  <span className="text-xs text-muted-foreground">
+                    {requiredTypes.length - pendingRequired.length}/{requiredTypes.length} enviados
+                  </span>
+                </div>
+                {pendingRequired.length === 0 ? (
+                  <p className="text-xs text-emerald-700">Todos os documentos obrigatórios foram enviados.</p>
+                ) : (
+                  <ul className="flex flex-wrap gap-1.5">
+                    {pendingRequired.map((t) => (
+                      <li key={t} className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-800">
+                        {dynamicRules.find((r) => r.document_type === t)?.label ??
+                          DOCS.find((d) => d.type === t)?.label ??
+                          t}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
             <div className="space-y-2">
               {DOCS.map((d) => {
-                const isOptional = d.optional || (d.type === "rg" && uploadedTypes.has("cnh")) || (d.type === "reservista" && !requireReservista);
+                const isOptional = !isRequired(d.type);
                 const uploaded = documents.find((x) => x.type === d.type && !x.dependent_id);
                 const done = !!uploaded;
                 const isPdf = uploaded?.storage_path ? /\.pdf$/i.test(uploaded.storage_path) : false;
