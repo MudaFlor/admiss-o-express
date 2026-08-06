@@ -241,6 +241,12 @@ function CandidatoDetailPage() {
         </CardContent>
       </Card>
 
+      <CandidateStageCard
+        candidateId={id}
+        stage={(candidate.stage ?? "cadastro_iniciado") as never}
+        stageNote={candidate.stage_note}
+      />
+
       <Tabs defaultValue="documentos">
         <TabsList>
           <TabsTrigger value="documentos">Documentos & OCR</TabsTrigger>
