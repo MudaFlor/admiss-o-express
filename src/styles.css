@@ -63,7 +63,55 @@
 
 :root {
   --radius: 0.75rem;
-  /* Mudaflor — premium black HR SaaS palette (dark-first) */
+  /* Mudaflor — light theme (mesma identidade, base clara) */
+  --background: oklch(0.99 0.003 100);
+  --foreground: oklch(0.22 0.005 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.005 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.005 250);
+  --primary: oklch(0.72 0.19 130);
+  --primary-foreground: oklch(0.16 0.003 250);
+  --primary-glow: oklch(0.82 0.19 130);
+  --secondary: oklch(0.96 0.004 250);
+  --secondary-foreground: oklch(0.25 0.005 250);
+  --muted: oklch(0.96 0.004 250);
+  --muted-foreground: oklch(0.5 0.008 250);
+  --accent: oklch(0.6 0.23 350);
+  --accent-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.58 0.22 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.62 0.16 142);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.72 0.13 85);
+  --warning-foreground: oklch(0.16 0.003 250);
+  --gold: oklch(0.68 0.12 85);
+  --border: oklch(0.2 0.01 250 / 0.12);
+  --input: oklch(0.2 0.01 250 / 0.16);
+  --ring: oklch(0.72 0.19 130 / 0.5);
+  --chart-1: oklch(0.68 0.18 130);
+  --chart-2: oklch(0.6 0.23 350);
+  --chart-3: oklch(0.68 0.12 85);
+  --chart-4: oklch(0.5 0.008 250);
+  --chart-5: oklch(0.75 0.006 250);
+  /* Sidebar clara */
+  --sidebar: oklch(0.975 0.004 250);
+  --sidebar-foreground: oklch(0.25 0.005 250);
+  --sidebar-primary: oklch(0.68 0.18 130);
+  --sidebar-primary-foreground: oklch(0.16 0.003 250);
+  --sidebar-accent: oklch(0.2 0.01 250 / 0.06);
+  --sidebar-accent-foreground: oklch(0.18 0.005 250);
+  --sidebar-border: oklch(0.2 0.01 250 / 0.1);
+  --sidebar-ring: oklch(0.68 0.18 130);
+  --shadow-card: 0 1px 2px 0 oklch(0.2 0.01 250 / 0.08), 0 0 0 1px oklch(0.2 0.01 250 / 0.05);
+  --shadow-elevated: 0 12px 32px -12px oklch(0.2 0.01 250 / 0.25), 0 0 0 1px oklch(0.2 0.01 250 / 0.06);
+  --gradient-brand: linear-gradient(135deg, oklch(0.72 0.19 130), oklch(0.66 0.16 142));
+  --gradient-sidebar: linear-gradient(180deg, oklch(0.985 0.003 250), oklch(0.955 0.004 250));
+  --gradient-accent: linear-gradient(135deg, oklch(0.72 0.19 130 / 0.14), oklch(0.6 0.23 350 / 0.14));
+}
+
+.dark {
+  /* Mudaflor — premium black HR SaaS palette */
   --background: oklch(0.14 0.003 250);           /* #0B0B0C graphite-black */
   --foreground: oklch(0.97 0.003 250);           /* off-white */
   --card: oklch(0.18 0.003 250);                 /* elevated black #141416 */
@@ -109,41 +157,6 @@
   --gradient-brand: linear-gradient(135deg, oklch(0.86 0.21 128), oklch(0.78 0.18 142));
   --gradient-sidebar: linear-gradient(180deg, oklch(0.08 0 0), oklch(0.05 0 0));
   --gradient-accent: linear-gradient(135deg, oklch(0.86 0.21 128 / 0.15), oklch(0.62 0.24 350 / 0.15));
-}
-
-.dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
 @layer base {
