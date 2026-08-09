@@ -1,14 +1,15 @@
-# Tema claro / tema escuro em Configurações
+# Tema claro / tema escuro no menu do topo
 
 Hoje o sistema é sempre escuro (paleta "Black Premium"). Vou adicionar uma escolha de tema
-persistente para cada usuário, com uma nova aba em **Configurações → Aparência**.
+persistente para cada usuário, dentro do menu já existente na barra superior.
 
 ## O que o usuário vai ver
 
-- Nova aba **Aparência** em `/configuracoes` com três opções: **Claro**, **Escuro** e **Sistema**
-  (segue a preferência do aparelho), exibidas como cartões selecionáveis com prévia de cores.
-- Um botão rápido de sol/lua no topo (ao lado do sino) para alternar sem entrar nas configurações.
+- No menu já existente do topo (botão da conta, com avatar e seta), acima de "Configurações",
+  entra um submenu **Tema** com as opções **Claro**, **Escuro** e **Sistema** (segue a
+  preferência do aparelho), com marcação na opção ativa.
 - A escolha fica salva no navegador e é aplicada já no carregamento, sem piscar de tela.
+- Sem botão novo na barra superior e sem nova aba em Configurações.
 
 ## Design do tema claro
 
@@ -27,7 +28,8 @@ rosa-magenta como acento. Sidebar clara com contraste sutil, sombras mais leves.
   e escuta de `prefers-color-scheme` no modo sistema.
 - `src/routes/__root.tsx`: envolver a aplicação no provider e injetar um script inline no
   `<head>` que aplica a classe antes da hidratação (evita flash e mismatch de SSR).
-- `src/components/AppTopbar.tsx`: botão de alternância com ícones Sun/Moon.
-- `src/routes/_authenticated/configuracoes.tsx`: aba "Aparência" com os três cartões de escolha.
+- `src/components/AppTopbar.tsx`: dentro do `DropdownMenu` existente, adicionar um
+  `DropdownMenuSub` "Tema" com `DropdownMenuRadioGroup` (Claro / Escuro / Sistema) e ícones
+  Sun, Moon e Monitor.
 
 Sem alterações de banco de dados — a preferência é local ao navegador.
