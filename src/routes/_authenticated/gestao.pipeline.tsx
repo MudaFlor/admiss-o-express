@@ -7,6 +7,16 @@ import { KpiCard } from "@/components/management/KpiCard";
 import { getManagementOverview } from "@/lib/management.functions";
 
 export const Route = createFileRoute("/_authenticated/gestao/pipeline")({
+  head: () => ({
+    meta: [
+      { title: "Gestão · Pipeline de admissão · Mudaflor People OS" },
+      { name: "description", content: "Currículos recebidos, candidatos em integração e admissões no período." },
+      { property: "og:title", content: "Gestão · Pipeline de admissão · Mudaflor People OS" },
+      { property: "og:description", content: "Currículos recebidos, candidatos em integração e admissões no período." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: PipelinePage,
 });
 
