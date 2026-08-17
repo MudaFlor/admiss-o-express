@@ -69,7 +69,7 @@ function LoginPage() {
     });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Conta criada! Verifique seu email para confirmar.");
+    toast.success("Conta criada! Confirme seu email. O acesso ao painel precisa ser liberado por um administrador.");
   }
 
   async function handleGoogle() {

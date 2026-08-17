@@ -643,6 +643,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_hr: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       absence_reason:

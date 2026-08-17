@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, FileText, Palmtree, Briefcase, Settings, LogOut, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Settings, LogOut, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   Sidebar,
@@ -21,8 +21,6 @@ import logo from "@/assets/logo-mudaflor.jpg";
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Colaboradores", url: "/colaboradores", icon: Users },
-  { title: "Documentos", url: "/documentos", icon: FileText },
-  { title: "Férias", url: "/ferias", icon: Palmtree },
   { title: "Recrutamento", url: "/recrutamento", icon: Briefcase },
   { title: "Gestão", url: "/gestao", icon: BarChart3 },
 ];

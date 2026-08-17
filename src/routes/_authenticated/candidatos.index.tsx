@@ -21,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CandidateStatusBadge } from "@/components/CandidateStatusBadge";
 import { createCandidate, listCandidates } from "@/lib/candidates.functions";
 import { buildCandidateInviteMessage, buildWhatsAppLink } from "@/lib/integrations/whatsapp";
+import { useIsAdmin } from "@/hooks/useRole";
 
 export const Route = createFileRoute("/_authenticated/candidatos/")({
   head: () => ({ meta: [{ title: "Candidatos — Admissão Digital" }] }),
@@ -29,6 +30,7 @@ export const Route = createFileRoute("/_authenticated/candidatos/")({
 
 function CandidatosPage() {
   const list = useServerFn(listCandidates);
+  const isAdmin = useIsAdmin();
   const create = useServerFn(createCandidate);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -100,9 +102,11 @@ function CandidatosPage() {
           <p className="text-sm text-muted-foreground">Gerencie convites, documentos e aprovações.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" onClick={testAsCandidate} disabled={testing}>
-          <FlaskConical className="h-4 w-4" /> {testing ? "Criando…" : "Testar como candidato"}
-        </Button>
+        {isAdmin && (
+          <Button variant="outline" onClick={testAsCandidate} disabled={testing}>
+            <FlaskConical className="h-4 w-4" /> {testing ? "Criando…" : "Testar como candidato"}
+          </Button>
+        )}
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setCreated(null); }}>
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4" /> Novo candidato</Button>

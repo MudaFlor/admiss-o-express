@@ -20,6 +20,16 @@ import { Activity, UserMinus, UserPlus } from "lucide-react";
 import { getManagementOverview } from "@/lib/management.functions";
 
 export const Route = createFileRoute("/_authenticated/gestao/rotatividade")({
+  head: () => ({
+    meta: [
+      { title: "Gestão · Rotatividade · Mudaflor People OS" },
+      { name: "description", content: "Turnover mensal, rescisões em experiência e motivos de desligamento." },
+      { property: "og:title", content: "Gestão · Rotatividade · Mudaflor People OS" },
+      { property: "og:description", content: "Turnover mensal, rescisões em experiência e motivos de desligamento." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: RotatividadePage,
 });
 

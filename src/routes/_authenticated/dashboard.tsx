@@ -65,7 +65,7 @@ function DashboardPage() {
     { label: "Colaboradores ativos", value: k?.active_employees ?? 0, icon: Users, to: "/colaboradores" as const },
     { label: "Candidatos no pipeline", value: candCount, icon: Briefcase, to: "/candidatos" as const },
     { label: "Admissões no período", value: k?.period_admissions ?? 0, icon: UserPlus, to: "/gestao" as const },
-    { label: "Documentos pendentes", value: statsQ.data?.counts.pendente ?? 0, icon: FileText, to: "/documentos" as const },
+    { label: "Cadastros pendentes", value: statsQ.data?.counts.pendente ?? 0, icon: FileText, to: "/candidatos" as const },
     {
       label: "Absenteísmo (mês)",
       value: `${(k?.absenteeism_rate ?? 0).toFixed(2)}%`,
