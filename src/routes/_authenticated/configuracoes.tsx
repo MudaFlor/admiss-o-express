@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Plus, Save, Trash2, ShieldCheck, UserCheck, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,9 @@ import {
   upsertDocumentRequirement,
   upsertMessageTemplate,
 } from "@/lib/admission.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { useIsAdmin } from "@/hooks/useRole";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
@@ -40,6 +43,7 @@ const DOC_TYPES = [
 ] as const;
 
 function ConfiguracoesPage() {
+  const isAdmin = useIsAdmin();
   return (
     <div className="mx-auto max-w-5xl space-y-4">
       <h1 className="text-2xl font-semibold">Configurações</h1>
@@ -47,11 +51,102 @@ function ConfiguracoesPage() {
         <TabsList>
           <TabsTrigger value="documentos">Documentos obrigatórios</TabsTrigger>
           <TabsTrigger value="mensagens">Modelos de mensagem</TabsTrigger>
+          {isAdmin && <TabsTrigger value="equipe">Equipe e acessos</TabsTrigger>}
         </TabsList>
         <TabsContent value="documentos"><RequirementsTab /></TabsContent>
         <TabsContent value="mensagens"><TemplatesTab /></TabsContent>
+        {isAdmin && <TabsContent value="equipe"><TeamTab /></TabsContent>}
       </Tabs>
     </div>
+  );
+}
+
+type TeamMember = { id: string; full_name: string | null; company_name: string | null; roles: string[] };
+
+function TeamTab() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["team-members"],
+    queryFn: async (): Promise<TeamMember[]> => {
+      const [{ data: profiles, error: pErr }, { data: roles, error: rErr }] = await Promise.all([
+        supabase.from("profiles").select("id, full_name, company_name").order("created_at"),
+        supabase.from("user_roles").select("user_id, role"),
+      ]);
+      if (pErr) throw pErr;
+      if (rErr) throw rErr;
+      return (profiles ?? []).map((p) => ({
+        ...p,
+        roles: (roles ?? []).filter((r) => r.user_id === p.id).map((r) => r.role as string),
+      }));
+    },
+  });
+
+  const setRole = useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: "rh" | "admin" | null }) => {
+      const { error: delErr } = await supabase.from("user_roles").delete().eq("user_id", userId);
+      if (delErr) throw delErr;
+      if (role) {
+        const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["team-members"] });
+      toast.success("Acesso atualizado.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Card className="mt-4">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <ShieldCheck className="h-4 w-4" /> Equipe e acessos
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Novas contas ficam pendentes até que um administrador libere o acesso. Administradores gerenciam
+          acessos; RH opera candidatos, colaboradores e documentos.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
+        {data?.length === 0 && <p className="text-sm text-muted-foreground">Nenhum usuário cadastrado.</p>}
+        {data?.map((m) => {
+          const role = m.roles.includes("admin") ? "admin" : m.roles.includes("rh") ? "rh" : null;
+          return (
+            <div key={m.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{m.full_name ?? "Sem nome"}</p>
+                <p className="truncate text-xs text-muted-foreground">{m.company_name ?? "—"}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant={role ? "default" : "secondary"}>
+                  {role === "admin" ? "Administrador" : role === "rh" ? "RH" : "Pendente"}
+                </Badge>
+                {role !== "rh" && (
+                  <Button size="sm" variant="outline" disabled={setRole.isPending}
+                    onClick={() => setRole.mutate({ userId: m.id, role: "rh" })}>
+                    <UserCheck className="h-4 w-4" /> Definir RH
+                  </Button>
+                )}
+                {role !== "admin" && (
+                  <Button size="sm" variant="outline" disabled={setRole.isPending}
+                    onClick={() => setRole.mutate({ userId: m.id, role: "admin" })}>
+                    <ShieldCheck className="h-4 w-4" /> Definir admin
+                  </Button>
+                )}
+                {role && (
+                  <Button size="sm" variant="ghost" disabled={setRole.isPending}
+                    onClick={() => setRole.mutate({ userId: m.id, role: null })}>
+                    <UserX className="h-4 w-4" /> Revogar
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 }
 
