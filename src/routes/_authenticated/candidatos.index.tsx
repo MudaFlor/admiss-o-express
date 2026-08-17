@@ -30,6 +30,7 @@ export const Route = createFileRoute("/_authenticated/candidatos/")({
 
 function CandidatosPage() {
   const list = useServerFn(listCandidates);
+  const isAdmin = useIsAdmin();
   const create = useServerFn(createCandidate);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
