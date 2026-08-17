@@ -24,8 +24,7 @@ export const Route = createFileRoute("/login")({
 
 const profiles = [
   { id: "rh", label: "RH", icon: UserCog, hint: "Gestão completa" },
-  { id: "gestor", label: "Gestor", icon: Users, hint: "Aprovar equipe" },
-  { id: "colab", label: "Colaborador", icon: User, hint: "Meus dados" },
+  { id: "colab", label: "Candidato/Colaborador", icon: User, hint: "Meus dados" },
 ] as const;
 
 function LoginPage() {
@@ -175,7 +174,7 @@ function LoginPage() {
             <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Acessar como
             </Label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {profiles.map((p) => {
                 const active = profile === p.id;
                 return (
