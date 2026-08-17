@@ -16,8 +16,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedRecrutamentoRouteImport } from './routes/_authenticated/recrutamento'
 import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated/gestao'
-import { Route as AuthenticatedFeriasRouteImport } from './routes/_authenticated/ferias'
-import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated/documentos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedColaboradoresRouteImport } from './routes/_authenticated/colaboradores'
@@ -64,16 +62,6 @@ const AuthenticatedRecrutamentoRoute =
 const AuthenticatedGestaoRoute = AuthenticatedGestaoRouteImport.update({
   id: '/gestao',
   path: '/gestao',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedFeriasRoute = AuthenticatedFeriasRouteImport.update({
-  id: '/ferias',
-  path: '/ferias',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedDocumentosRoute = AuthenticatedDocumentosRouteImport.update({
-  id: '/documentos',
-  path: '/documentos',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -154,8 +142,6 @@ export interface FileRoutesByFullPath {
   '/colaboradores': typeof AuthenticatedColaboradoresRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/documentos': typeof AuthenticatedDocumentosRoute
-  '/ferias': typeof AuthenticatedFeriasRoute
   '/gestao': typeof AuthenticatedGestaoRouteWithChildren
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
@@ -176,8 +162,6 @@ export interface FileRoutesByTo {
   '/colaboradores': typeof AuthenticatedColaboradoresRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/documentos': typeof AuthenticatedDocumentosRoute
-  '/ferias': typeof AuthenticatedFeriasRoute
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
@@ -199,8 +183,6 @@ export interface FileRoutesById {
   '/_authenticated/colaboradores': typeof AuthenticatedColaboradoresRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
-  '/_authenticated/ferias': typeof AuthenticatedFeriasRoute
   '/_authenticated/gestao': typeof AuthenticatedGestaoRouteWithChildren
   '/_authenticated/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
@@ -223,8 +205,6 @@ export interface FileRouteTypes {
     | '/colaboradores'
     | '/configuracoes'
     | '/dashboard'
-    | '/documentos'
-    | '/ferias'
     | '/gestao'
     | '/recrutamento'
     | '/c/$token'
@@ -245,8 +225,6 @@ export interface FileRouteTypes {
     | '/colaboradores'
     | '/configuracoes'
     | '/dashboard'
-    | '/documentos'
-    | '/ferias'
     | '/recrutamento'
     | '/c/$token'
     | '/candidatos/$id'
@@ -267,8 +245,6 @@ export interface FileRouteTypes {
     | '/_authenticated/colaboradores'
     | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
-    | '/_authenticated/documentos'
-    | '/_authenticated/ferias'
     | '/_authenticated/gestao'
     | '/_authenticated/recrutamento'
     | '/c/$token'
@@ -343,20 +319,6 @@ declare module '@tanstack/react-router' {
       path: '/gestao'
       fullPath: '/gestao'
       preLoaderRoute: typeof AuthenticatedGestaoRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/ferias': {
-      id: '/_authenticated/ferias'
-      path: '/ferias'
-      fullPath: '/ferias'
-      preLoaderRoute: typeof AuthenticatedFeriasRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/documentos': {
-      id: '/_authenticated/documentos'
-      path: '/documentos'
-      fullPath: '/documentos'
-      preLoaderRoute: typeof AuthenticatedDocumentosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -467,8 +429,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedColaboradoresRoute: typeof AuthenticatedColaboradoresRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
-  AuthenticatedFeriasRoute: typeof AuthenticatedFeriasRoute
   AuthenticatedGestaoRoute: typeof AuthenticatedGestaoRouteWithChildren
   AuthenticatedRecrutamentoRoute: typeof AuthenticatedRecrutamentoRoute
   AuthenticatedCandidatosIdRoute: typeof AuthenticatedCandidatosIdRoute
@@ -479,8 +439,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedColaboradoresRoute: AuthenticatedColaboradoresRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
-  AuthenticatedFeriasRoute: AuthenticatedFeriasRoute,
   AuthenticatedGestaoRoute: AuthenticatedGestaoRouteWithChildren,
   AuthenticatedRecrutamentoRoute: AuthenticatedRecrutamentoRoute,
   AuthenticatedCandidatosIdRoute: AuthenticatedCandidatosIdRoute,
