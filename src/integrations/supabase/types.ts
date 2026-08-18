@@ -222,6 +222,53 @@ export type Database = {
         }
         Relationships: []
       }
+      correction_requests: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          documents: Json
+          fields: Json
+          id: string
+          note: string | null
+          requested_by: string | null
+          resolved_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          documents?: Json
+          fields?: Json
+          id?: string
+          note?: string | null
+          requested_by?: string | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          documents?: Json
+          fields?: Json
+          id?: string
+          note?: string | null
+          requested_by?: string | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "correction_requests_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dependents: {
         Row: {
           birth_date: string | null
