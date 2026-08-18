@@ -184,6 +184,7 @@ function CandidatePage() {
   if (q.isError) return <Center><p className="text-sm text-rose-600">{(q.error as Error).message}</p></Center>;
 
   const { candidate, documents } = q.data!;
+  const correction = q.data!.correction;
 
   if (candidate.deletion_requested_at) {
     return <Done title="Solicitacao registrada" desc="Recebemos sua solicitacao de exclusao. O RH entrara em contato." />;
@@ -437,6 +438,28 @@ function CandidatePage() {
       </header>
 
       <main className="mx-auto max-w-md space-y-4 p-4">
+        {correction && (
+          <Card className="border-amber-400 bg-amber-50">
+            <CardContent className="space-y-2 p-4 text-sm text-amber-900">
+              <div className="flex items-center gap-2 font-semibold">
+                <AlertTriangle className="h-4 w-4" /> O RH pediu ajustes no seu cadastro
+              </div>
+              <ul className="list-inside list-disc text-xs">
+                {correction.fields.map((f) => (
+                  <li key={f}>{CORRECTION_FIELD_LABEL[f] ?? f}</li>
+                ))}
+                {correction.documents.map((d) => (
+                  <li key={d.type}>{d.label} — reenviar arquivo</li>
+                ))}
+              </ul>
+              {correction.note && <p className="text-xs">{correction.note}</p>}
+              <p className="text-[11px] text-amber-800">
+                Corrija os itens acima e envie o cadastro novamente ao final.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {step === 0 && (
           <Card>
             <CardContent className="space-y-4 p-5">
