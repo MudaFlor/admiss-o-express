@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CandidateStageCard } from "@/components/CandidateStageCard";
+import { CorrectionRequestCard } from "@/components/CorrectionRequestCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -246,6 +247,15 @@ function CandidatoDetailPage() {
         candidateId={id}
         stage={(candidate.stage ?? "cadastro_iniciado") as never}
         stageNote={candidate.stage_note}
+      />
+
+      <CorrectionRequestCard
+        candidateId={id}
+        availableDocuments={Array.from(
+          new Map(
+            q.data!.documents.map((d) => [d.type as string, { type: d.type as string, label: (d.label ?? d.type) as string }]),
+          ).values(),
+        )}
       />
 
       <Tabs defaultValue="documentos">
