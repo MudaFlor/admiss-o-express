@@ -85,6 +85,15 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
       .eq("candidate_id", candidate.id)
       .order("created_at", { ascending: true });
 
+    // Pendência de correção aberta pelo RH (aviso exibido no topo do portal).
+    const { data: corrections } = await supabaseAdmin
+      .from("correction_requests")
+      .select("id, fields, documents, note, created_at")
+      .eq("candidate_id", candidate.id)
+      .eq("status", "aberta")
+      .order("created_at", { ascending: false })
+      .limit(1);
+
     return {
       candidate: {
         id: candidate.id,
@@ -103,6 +112,9 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
       },
       documents: docsWithUrls,
       dependents: dependents ?? [],
+      correction: (corrections?.[0] as
+        | { id: string; fields: string[]; documents: { type: string; label: string }[]; note: string | null; created_at: string }
+        | undefined) ?? null,
     };
   });
 
@@ -294,6 +306,13 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
     });
 
     await advanceStage(candidate.id, "aguardando_aprovacao", { note: "Envio finalizado pelo candidato" });
+
+    // Reenvio após correção: encerra pendências abertas automaticamente.
+    await supabaseAdmin
+      .from("correction_requests")
+      .update({ status: "resolvida", resolved_at: new Date().toISOString() })
+      .eq("candidate_id", candidate.id)
+      .eq("status", "aberta");
 
     return { ok: true };
   });
