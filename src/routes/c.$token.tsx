@@ -33,6 +33,7 @@ import {
 import { crossCheckCandidate, extractDeclaredFromFormData } from "@/lib/validation/cross-check";
 import { AlertTriangle } from "lucide-react";
 import { LGPD_TERMS_TEXT, LGPD_TERMS_VERSION } from "@/lib/lgpd/terms";
+import { CORRECTION_FIELD_LABEL } from "@/lib/corrections";
 
 type SignatureDeviceInfo = {
   user_agent?: string; platform?: string; language?: string; timezone?: string;
