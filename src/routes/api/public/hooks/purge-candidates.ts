@@ -1,12 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { safeEqual } from "@/lib/security/signing.server";
 
 // Purga candidatos que solicitaram exclusão há mais de 30 dias (LGPD - direito ao esquecimento).
 // Remove: dependents, documents (arquivos + linhas), notifications e o candidato.
 // Mantém: lgpd_consents (5 anos como prova legal), mas anonimiza campos sensíveis.
+// Rota destrutiva: exige o segredo CRON_SECRET no header x-cron-secret.
+
+function authorized(request: Request): boolean {
+  const secret = process.env["CRON_SECRET"];
+  const sent = request.headers.get("x-cron-secret") ?? "";
+  return !!secret && safeEqual(secret, sent);
+}
+
 export const Route = createFileRoute("/api/public/hooks/purge-candidates")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
+        if (!authorized(request)) {
+          return new Response("Unauthorized", { status: 401 });
+        }
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -16,7 +28,8 @@ export const Route = createFileRoute("/api/public/hooks/purge-candidates")({
           .not("deletion_requested_at", "is", null)
           .lt("deletion_requested_at", cutoff);
         if (error) {
-          return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          console.error("[purge-candidates]", error.message);
+          return new Response(JSON.stringify({ ok: false }), {
             status: 500, headers: { "Content-Type": "application/json" },
           });
         }
@@ -53,7 +66,7 @@ export const Route = createFileRoute("/api/public/hooks/purge-candidates")({
 
         return new Response(
           JSON.stringify({ ok: true, candidates_purged: ids.length, files_removed: filesRemoved }),
-          { headers: { "Content-Type": "application/json" } },
+          { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } },
         );
       },
     },
