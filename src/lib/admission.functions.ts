@@ -45,7 +45,7 @@ export const listStageHistory = createServerFn({ method: "POST" })
       .select("id, from_stage, to_stage, actor_user_id, note, created_at")
       .eq("candidate_id", data.candidate_id)
       .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return rows ?? [];
   });
 
@@ -56,7 +56,7 @@ export const listDocumentRequirements = createServerFn({ method: "POST" })
       .from("document_requirements")
       .select("id, document_type, label, condition, is_active")
       .order("label", { ascending: true });
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return data ?? [];
   });
 
@@ -80,10 +80,10 @@ export const upsertDocumentRequirement = createServerFn({ method: "POST" })
     };
     if (data.id) {
       const { error } = await context.supabase.from("document_requirements").update(payload).eq("id", data.id);
-      if (error) throw new Error(error.message);
+      if (error) fail(error);
     } else {
       const { error } = await context.supabase.from("document_requirements").insert(payload);
-      if (error) throw new Error(error.message);
+      if (error) fail(error);
     }
     return { ok: true };
   });
@@ -93,7 +93,7 @@ export const deleteDocumentRequirement = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("document_requirements").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return { ok: true };
   });
 
@@ -104,7 +104,7 @@ export const listMessageTemplates = createServerFn({ method: "POST" })
       .from("message_templates")
       .select("id, kind, channel, subject, body, is_active, updated_at")
       .order("kind", { ascending: true });
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return data ?? [];
   });
 
@@ -130,10 +130,10 @@ export const upsertMessageTemplate = createServerFn({ method: "POST" })
     };
     if (data.id) {
       const { error } = await context.supabase.from("message_templates").update(payload).eq("id", data.id);
-      if (error) throw new Error(error.message);
+      if (error) fail(error);
     } else {
       const { error } = await context.supabase.from("message_templates").insert(payload);
-      if (error) throw new Error(error.message);
+      if (error) fail(error);
     }
     return { ok: true };
   });
@@ -157,7 +157,7 @@ export const composeCandidateMessage = createServerFn({ method: "POST" })
       .select("id, full_name, phone, email, access_token")
       .eq("id", data.candidate_id)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     if (!cand) throw new Error("Candidato não encontrado");
 
     const origin = (globalThis as { location?: { origin?: string } }).location?.origin ?? "";

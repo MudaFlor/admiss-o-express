@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { fail } from "@/lib/errors";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { logAudit } from "@/lib/audit.server";
@@ -57,7 +58,7 @@ export const createCandidateFromProfile = createServerFn({ method: "POST" })
       })
       .select("id, access_token, full_name, phone")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
 
     await logAudit({
       actor_user_id: userId,
