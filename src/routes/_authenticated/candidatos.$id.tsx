@@ -88,6 +88,7 @@ function CandidatoDetailPage() {
   const restoreDoc = useServerFn(restoreDocumentRH);
   const purgeDoc = useServerFn(purgeDocumentRH);
   const getConsents = useServerFn(listLgpdConsentsForCandidate);
+  const receiptUrlFn = useServerFn(getConsentReceiptUrl);
   const qc = useQueryClient();
 
   const q = useQuery({ queryKey: ["candidate", id], queryFn: () => get({ data: { id } }) });
