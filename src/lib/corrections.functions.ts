@@ -36,7 +36,7 @@ export const requestCandidateCorrection = createServerFn({ method: "POST" })
       .select("id, full_name, phone, access_token")
       .eq("id", data.candidate_id)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     if (!cand) throw new Error("Candidato não encontrado");
 
     const { error: insErr } = await context.supabase.from("correction_requests").insert({
@@ -47,7 +47,7 @@ export const requestCandidateCorrection = createServerFn({ method: "POST" })
       note: data.note ?? null,
       status: "aberta",
     });
-    if (insErr) throw new Error(insErr.message);
+    if (insErr) fail(insErr);
 
     const { setStage } = await import("@/lib/workflow/stage.server");
     await setStage(cand.id, "correcao_solicitada", {
@@ -107,7 +107,7 @@ export const listCorrectionRequests = createServerFn({ method: "POST" })
       .select("id, candidate_id, fields, documents, note, status, created_at, resolved_at")
       .eq("candidate_id", data.candidate_id)
       .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return rows ?? [];
   });
 
@@ -119,6 +119,6 @@ export const resolveCorrectionRequest = createServerFn({ method: "POST" })
       .from("correction_requests")
       .update({ status: "resolvida", resolved_at: new Date().toISOString() })
       .eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return { ok: true };
   });

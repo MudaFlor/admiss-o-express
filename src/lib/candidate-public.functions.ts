@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { fail } from "@/lib/errors";
 import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -48,7 +49,7 @@ async function loadByToken(token: string) {
     .select("*")
     .eq("access_token", token)
     .maybeSingle();
-  if (error) throw new Error(error.message);
+  if (error) fail(error);
   if (!data) throw new Error("Link inválido");
   if (new Date(data.token_expires_at) < new Date()) throw new Error("Link expirado");
   return data;
@@ -146,7 +147,7 @@ export const updateCandidateBasics = createServerFn({ method: "POST" })
         status: candidate.status === "pendente" ? "em_analise" : candidate.status,
       })
       .eq("id", candidate.id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return { ok: true };
   });
 
@@ -223,7 +224,7 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
       })
       .select("id, type, ocr_data, ocr_confidence, status, dependent_id, label")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
 
     if (candidate.status === "pendente") {
       await supabaseAdmin
@@ -297,7 +298,7 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
         estado_civil: data.estado_civil ?? candidate.estado_civil ?? null,
       })
       .eq("id", candidate.id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
 
     await supabaseAdmin.from("notifications").insert({
       candidate_id: candidate.id,
@@ -381,7 +382,7 @@ export const upsertDependent = createServerFn({ method: "POST" })
         .eq("candidate_id", candidate.id)
         .select("*")
         .single();
-      if (error) throw new Error(error.message);
+      if (error) fail(error);
       return row;
     }
     const { data: row, error } = await supabaseAdmin
@@ -389,7 +390,7 @@ export const upsertDependent = createServerFn({ method: "POST" })
       .insert(payload)
       .select("*")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return row;
   });
 
@@ -403,7 +404,7 @@ export const removeDependent = createServerFn({ method: "POST" })
       .delete()
       .eq("id", data.id)
       .eq("candidate_id", candidate.id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return { ok: true };
   });
 
@@ -459,7 +460,7 @@ export const acceptLgpdConsent = createServerFn({ method: "POST" })
       .select("id, token_expires_at, deletion_requested_at, lgpd_accepted_at, full_name, cpf")
       .eq("access_token", data.token)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     if (!candidate) throw new Error("Link inválido");
     if (new Date(candidate.token_expires_at) < new Date()) throw new Error("Link expirado");
     if (candidate.deletion_requested_at) throw new Error("Cadastro encerrado");
@@ -535,7 +536,7 @@ export const requestDataDeletion = createServerFn({ method: "POST" })
       .select("id, token_expires_at")
       .eq("access_token", data.token)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     if (!candidate) throw new Error("Link inválido");
     if (new Date(candidate.token_expires_at) < new Date()) throw new Error("Link expirado");
     await supabaseAdmin

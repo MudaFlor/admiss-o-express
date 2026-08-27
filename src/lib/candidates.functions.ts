@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { fail } from "@/lib/errors";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -13,7 +14,7 @@ export const listLgpdConsentsForCandidate = createServerFn({ method: "POST" })
     // RLS já limita ao RH que gerencia o candidato
     const { error: chkErr, count } = await supabase
       .from("candidates").select("id", { count: "exact", head: true }).eq("id", data.candidate_id);
-    if (chkErr) throw new Error(chkErr.message);
+    if (chkErr) fail(chkErr);
     if (!count) throw new Error("Candidato não encontrado");
 
     const { data: rows, error } = await supabaseAdmin
@@ -21,7 +22,7 @@ export const listLgpdConsentsForCandidate = createServerFn({ method: "POST" })
       .select("*")
       .eq("candidate_id", data.candidate_id)
       .order("accepted_at", { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     await logAudit({
       actor_user_id: context.userId,
       action: "view_lgpd_consent",
@@ -59,7 +60,7 @@ export const createCandidate = createServerFn({ method: "POST" })
       })
       .select("id, access_token")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
 
     await supabaseAdmin.from("notifications").insert({
       candidate_id: created.id,
@@ -89,7 +90,7 @@ export const listCandidates = createServerFn({ method: "POST" })
     if (data.status) q = q.eq("status", data.status);
     if (data.search) q = q.ilike("full_name", `%${data.search}%`);
     const { data: rows, error } = await q;
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return rows ?? [];
   });
 
@@ -98,7 +99,7 @@ export const getDashboardStats = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase } = context;
     const { data, error } = await supabase.from("candidates").select("status");
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     const counts = { pendente: 0, em_analise: 0, aprovado: 0, rejeitado: 0 };
     for (const r of data ?? []) counts[r.status as keyof typeof counts]++;
     return { counts, total: data?.length ?? 0 };
@@ -114,7 +115,7 @@ export const getCandidateById = createServerFn({ method: "POST" })
       .select("*")
       .eq("id", data.id)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     if (!candidate) throw new Error("Candidato não encontrado");
 
     const { data: documents } = await supabase
@@ -180,7 +181,7 @@ export const updateCandidateForm = createServerFn({ method: "POST" })
       .from("candidates")
       .update({ form_data: data.form_data as never })
       .eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     await logAudit({ actor_user_id: context.userId, action: "edit_form", entity: "candidate", entity_id: data.id });
     return { ok: true };
   });
@@ -211,7 +212,7 @@ export const updateCandidateBasicsRH = createServerFn({ method: "POST" })
         position: data.position || null,
       })
       .eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     await logAudit({ actor_user_id: context.userId, action: "edit_basics", entity: "candidate", entity_id: data.id });
     return { ok: true };
   });
@@ -232,7 +233,7 @@ export const updateDocumentOcr = createServerFn({ method: "POST" })
       .from("documents")
       .update({ ocr_data: data.ocr_data as never })
       .eq("id", data.document_id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     await logAudit({ actor_user_id: context.userId, action: "edit_ocr", entity: "document", entity_id: data.document_id });
     return { ok: true };
   });
@@ -246,7 +247,7 @@ export const approveCandidate = createServerFn({ method: "POST" })
       .from("candidates")
       .update({ status: "aprovado", reviewed_by: userId, reviewed_at: new Date().toISOString(), rejection_reason: null })
       .eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     await supabaseAdmin.from("notifications").insert({
       candidate_id: data.id,
       event: "candidate.approved",
@@ -272,7 +273,7 @@ export const rejectCandidate = createServerFn({ method: "POST" })
         rejection_reason: data.reason,
       })
       .eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     await supabaseAdmin.from("notifications").insert({
       candidate_id: data.id,
       event: "candidate.rejected",
@@ -296,7 +297,7 @@ export const reopenCandidate = createServerFn({ method: "POST" })
         reviewed_at: null,
       })
       .eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     await supabaseAdmin.from("notifications").insert({
       candidate_id: data.id,
       event: "candidate.reopened",
@@ -316,7 +317,7 @@ export const getCandidateNotifications = createServerFn({ method: "POST" })
       .select("*")
       .eq("candidate_id", data.id)
       .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return rows ?? [];
   });
 
@@ -329,7 +330,7 @@ export const softDeleteDocumentRH = createServerFn({ method: "POST" })
       .from("documents")
       .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
       .eq("id", data.document_id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     await logAudit({ actor_user_id: userId, action: "soft_delete_doc", entity: "document", entity_id: data.document_id });
     return { ok: true };
   });
@@ -343,7 +344,7 @@ export const restoreDocumentRH = createServerFn({ method: "POST" })
       .from("documents")
       .update({ deleted_at: null, deleted_by: null })
       .eq("id", data.document_id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     await logAudit({ actor_user_id: context.userId, action: "restore_doc", entity: "document", entity_id: data.document_id });
     return { ok: true };
   });
@@ -358,12 +359,12 @@ export const purgeDocumentRH = createServerFn({ method: "POST" })
       .select("id, storage_path, deleted_at")
       .eq("id", data.document_id)
       .maybeSingle();
-    if (selErr) throw new Error(selErr.message);
+    if (selErr) fail(selErr);
     if (!doc) throw new Error("Documento não encontrado");
     if (!doc.deleted_at) throw new Error("Documento não está na lixeira");
     await supabaseAdmin.storage.from("candidate-documents").remove([doc.storage_path]);
     const { error } = await supabaseAdmin.from("documents").delete().eq("id", doc.id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     await logAudit({ actor_user_id: context.userId, action: "purge_doc", entity: "document", entity_id: doc.id });
     return { ok: true };
   });

@@ -11,7 +11,38 @@ function esc(v: unknown): string {
 export const Route = createFileRoute("/api/consent-receipt/$id")({
   server: {
     handlers: {
-      GET: async ({ params }) => {
+      GET: async ({ params, request }) => {
+        // O comprovante contém dados pessoais (nome, CPF, IP, geolocalização):
+        // só é servido com link assinado (HMAC + expiração) gerado pelo RH.
+        const url = new URL(request.url);
+        const { verifyReceiptSignature } = await import("@/lib/security/signing.server");
+        const { assertRateLimitPersisted } = await import("@/lib/rate-limit.server");
+
+        const ip =
+          request.headers.get("cf-connecting-ip") ??
+          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+          "unknown";
+        try {
+          await assertRateLimitPersisted(`receipt:${ip}`, { limit: 20, windowMs: 60_000 });
+        } catch {
+          return new Response("Muitas tentativas", {
+            status: 429,
+            headers: { "Cache-Control": "no-store" },
+          });
+        }
+
+        const valid = await verifyReceiptSignature(
+          params.id,
+          url.searchParams.get("exp"),
+          url.searchParams.get("sig"),
+        );
+        if (!valid) {
+          return new Response("Link inválido ou expirado", {
+            status: 403,
+            headers: { "Cache-Control": "no-store" },
+          });
+        }
+
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data: consent, error } = await supabaseAdmin
           .from("lgpd_consents")

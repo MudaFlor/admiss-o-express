@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { fail } from "@/lib/errors";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -210,7 +211,7 @@ export const createEmployee = createServerFn({ method: "POST" })
       })
       .select("id")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return row;
   });
 
@@ -229,7 +230,7 @@ export const terminateEmployee = createServerFn({ method: "POST" })
       .from("employees")
       .update({ termination_date: data.termination_date, termination_reason: data.reason })
       .eq("id", data.employee_id);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return { ok: true };
   });
 
@@ -256,7 +257,7 @@ export const createAbsence = createServerFn({ method: "POST" })
       hours_lost: data.hours_lost,
       notes: data.notes ?? null,
     });
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return { ok: true };
   });
 
@@ -269,6 +270,6 @@ export const listEmployees = createServerFn({ method: "POST" })
       .select("id, full_name, position, department, admission_date, termination_date, termination_reason")
       .order("admission_date", { ascending: false })
       .limit(500);
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return data ?? [];
   });
