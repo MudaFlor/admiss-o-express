@@ -4,6 +4,7 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { logAudit } from "@/lib/audit.server";
+import { fail } from "@/lib/errors";
 
 const ItemSchema = z.object({ type: z.string().min(1).max(60), label: z.string().min(1).max(120) });
 
