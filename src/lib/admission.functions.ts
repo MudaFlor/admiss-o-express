@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { logAudit } from "@/lib/audit.server";
+import { fail } from "@/lib/errors";
 
 const STAGE_VALUES = [
   "cadastro_iniciado","aceite_lgpd","curriculo_enviado","documentos_enviados",
