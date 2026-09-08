@@ -44,10 +44,6 @@ function Landing() {
           <h1 className="mt-5 text-4xl font-semibold tracking-tight md:text-5xl">
             Gestão de pessoas, com a precisão da Mudaflor.
           </h1>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Colaboradores, documentos, férias e recrutamento centralizados em uma plataforma
-            sóbria, segura e premium — feita para operar RH com seriedade.
-          </p>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90"><Link to="/login">Acessar painel <ArrowRight className="h-4 w-4" /></Link></Button>
             <Button asChild size="lg" variant="outline" className="border-border bg-card"><Link to="/login">Sou colaborador</Link></Button>
