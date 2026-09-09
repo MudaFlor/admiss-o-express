@@ -22,7 +22,8 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const navigate = useNavigate();
-  const { data, isLoading } = useRoles();
+  const { data, isLoading, refetch } = useRoles();
+  const [claiming, setClaiming] = useState(false);
 
   if (isLoading) {
     return (
