@@ -714,6 +714,7 @@ export type Database = {
         Args: { _key: string; _window_start: string }
         Returns: number
       }
+      claim_first_admin: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
