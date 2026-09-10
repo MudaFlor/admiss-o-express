@@ -151,6 +151,7 @@ export type Database = {
           form_data: Json
           full_name: string
           id: string
+          last_reminder_at: string | null
           lgpd_accepted_at: string | null
           phone: string | null
           position: string | null
@@ -164,6 +165,8 @@ export type Database = {
           stage_updated_by: string | null
           status: Database["public"]["Enums"]["candidate_status"]
           token_expires_at: string
+          token_revoked_at: string | null
+          token_rotated_at: string | null
           updated_at: string
         }
         Insert: {
@@ -178,6 +181,7 @@ export type Database = {
           form_data?: Json
           full_name: string
           id?: string
+          last_reminder_at?: string | null
           lgpd_accepted_at?: string | null
           phone?: string | null
           position?: string | null
@@ -191,6 +195,8 @@ export type Database = {
           stage_updated_by?: string | null
           status?: Database["public"]["Enums"]["candidate_status"]
           token_expires_at?: string
+          token_revoked_at?: string | null
+          token_rotated_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -205,6 +211,7 @@ export type Database = {
           form_data?: Json
           full_name?: string
           id?: string
+          last_reminder_at?: string | null
           lgpd_accepted_at?: string | null
           phone?: string | null
           position?: string | null
@@ -218,6 +225,8 @@ export type Database = {
           stage_updated_by?: string | null
           status?: Database["public"]["Enums"]["candidate_status"]
           token_expires_at?: string
+          token_revoked_at?: string | null
+          token_rotated_at?: string | null
           updated_at?: string
         }
         Relationships: []
