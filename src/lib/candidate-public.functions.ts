@@ -7,11 +7,13 @@ import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import { runOcr } from "@/lib/ocr/provider.server";
 import { parseResumeFromStorage } from "@/lib/ai/resume-parser.server";
 import { LGPD_TERMS_TEXT, LGPD_TERMS_VERSION, hashTerms } from "@/lib/lgpd/terms";
-import { assertRateLimit } from "@/lib/rate-limit.server";
+import { assertRateLimitPersisted } from "@/lib/rate-limit.server";
 import type { Database } from "@/integrations/supabase/types";
 import { advanceStage } from "@/lib/workflow/stage.server";
 import { requiredDocumentsFor, missingDocs } from "@/lib/requirements/requirements.server";
 import { lookupCep, checkDuplicateCpf } from "@/lib/validation/field-checks";
+import { signedDocumentUrl, assertUploadedFileIsSafe } from "@/lib/security/storage.server";
+import { isAllowedExtension } from "@/lib/upload-rules";
 
 function clientIp(): string {
   return getRequestIP({ xForwardedFor: true }) ?? "unknown";
@@ -52,6 +54,9 @@ async function loadByToken(token: string) {
   if (error) fail(error);
   if (!data) throw new Error("Link inválido");
   if (new Date(data.token_expires_at) < new Date()) throw new Error("Link expirado");
+  if (data.token_revoked_at && new Date(data.token_revoked_at) <= new Date()) {
+    throw new Error("Link cancelado. Entre em contato com o RH.");
+  }
   return data;
 }
 
@@ -60,10 +65,17 @@ function requireConsent(candidate: { lgpd_accepted_at: string | null; deletion_r
   if (!candidate.lgpd_accepted_at) throw new Error("Aceite do termo LGPD obrigatório");
 }
 
+function assertPathBelongsToCandidate(storagePath: string, candidateId: string) {
+  const prefix = `${candidateId}/`;
+  if (!storagePath.startsWith(prefix)) {
+    throw new Error("Caminho do arquivo inválido.");
+  }
+}
+
 export const getCandidateByToken = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ token: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
-    assertRateLimit(`portal:read:${clientIp()}`, LIMIT_READ);
+    await assertRateLimitPersisted(`portal:read:${clientIp()}`, LIMIT_READ);
     const candidate = await loadByToken(data.token);
     const { data: documents } = await supabaseAdmin
       .from("documents")
@@ -73,10 +85,8 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
 
     const docsWithUrls = await Promise.all(
       (documents ?? []).map(async (d) => {
-        const { data: signed } = await supabaseAdmin.storage
-          .from("candidate-documents")
-          .createSignedUrl(d.storage_path, 60 * 10);
-        return { ...d, signed_url: signed?.signedUrl ?? null };
+        const signedUrl = await signedDocumentUrl(d.storage_path);
+        return { ...d, signed_url: signedUrl };
       }),
     );
 
@@ -132,7 +142,7 @@ export const updateCandidateBasics = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    assertRateLimit(`portal:write:${clientIp()}`, LIMIT_WRITE);
+    await assertRateLimitPersisted(`portal:write:${clientIp()}`, LIMIT_WRITE);
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
     const cpf = normalizeCpf(data.cpf);
@@ -162,10 +172,12 @@ export const createDocumentUploadUrl = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    assertRateLimit(`portal:upload:${clientIp()}`, LIMIT_UPLOAD);
+    await assertRateLimitPersisted(`portal:upload:${clientIp()}`, LIMIT_UPLOAD);
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
-    const path = `${candidate.id}/${data.type}-${crypto.randomUUID()}.${data.ext.toLowerCase()}`;
+    const ext = data.ext.toLowerCase();
+    if (!isAllowedExtension(ext)) throw new Error("Formato não aceito. Envie apenas PDF, JPG ou PNG.");
+    const path = `${candidate.id}/${data.type}-${crypto.randomUUID()}.${ext}`;
     const { data: signed, error } = await supabaseAdmin.storage
       .from("candidate-documents")
       .createSignedUploadUrl(path);
@@ -186,9 +198,12 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    assertRateLimit(`portal:upload:${clientIp()}`, LIMIT_UPLOAD);
+    await assertRateLimitPersisted(`portal:upload:${clientIp()}`, LIMIT_UPLOAD);
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
+    assertPathBelongsToCandidate(data.storage_path, candidate.id);
+    await assertUploadedFileIsSafe(data.storage_path);
+
     // Run OCR (no-op para tipos sem extração)
     const ocr = await runOcr(data.type, data.storage_path);
 
@@ -258,6 +273,7 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
+    await assertRateLimitPersisted(`portal:write:${clientIp()}`, LIMIT_WRITE);
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
 
@@ -323,7 +339,7 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
 export const lookupCepPublic = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ token: z.string().uuid(), cep: z.string().min(8).max(10) }).parse(input))
   .handler(async ({ data }) => {
-    assertRateLimit(`portal:read:${clientIp()}`, LIMIT_READ);
+    await assertRateLimitPersisted(`portal:read:${clientIp()}`, LIMIT_READ);
     await loadByToken(data.token); // valida token
     return await lookupCep(data.cep);
   });
@@ -331,7 +347,7 @@ export const lookupCepPublic = createServerFn({ method: "POST" })
 export const checkCpfDuplicate = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ token: z.string().uuid(), cpf: z.string().min(11).max(20) }).parse(input))
   .handler(async ({ data }) => {
-    assertRateLimit(`portal:read:${clientIp()}`, LIMIT_READ);
+    await assertRateLimitPersisted(`portal:read:${clientIp()}`, LIMIT_READ);
     const candidate = await loadByToken(data.token);
     return await checkDuplicateCpf(data.cpf, candidate.id);
   });
@@ -339,7 +355,7 @@ export const checkCpfDuplicate = createServerFn({ method: "POST" })
 export const getRequiredDocuments = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ token: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
-    assertRateLimit(`portal:read:${clientIp()}`, LIMIT_READ);
+    await assertRateLimitPersisted(`portal:read:${clientIp()}`, LIMIT_READ);
     const candidate = await loadByToken(data.token);
     const rules = await requiredDocumentsFor({
       position: candidate.position,
@@ -364,6 +380,7 @@ export const upsertDependent = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data }) => {
+    await assertRateLimitPersisted(`portal:write:${clientIp()}`, LIMIT_WRITE);
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
     const payload = {
@@ -397,6 +414,7 @@ export const upsertDependent = createServerFn({ method: "POST" })
 export const removeDependent = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ token: z.string().uuid(), id: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
+    await assertRateLimitPersisted(`portal:write:${clientIp()}`, LIMIT_WRITE);
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
     const { error } = await supabaseAdmin
@@ -411,6 +429,7 @@ export const removeDependent = createServerFn({ method: "POST" })
 export const deleteDocument = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ token: z.string().uuid(), id: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
+    await assertRateLimitPersisted(`portal:write:${clientIp()}`, LIMIT_WRITE);
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
     const { data: doc } = await supabaseAdmin
@@ -454,15 +473,18 @@ export const acceptLgpdConsent = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    assertRateLimit(`portal:consent:${clientIp()}`, LIMIT_CONSENT);
+    await assertRateLimitPersisted(`portal:consent:${clientIp()}`, LIMIT_CONSENT);
     const { data: candidate, error } = await supabaseAdmin
       .from("candidates")
-      .select("id, token_expires_at, deletion_requested_at, lgpd_accepted_at, full_name, cpf")
+      .select("id, token_expires_at, deletion_requested_at, lgpd_accepted_at, full_name, cpf, token_revoked_at")
       .eq("access_token", data.token)
       .maybeSingle();
     if (error) fail(error);
     if (!candidate) throw new Error("Link inválido");
     if (new Date(candidate.token_expires_at) < new Date()) throw new Error("Link expirado");
+    if (candidate.token_revoked_at && new Date(candidate.token_revoked_at) <= new Date()) {
+      throw new Error("Link cancelado. Entre em contato com o RH.");
+    }
     if (candidate.deletion_requested_at) throw new Error("Cadastro encerrado");
 
     // Validar assinatura
@@ -510,8 +532,11 @@ export const parseResumeForCandidate = createServerFn({ method: "POST" })
     z.object({ token: z.string().uuid(), storage_path: z.string().min(3).max(300) }).parse(input),
   )
   .handler(async ({ data }) => {
+    await assertRateLimitPersisted(`portal:upload:${clientIp()}`, LIMIT_UPLOAD);
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
+    assertPathBelongsToCandidate(data.storage_path, candidate.id);
+    await assertUploadedFileIsSafe(data.storage_path);
     const parsed = await parseResumeFromStorage(data.storage_path);
 
     // Save curriculo doc reference (replace existing)
@@ -531,14 +556,18 @@ export const parseResumeForCandidate = createServerFn({ method: "POST" })
 export const requestDataDeletion = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ token: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
+    await assertRateLimitPersisted(`portal:write:${clientIp()}`, LIMIT_WRITE);
     const { data: candidate, error } = await supabaseAdmin
       .from("candidates")
-      .select("id, token_expires_at")
+      .select("id, token_expires_at, token_revoked_at")
       .eq("access_token", data.token)
       .maybeSingle();
     if (error) fail(error);
     if (!candidate) throw new Error("Link inválido");
     if (new Date(candidate.token_expires_at) < new Date()) throw new Error("Link expirado");
+    if (candidate.token_revoked_at && new Date(candidate.token_revoked_at) <= new Date()) {
+      throw new Error("Link cancelado. Entre em contato com o RH.");
+    }
     await supabaseAdmin
       .from("candidates")
       .update({ deletion_requested_at: new Date().toISOString() })
