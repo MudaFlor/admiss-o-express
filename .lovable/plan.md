@@ -1,5 +1,8 @@
 # Concluir segurança, automações e facilidades operacionais
 
+> Atualização: os uploads passarão a aceitar **apenas PDF, JPEG e PNG**. DOCX, WEBP, HEIC/HEIF e demais formatos serão removidos das regras client-side e server-side.
+
+
 ## Objetivo
 Finalizar os blocos anteriormente solicitados, mantendo fora do escopo apenas o isolamento entre empresas. A entrega reforçará o portal do candidato, o controle de acesso por link, os arquivos, a retenção LGPD, a auditoria e os testes dos fluxos críticos.
 
