@@ -1,5 +1,8 @@
 # Concluir segurança, automações e facilidades operacionais
 
+> Atualização: os uploads passarão a aceitar **apenas PDF, JPEG e PNG**. DOCX, WEBP, HEIC/HEIF e demais formatos serão removidos das regras client-side e server-side.
+
+
 ## Objetivo
 Finalizar os blocos anteriormente solicitados, mantendo fora do escopo apenas o isolamento entre empresas. A entrega reforçará o portal do candidato, o controle de acesso por link, os arquivos, a retenção LGPD, a auditoria e os testes dos fluxos críticos.
 
@@ -28,11 +31,15 @@ Finalizar os blocos anteriormente solicitados, mantendo fora do escopo apenas o 
 - Registrar as duas operações na auditoria.
 
 ### 3. Validar uploads de ponta a ponta
+- Restringir a lista de formatos permitidos a **PDF, JPEG e PNG** nas regras compartilhadas (`src/lib/upload-rules.ts`) e em todos os campos de arquivo do sistema.
+- Restringir a lista de formatos permitidos a **PDF, JPEG e PNG** nas regras compartilhadas (`src/lib/upload-rules.ts`) e em todos os campos de arquivo do sistema.
 - Validar no navegador tamanho máximo de 10 MB, extensão e tipo antes do envio do currículo, documentos do titular e documentos de dependentes.
 - Restringir o pedido de upload a extensões permitidas e garantir que o caminho gerado pertença ao candidato e ao tipo informado.
 - Após o upload, conferir no servidor tamanho e tipo registrados; remover automaticamente arquivos inválidos antes de OCR ou gravação no banco.
 - Rejeitar caminhos adulterados e impedir que um candidato finalize arquivos de outra pasta.
 - Manter mensagens claras para formato inválido, arquivo vazio ou tamanho excedido.
+
+
 
 ### 4. Reduzir exposição dos documentos
 - Centralizar a criação de links temporários no utilitário existente de 5 minutos.
