@@ -8,20 +8,12 @@ export const ALLOWED_EXTENSIONS = [
   "jpg",
   "jpeg",
   "png",
-  "webp",
-  "heic",
-  "heif",
-  "docx",
 ] as const;
 
 export const ALLOWED_MIME_TYPES = [
   "application/pdf",
   "image/jpeg",
   "image/png",
-  "image/webp",
-  "image/heic",
-  "image/heif",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ] as const;
 
 export function isAllowedExtension(ext: string): boolean {
@@ -37,14 +29,14 @@ export function isAllowedMime(mime: string | null | undefined): boolean {
 export function validateFile(file: { name: string; size: number; type: string }): string | null {
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
   if (!isAllowedExtension(ext)) {
-    return "Formato não aceito. Envie PDF, DOCX ou foto (JPG/PNG/WEBP/HEIC).";
+    return "Formato não aceito. Envie apenas PDF, JPG ou PNG.";
   }
   if (file.size > MAX_FILE_BYTES) {
     return "Arquivo maior que 10 MB. Reduza a qualidade da foto e tente novamente.";
   }
   if (file.size === 0) return "Arquivo vazio.";
   if (file.type && !isAllowedMime(file.type)) {
-    return "Tipo de arquivo não aceito. Envie PDF, DOCX ou foto.";
+    return "Tipo de arquivo não aceito. Envie apenas PDF, JPG ou PNG.";
   }
   return null;
 }
