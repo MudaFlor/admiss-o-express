@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import { logAudit } from "@/lib/audit.server";
+import { signedDocumentUrl } from "@/lib/security/storage.server";
 
 export const listLgpdConsentsForCandidate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
