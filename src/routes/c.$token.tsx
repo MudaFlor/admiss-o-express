@@ -34,6 +34,7 @@ import { crossCheckCandidate, extractDeclaredFromFormData } from "@/lib/validati
 import { AlertTriangle } from "lucide-react";
 import { LGPD_TERMS_TEXT, LGPD_TERMS_VERSION } from "@/lib/lgpd/terms";
 import { CORRECTION_FIELD_LABEL } from "@/lib/corrections";
+import { validateFile } from "@/lib/upload-rules";
 
 type SignatureDeviceInfo = {
   user_agent?: string; platform?: string; language?: string; timezone?: string;
@@ -267,10 +268,10 @@ function CandidatePage() {
   async function handleResumeUpload(file: File) {
     setParsing(true);
     try {
+      const invalid = validateFile(file);
+      if (invalid) throw new Error(invalid);
       const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
-      if (!["pdf", "docx", "jpg", "jpeg", "png", "webp"].includes(ext))
-        throw new Error("Formato nao suportado");
-      if (file.size > 10 * 1024 * 1024) throw new Error("Arquivo maior que 10MB");
+
 
       const sig = await createUpload({ data: { token, type: "curriculo", ext } });
       const up = await fetch(sig.signedUrl, { method: "PUT", body: file, headers: { "content-type": file.type } });
