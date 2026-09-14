@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import { logAudit } from "@/lib/audit.server";
+import { signedDocumentUrl } from "@/lib/security/storage.server";
 
 export const listLgpdConsentsForCandidate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -126,12 +127,10 @@ export const getCandidateById = createServerFn({ method: "POST" })
       .order("uploaded_at", { ascending: true });
 
     const docsWithUrls = await Promise.all(
-      (documents ?? []).map(async (d) => {
-        const { data: signed } = await supabaseAdmin.storage
-          .from("candidate-documents")
-          .createSignedUrl(d.storage_path, 60 * 10);
-        return { ...d, signed_url: signed?.signedUrl ?? null };
-      }),
+      (documents ?? []).map(async (d) => ({
+        ...d,
+        signed_url: await signedDocumentUrl(d.storage_path),
+      })),
     );
 
     const { data: dependents } = await supabase
@@ -148,12 +147,10 @@ export const getCandidateById = createServerFn({ method: "POST" })
       .order("deleted_at", { ascending: false });
 
     const trashWithUrls = await Promise.all(
-      (trashed ?? []).map(async (d) => {
-        const { data: signed } = await supabaseAdmin.storage
-          .from("candidate-documents")
-          .createSignedUrl(d.storage_path, 60 * 10);
-        return { ...d, signed_url: signed?.signedUrl ?? null };
-      }),
+      (trashed ?? []).map(async (d) => ({
+        ...d,
+        signed_url: await signedDocumentUrl(d.storage_path),
+      })),
     );
 
     await logAudit({

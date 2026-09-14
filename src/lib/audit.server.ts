@@ -14,7 +14,11 @@ export type AuditAction =
   | "purge_doc"
   | "export"
   | "view_lgpd_consent"
-  | "download_receipt";
+  | "download_receipt"
+  | "rotate_token"
+  | "revoke_token"
+  | "send_reminder"
+  | "view_document";
 
 export async function logAudit(params: {
   actor_user_id: string;
