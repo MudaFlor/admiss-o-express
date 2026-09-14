@@ -325,6 +325,8 @@ function CandidatePage() {
     const key = `${type}:${opts?.dependent_id ?? ""}`;
     setUploading(key);
     try {
+      const invalid = validateFile(file);
+      if (invalid) throw new Error(invalid);
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const sig = await createUpload({ data: { token, type, ext } });
       const up = await fetch(sig.signedUrl, { method: "PUT", body: file, headers: { "content-type": file.type } });
