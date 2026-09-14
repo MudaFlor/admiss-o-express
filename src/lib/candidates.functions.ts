@@ -147,12 +147,10 @@ export const getCandidateById = createServerFn({ method: "POST" })
       .order("deleted_at", { ascending: false });
 
     const trashWithUrls = await Promise.all(
-      (trashed ?? []).map(async (d) => {
-        const { data: signed } = await supabaseAdmin.storage
-          .from("candidate-documents")
-          .createSignedUrl(d.storage_path, 60 * 10);
-        return { ...d, signed_url: signed?.signedUrl ?? null };
-      }),
+      (trashed ?? []).map(async (d) => ({
+        ...d,
+        signed_url: await signedDocumentUrl(d.storage_path),
+      })),
     );
 
     await logAudit({
