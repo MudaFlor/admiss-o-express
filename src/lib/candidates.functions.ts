@@ -127,12 +127,10 @@ export const getCandidateById = createServerFn({ method: "POST" })
       .order("uploaded_at", { ascending: true });
 
     const docsWithUrls = await Promise.all(
-      (documents ?? []).map(async (d) => {
-        const { data: signed } = await supabaseAdmin.storage
-          .from("candidate-documents")
-          .createSignedUrl(d.storage_path, 60 * 10);
-        return { ...d, signed_url: signed?.signedUrl ?? null };
-      }),
+      (documents ?? []).map(async (d) => ({
+        ...d,
+        signed_url: await signedDocumentUrl(d.storage_path),
+      })),
     );
 
     const { data: dependents } = await supabase
