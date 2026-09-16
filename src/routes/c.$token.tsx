@@ -519,12 +519,12 @@ function CandidatePage() {
                 <h1 className="text-lg font-semibold">Envie seu curriculo</h1>
               </div>
               <p className="text-sm text-muted-foreground">
-                Vamos ler seu curriculo automaticamente e preencher o formulario pra voce. Aceitamos PDF, DOCX, JPG e PNG.
+                Vamos ler seu curriculo automaticamente e preencher o formulario pra voce. Aceitamos PDF, JPG e PNG.
               </p>
               <label className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors ${parsing ? "opacity-60" : "hover:border-primary hover:bg-primary/5"}`}>
                 <input
                   type="file"
-                  accept=".pdf,.docx,image/*"
+                  accept="application/pdf,image/jpeg,image/png"
                   className="hidden"
                   disabled={parsing}
                   onChange={(e) => {
@@ -542,7 +542,7 @@ function CandidatePage() {
                   <>
                     <Upload className="h-8 w-8 text-muted-foreground" />
                     <div className="text-sm font-medium">Toque para enviar</div>
-                    <div className="text-xs text-muted-foreground">PDF, DOCX, JPG ou PNG (max 10MB)</div>
+                    <div className="text-xs text-muted-foreground">PDF, JPG ou PNG (max 10MB)</div>
                   </>
                 )}
               </label>
@@ -708,7 +708,7 @@ function CandidatePage() {
                       <label className="cursor-pointer">
                         <input
                           type="file"
-                          accept="image/*,application/pdf"
+                          accept="application/pdf,image/jpeg,image/png"
                           capture="environment"
                           className="hidden"
                           disabled={uploading === uploadKey}
@@ -998,7 +998,7 @@ function DependentsBlock(props: {
                             </div>
                           </div>
                           <label className="cursor-pointer">
-                            <input type="file" accept="image/*,application/pdf" capture="environment" className="hidden"
+                            <input type="file" accept="application/pdf,image/jpeg,image/png" capture="environment" className="hidden"
                               disabled={uploading === key}
                               onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(dd.type, f, { dependent_id: dep.id }); }}
                             />

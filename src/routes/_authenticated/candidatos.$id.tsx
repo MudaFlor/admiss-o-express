@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CandidateStageCard } from "@/components/CandidateStageCard";
 import { CorrectionRequestCard } from "@/components/CorrectionRequestCard";
+import { CandidateLinkCard } from "@/components/CandidateLinkCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -244,6 +245,8 @@ function CandidatoDetailPage() {
           ))}
         </CardContent>
       </Card>
+
+      <CandidateLinkCard candidateId={id} />
 
       <CandidateStageCard
         candidateId={id}
