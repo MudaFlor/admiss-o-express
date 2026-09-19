@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/button";
 import { useRoles } from "@/hooks/useRole";
 
 export const Route = createFileRoute("/_authenticated")({
+  // A sessão fica no navegador (localStorage); sem isso o servidor nunca a enxerga
+  // e qualquer link direto cai no login e depois no dashboard.
+  ssr: false,
   beforeLoad: async ({ location }) => {
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
