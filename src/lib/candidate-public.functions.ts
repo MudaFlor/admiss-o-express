@@ -285,24 +285,30 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
     const holderDocs = new Set((docs ?? []).filter((d) => !d.dependent_id).map((d) => d.type));
     // RG ou CNH: pelo menos um
     const hasIdentidade = holderDocs.has("rg") || holderDocs.has("cnh");
-    const missing: string[] = [];
-    for (const t of REQUIRED_HOLDER_DOCS) if (!holderDocs.has(t)) missing.push(t);
-    if (!hasIdentidade && !missing.includes("rg")) missing.push("rg_ou_cnh");
     const sexo = data.sexo ?? candidate.sexo;
-    if (sexo === "masculino" && !holderDocs.has("reservista")) missing.push("reservista");
-    if (missing.length) throw new Error(`Faltam documentos: ${missing.join(", ")}`);
 
-    // Checagem por requisitos dinâmicos (configuráveis pelo RH)
+    // Fonte única da verdade: as regras configuradas pelo RH. Sem regras cadastradas,
+    // aplica a lista padrão de documentos do titular.
     const rules = await requiredDocumentsFor({
       position: candidate.position,
-      sexo: data.sexo ?? candidate.sexo,
+      sexo,
       estado_civil: data.estado_civil ?? candidate.estado_civil,
     });
     const present = Array.from(holderDocs) as DocType[];
-    const dynMissing = missingDocs(rules, present);
-    if (dynMissing.length) {
-      throw new Error(`Faltam documentos: ${dynMissing.map((r) => r.label).join(", ")}`);
+    const missing: string[] = [];
+
+    if (rules.length > 0) {
+      for (const r of missingDocs(rules, present)) {
+        if (r.document_type === "rg" && hasIdentidade) continue;
+        missing.push(r.label);
+      }
+    } else {
+      for (const t of REQUIRED_HOLDER_DOCS) if (!holderDocs.has(t)) missing.push(t);
+      if (!hasIdentidade && !missing.includes("rg")) missing.push("rg_ou_cnh");
+      if (sexo === "masculino" && !holderDocs.has("reservista")) missing.push("reservista");
     }
+    if (!hasIdentidade && !missing.includes("rg_ou_cnh")) missing.push("RG ou CNH");
+    if (missing.length) throw new Error(`Faltam documentos: ${missing.join(", ")}`);
 
     const { error } = await supabaseAdmin
       .from("candidates")
