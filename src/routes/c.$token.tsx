@@ -196,7 +196,15 @@ function CandidatePage() {
 
   const sexo = candidate.sexo ?? "";
   const requireReservista = sexo === "masculino";
-  const DOCS = HOLDER_DOCS;
+  // Todo documento exigido pelo RH precisa ter um cartão de envio aqui,
+  // mesmo que não esteja na lista padrão (ex.: currículo).
+  const extraRules = (requiredQ.data ?? []).filter(
+    (r) => !HOLDER_DOCS.some((d) => d.type === (r.document_type as DocType)),
+  );
+  const DOCS: ReadonlyArray<DocDef> = [
+    ...HOLDER_DOCS,
+    ...extraRules.map((r) => ({ type: r.document_type as DocType, label: r.label })),
+  ];
   const uploadedTypes = new Set(documents.filter((d) => !d.dependent_id).map((d) => d.type));
   const hasIdentidade = uploadedTypes.has("rg") || uploadedTypes.has("cnh");
   // Checklist dinâmico configurado pelo RH (cargo, sexo, estado civil). Se não houver
