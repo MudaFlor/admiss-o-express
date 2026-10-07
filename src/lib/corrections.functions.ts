@@ -65,7 +65,14 @@ export const requestCandidateCorrection = createServerFn({ method: "POST" })
     const link = `${originFromRequest()}/c/${cand.access_token}`;
     const { renderMessage, logMessage } = await import("@/lib/messaging/messaging.server");
     const rendered = await renderMessage("correcao", "whatsapp", {
-      vars: { nome: cand.full_name, itens, observacao: data.note ?? "", link },
+      vars: {
+        nome: cand.full_name,
+        itens,
+        observacao: data.note ?? "",
+        // Modelos antigos usam {{motivo}}: envia itens + observação para não sair vazio.
+        motivo: `\n${itens}${data.note ? `\n\n${data.note}` : ""}\n`,
+        link,
+      },
       recipient: cand.phone,
     });
 

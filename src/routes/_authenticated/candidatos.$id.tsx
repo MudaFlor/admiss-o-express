@@ -258,7 +258,7 @@ function CandidatoDetailPage() {
         candidateId={id}
         availableDocuments={Array.from(
           new Map(
-            q.data!.documents.map((d) => [d.type as string, { type: d.type as string, label: (d.label ?? d.type) as string }]),
+            q.data!.documents.map((d) => [d.type as string, { type: d.type as string, label: (d.label ?? DOC_LABELS[d.type] ?? d.type) as string }]),
           ).values(),
         )}
       />

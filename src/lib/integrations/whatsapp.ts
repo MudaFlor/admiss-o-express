@@ -2,7 +2,9 @@
 // expor um sendMessage(server) aqui sem mudar o callsite do botão de compartilhar.
 
 export function buildWhatsAppLink(phone: string | null | undefined, message: string): string {
-  const cleaned = (phone ?? "").replace(/\D/g, "");
+  let cleaned = (phone ?? "").replace(/\D/g, "");
+  // Números brasileiros com DDD (10–11 dígitos) precisam do código do país 55.
+  if (cleaned.length === 10 || cleaned.length === 11) cleaned = `55${cleaned}`;
   const text = encodeURIComponent(message);
   if (cleaned) return `https://wa.me/${cleaned}?text=${text}`;
   return `https://wa.me/?text=${text}`;
