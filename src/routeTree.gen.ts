@@ -9,29 +9,33 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as CTokenRouteImport } from './routes/c.$token'
-import { Route as AuthenticatedRecrutamentoRouteImport } from './routes/_authenticated/recrutamento'
-import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated/gestao'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedColaboradoresRouteImport } from './routes/_authenticated/colaboradores'
-import { Route as AuthenticatedGestaoIndexRouteImport } from './routes/_authenticated/gestao.index'
+import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated/gestao'
+import { Route as AuthenticatedRecrutamentoRouteImport } from './routes/_authenticated/recrutamento'
+import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedCandidatosIndexRouteImport } from './routes/_authenticated/candidatos.index'
-import { Route as ApiConsentReceiptIdRouteImport } from './routes/api/consent-receipt.$id'
-import { Route as AuthenticatedGestaoRotatividadeRouteImport } from './routes/_authenticated/gestao.rotatividade'
-import { Route as AuthenticatedGestaoPipelineRouteImport } from './routes/_authenticated/gestao.pipeline'
-import { Route as AuthenticatedGestaoAbsenteismoRouteImport } from './routes/_authenticated/gestao.absenteismo'
 import { Route as AuthenticatedCandidatosIdRouteImport } from './routes/_authenticated/candidatos.$id'
-import { Route as ApiPublicHooksPurgeTrashRouteImport } from './routes/api/public/hooks/purge-trash'
+import { Route as AuthenticatedGestaoIndexRouteImport } from './routes/_authenticated/gestao.index'
+import { Route as AuthenticatedGestaoAbsenteismoRouteImport } from './routes/_authenticated/gestao.absenteismo'
+import { Route as AuthenticatedGestaoPipelineRouteImport } from './routes/_authenticated/gestao.pipeline'
+import { Route as AuthenticatedGestaoRotatividadeRouteImport } from './routes/_authenticated/gestao.rotatividade'
+import { Route as ApiConsentReceiptIdRouteImport } from './routes/api/consent-receipt.$id'
 import { Route as ApiPublicHooksPurgeCandidatesRouteImport } from './routes/api/public/hooks/purge-candidates'
+import { Route as ApiPublicHooksPurgeTrashRouteImport } from './routes/api/public/hooks/purge-trash'
 
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -39,19 +43,32 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: '/_authenticated',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedColaboradoresRoute =
+  AuthenticatedColaboradoresRouteImport.update({
+    id: '/colaboradores',
+    path: '/colaboradores',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedConfiguracoesRoute =
+  AuthenticatedConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const CTokenRoute = CTokenRouteImport.update({
-  id: '/c/$token',
-  path: '/c/$token',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedGestaoRoute = AuthenticatedGestaoRouteImport.update({
+  id: '/gestao',
+  path: '/gestao',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedRecrutamentoRoute =
   AuthenticatedRecrutamentoRouteImport.update({
@@ -59,26 +76,21 @@ const AuthenticatedRecrutamentoRoute =
     path: '/recrutamento',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedGestaoRoute = AuthenticatedGestaoRouteImport.update({
-  id: '/gestao',
-  path: '/gestao',
-  getParentRoute: () => AuthenticatedRoute,
+const CTokenRoute = CTokenRouteImport.update({
+  id: '/c/$token',
+  path: '/c/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedConfiguracoesRoute =
-  AuthenticatedConfiguracoesRouteImport.update({
-    id: '/configuracoes',
-    path: '/configuracoes',
+const AuthenticatedCandidatosIndexRoute =
+  AuthenticatedCandidatosIndexRouteImport.update({
+    id: '/candidatos/',
+    path: '/candidatos/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedColaboradoresRoute =
-  AuthenticatedColaboradoresRouteImport.update({
-    id: '/colaboradores',
-    path: '/colaboradores',
+const AuthenticatedCandidatosIdRoute =
+  AuthenticatedCandidatosIdRouteImport.update({
+    id: '/candidatos/$id',
+    path: '/candidatos/$id',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedGestaoIndexRoute =
@@ -87,21 +99,10 @@ const AuthenticatedGestaoIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedGestaoRoute,
   } as any)
-const AuthenticatedCandidatosIndexRoute =
-  AuthenticatedCandidatosIndexRouteImport.update({
-    id: '/candidatos/',
-    path: '/candidatos/',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const ApiConsentReceiptIdRoute = ApiConsentReceiptIdRouteImport.update({
-  id: '/api/consent-receipt/$id',
-  path: '/api/consent-receipt/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedGestaoRotatividadeRoute =
-  AuthenticatedGestaoRotatividadeRouteImport.update({
-    id: '/rotatividade',
-    path: '/rotatividade',
+const AuthenticatedGestaoAbsenteismoRoute =
+  AuthenticatedGestaoAbsenteismoRouteImport.update({
+    id: '/absenteismo',
+    path: '/absenteismo',
     getParentRoute: () => AuthenticatedGestaoRoute,
   } as any)
 const AuthenticatedGestaoPipelineRoute =
@@ -110,28 +111,27 @@ const AuthenticatedGestaoPipelineRoute =
     path: '/pipeline',
     getParentRoute: () => AuthenticatedGestaoRoute,
   } as any)
-const AuthenticatedGestaoAbsenteismoRoute =
-  AuthenticatedGestaoAbsenteismoRouteImport.update({
-    id: '/absenteismo',
-    path: '/absenteismo',
+const AuthenticatedGestaoRotatividadeRoute =
+  AuthenticatedGestaoRotatividadeRouteImport.update({
+    id: '/rotatividade',
+    path: '/rotatividade',
     getParentRoute: () => AuthenticatedGestaoRoute,
   } as any)
-const AuthenticatedCandidatosIdRoute =
-  AuthenticatedCandidatosIdRouteImport.update({
-    id: '/candidatos/$id',
-    path: '/candidatos/$id',
-    getParentRoute: () => AuthenticatedRoute,
+const ApiConsentReceiptIdRoute = ApiConsentReceiptIdRouteImport.update({
+  id: '/api/consent-receipt/$id',
+  path: '/api/consent-receipt/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHooksPurgeCandidatesRoute =
+  ApiPublicHooksPurgeCandidatesRouteImport.update({
+    id: '/api/public/hooks/purge-candidates',
+    path: '/api/public/hooks/purge-candidates',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksPurgeTrashRoute =
   ApiPublicHooksPurgeTrashRouteImport.update({
     id: '/api/public/hooks/purge-trash',
     path: '/api/public/hooks/purge-trash',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksPurgeCandidatesRoute =
-  ApiPublicHooksPurgeCandidatesRouteImport.update({
-    id: '/api/public/hooks/purge-candidates',
-    path: '/api/public/hooks/purge-candidates',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -272,18 +272,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -293,39 +286,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/c/$token': {
-      id: '/c/$token'
-      path: '/c/$token'
-      fullPath: '/c/$token'
-      preLoaderRoute: typeof CTokenRouteImport
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/recrutamento': {
-      id: '/_authenticated/recrutamento'
-      path: '/recrutamento'
-      fullPath: '/recrutamento'
-      preLoaderRoute: typeof AuthenticatedRecrutamentoRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/gestao': {
-      id: '/_authenticated/gestao'
-      path: '/gestao'
-      fullPath: '/gestao'
-      preLoaderRoute: typeof AuthenticatedGestaoRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+    '/_authenticated/colaboradores': {
+      id: '/_authenticated/colaboradores'
+      path: '/colaboradores'
+      fullPath: '/colaboradores'
+      preLoaderRoute: typeof AuthenticatedColaboradoresRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/configuracoes': {
@@ -335,11 +314,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/colaboradores': {
-      id: '/_authenticated/colaboradores'
-      path: '/colaboradores'
-      fullPath: '/colaboradores'
-      preLoaderRoute: typeof AuthenticatedColaboradoresRouteImport
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/gestao': {
+      id: '/_authenticated/gestao'
+      path: '/gestao'
+      fullPath: '/gestao'
+      preLoaderRoute: typeof AuthenticatedGestaoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/recrutamento': {
+      id: '/_authenticated/recrutamento'
+      path: '/recrutamento'
+      fullPath: '/recrutamento'
+      preLoaderRoute: typeof AuthenticatedRecrutamentoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/c/$token': {
+      id: '/c/$token'
+      path: '/c/$token'
+      fullPath: '/c/$token'
+      preLoaderRoute: typeof CTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/candidatos/': {
+      id: '/_authenticated/candidatos/'
+      path: '/candidatos'
+      fullPath: '/candidatos/'
+      preLoaderRoute: typeof AuthenticatedCandidatosIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/candidatos/$id': {
+      id: '/_authenticated/candidatos/$id'
+      path: '/candidatos/$id'
+      fullPath: '/candidatos/$id'
+      preLoaderRoute: typeof AuthenticatedCandidatosIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/gestao/': {
@@ -349,25 +363,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGestaoIndexRouteImport
       parentRoute: typeof AuthenticatedGestaoRoute
     }
-    '/_authenticated/candidatos/': {
-      id: '/_authenticated/candidatos/'
-      path: '/candidatos'
-      fullPath: '/candidatos/'
-      preLoaderRoute: typeof AuthenticatedCandidatosIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/api/consent-receipt/$id': {
-      id: '/api/consent-receipt/$id'
-      path: '/api/consent-receipt/$id'
-      fullPath: '/api/consent-receipt/$id'
-      preLoaderRoute: typeof ApiConsentReceiptIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/gestao/rotatividade': {
-      id: '/_authenticated/gestao/rotatividade'
-      path: '/rotatividade'
-      fullPath: '/gestao/rotatividade'
-      preLoaderRoute: typeof AuthenticatedGestaoRotatividadeRouteImport
+    '/_authenticated/gestao/absenteismo': {
+      id: '/_authenticated/gestao/absenteismo'
+      path: '/absenteismo'
+      fullPath: '/gestao/absenteismo'
+      preLoaderRoute: typeof AuthenticatedGestaoAbsenteismoRouteImport
       parentRoute: typeof AuthenticatedGestaoRoute
     }
     '/_authenticated/gestao/pipeline': {
@@ -377,25 +377,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGestaoPipelineRouteImport
       parentRoute: typeof AuthenticatedGestaoRoute
     }
-    '/_authenticated/gestao/absenteismo': {
-      id: '/_authenticated/gestao/absenteismo'
-      path: '/absenteismo'
-      fullPath: '/gestao/absenteismo'
-      preLoaderRoute: typeof AuthenticatedGestaoAbsenteismoRouteImport
+    '/_authenticated/gestao/rotatividade': {
+      id: '/_authenticated/gestao/rotatividade'
+      path: '/rotatividade'
+      fullPath: '/gestao/rotatividade'
+      preLoaderRoute: typeof AuthenticatedGestaoRotatividadeRouteImport
       parentRoute: typeof AuthenticatedGestaoRoute
     }
-    '/_authenticated/candidatos/$id': {
-      id: '/_authenticated/candidatos/$id'
-      path: '/candidatos/$id'
-      fullPath: '/candidatos/$id'
-      preLoaderRoute: typeof AuthenticatedCandidatosIdRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/api/public/hooks/purge-trash': {
-      id: '/api/public/hooks/purge-trash'
-      path: '/api/public/hooks/purge-trash'
-      fullPath: '/api/public/hooks/purge-trash'
-      preLoaderRoute: typeof ApiPublicHooksPurgeTrashRouteImport
+    '/api/consent-receipt/$id': {
+      id: '/api/consent-receipt/$id'
+      path: '/api/consent-receipt/$id'
+      fullPath: '/api/consent-receipt/$id'
+      preLoaderRoute: typeof ApiConsentReceiptIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/purge-candidates': {
@@ -403,6 +396,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/hooks/purge-candidates'
       fullPath: '/api/public/hooks/purge-candidates'
       preLoaderRoute: typeof ApiPublicHooksPurgeCandidatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/purge-trash': {
+      id: '/api/public/hooks/purge-trash'
+      path: '/api/public/hooks/purge-trash'
+      fullPath: '/api/public/hooks/purge-trash'
+      preLoaderRoute: typeof ApiPublicHooksPurgeTrashRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
