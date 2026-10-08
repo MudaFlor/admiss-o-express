@@ -178,9 +178,24 @@ function CandidatePage() {
   const [step, setStep] = useState(0);
 
   const lgpdAt = q.data?.candidate.lgpd_accepted_at;
+  const cand = q.data?.candidate;
   useEffect(() => {
-    if (lgpdAt && step === 0) setStep(1);
+    if (lgpdAt && step === 0) setStep(3);
   }, [lgpdAt, step]);
+  // Fluxo expresso: ficha base vem do cadastro do RH; OCR completa o resto.
+  useEffect(() => {
+    if (!cand) return;
+    setForm((f) => f.full_name ? f : {
+      ...f,
+      full_name: cand.full_name ?? "",
+      cpf: cand.cpf ?? "",
+      email: cand.email ?? "",
+      telefone: cand.phone ?? "",
+      sexo: cand.sexo ?? "",
+      cor_raca: cand.cor_raca ?? "",
+      estado_civil: cand.estado_civil ?? "",
+    });
+  }, [cand]);
 
   if (q.isLoading) return <Center><Loader2 className="h-5 w-5 animate-spin" /></Center>;
   if (q.isError) return <Center><p className="text-sm text-rose-600">{(q.error as Error).message}</p></Center>;
@@ -225,7 +240,7 @@ function CandidatePage() {
     : DOCS.filter((d) => isRequired(d.type)).map((d) => d.type);
   const pendingRequired = requiredTypes.filter((t) => !uploadedTypes.has(t));
   const allUploaded = hasIdentidade && requiredTypes.every((t) => uploadedTypes.has(t));
-  const totalSteps = 4;
+  const totalSteps = 2;
 
   // ---- Validação cruzada (UI) ----
   const crossCheck = crossCheckCandidate({
@@ -246,26 +261,23 @@ function CandidatePage() {
   }
 
   async function handleAcceptLgpd() {
-    if (!consent) return toast.error("Confirme o aceite do termo");
-    if (sigName.trim().length < 2) return toast.error("Digite seu nome completo");
-    if (sigCpf.replace(/\D/g, "").length !== 11) return toast.error("Confirme seu CPF");
+    const cpfToSign = candidate.cpf || sigCpf;
+    if (cpfToSign.replace(/\D/g, "").length !== 11) return toast.error("Informe seu CPF");
     setAccepting(true);
     try {
       const device_info = collectDeviceInfo();
-      const geolocation = geoConsent ? await requestGeolocation() : null;
       await accept({
         data: {
           token,
-          signature_name: sigName,
-          signature_cpf: sigCpf,
+          signature_name: candidate.full_name,
+          signature_cpf: cpfToSign,
           device_info,
-          geo_consent: geoConsent && !!geolocation,
-          geolocation: geolocation ?? undefined,
+          geo_consent: false,
         },
       });
-      toast.success("Termo assinado e registrado");
+      toast.success("Termo aceito");
       await qc.invalidateQueries({ queryKey: ["c", token] });
-      setStep(1);
+      setStep(3);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro");
     } finally {
@@ -479,41 +491,27 @@ function CandidatePage() {
                 <Lock className="h-5 w-5 text-primary" />
                 <h1 className="text-lg font-semibold">Termo de consentimento — LGPD</h1>
               </div>
-              <div className="text-[11px] text-muted-foreground">Versão do termo: <span className="font-mono">{LGPD_TERMS_VERSION}</span></div>
-              <div className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-md border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
-                {LGPD_TERMS_TEXT}
-              </div>
+              <p className="text-sm">
+                Olá, <strong>{candidate.full_name}</strong>! Para enviar seus documentos de admissão, precisamos do seu consentimento para tratar seus dados pessoais.
+              </p>
+              <details className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+                <summary className="cursor-pointer font-medium text-foreground">Ler o termo completo (versão {LGPD_TERMS_VERSION})</summary>
+                <div className="mt-2 max-h-60 overflow-y-auto whitespace-pre-wrap leading-relaxed">{LGPD_TERMS_TEXT}</div>
+              </details>
 
-              <label className="flex cursor-pointer items-start gap-3 rounded-md border bg-background p-3">
-                <Checkbox checked={consent} onCheckedChange={(v) => setConsent(v === true)} className="mt-0.5" />
-                <span className="text-sm">Li e <strong>aceito</strong> os termos de tratamento dos meus dados pessoais conforme a LGPD.</span>
-              </label>
-
-              <div className="space-y-2 rounded-md border bg-background p-3">
-                <div className="text-xs font-medium text-foreground">Assinatura eletrônica</div>
+              {!candidate.cpf && (
                 <div className="space-y-1">
-                  <Label htmlFor="sig-name" className="text-xs">Nome completo (como no cadastro)</Label>
-                  <Input id="sig-name" value={sigName} onChange={(e) => setSigName(e.target.value)} placeholder={candidate.full_name} autoComplete="off" />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="sig-cpf" className="text-xs">Confirme seu CPF</Label>
+                  <Label htmlFor="sig-cpf" className="text-xs">Seu CPF</Label>
                   <Input id="sig-cpf" inputMode="numeric" value={sigCpf} onChange={(e) => setSigCpf(e.target.value)} placeholder="000.000.000-00" autoComplete="off" />
                 </div>
-              </div>
-
-              <label className="flex cursor-pointer items-start gap-3 rounded-md border bg-background p-3">
-                <Checkbox checked={geoConsent} onCheckedChange={(v) => setGeoConsent(v === true)} className="mt-0.5" />
-                <span className="text-xs text-muted-foreground">
-                  Autorizo registrar minha <strong className="text-foreground">localização aproximada</strong> como evidência adicional do aceite (opcional). O navegador pedirá permissão.
-                </span>
-              </label>
+              )}
 
               <div className="rounded-md bg-muted/40 p-2 text-[11px] leading-relaxed text-muted-foreground">
-                Ao continuar, serão registrados: data e hora (servidor), IP, informações técnicas do seu dispositivo e o texto exato do termo com um código de verificação (hash SHA-256).
+                Ao clicar em concordar, sua assinatura eletrônica é registrada com data, hora, IP e dispositivo.
               </div>
 
-              <Button className="w-full" disabled={!consent || accepting} onClick={handleAcceptLgpd}>
-                {accepting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Assinar e continuar"}
+              <Button className="w-full" disabled={accepting} onClick={handleAcceptLgpd}>
+                {accepting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Concordar e enviar documentos"}
               </Button>
             </CardContent>
           </Card>
@@ -748,19 +746,10 @@ function CandidatePage() {
               onChange={() => qc.invalidateQueries({ queryKey: ["c", token] })}
             />
 
-            <CrossCheckPanel result={crossCheck} onEdit={() => setStep(2)} />
 
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>Voltar</Button>
-              <Button className="flex-1" disabled={!allUploaded || hasDivergence} onClick={handleSubmit}>
-                Enviar cadastro
-              </Button>
-            </div>
-            {hasDivergence && (
-              <p className="text-center text-[11px] text-amber-700">
-                Existem divergências entre seus documentos. Corrija antes de enviar.
-              </p>
-            )}
+            <Button className="w-full" disabled={!allUploaded} onClick={handleSubmit}>
+              Enviar documentos
+            </Button>
           </>
         )}
 
