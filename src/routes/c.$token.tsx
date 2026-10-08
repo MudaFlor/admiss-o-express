@@ -138,6 +138,12 @@ function buildEndereco(fields: Record<string, string>): string | null {
   const parts = [linha1, complemento, bairro, [cidade, uf].filter(Boolean).join("/"), cep].filter(Boolean);
   return parts.length ? parts.join(" — ") : null;
 }
+const REVIEW_FIELDS: ReadonlyArray<[keyof FormState, string]> = [
+  ["full_name", "Nome completo"], ["cpf", "CPF"], ["rg", "RG"], ["rg_emissao", "Data de emissão do RG"],
+  ["data_nascimento", "Data de nascimento"], ["local_nascimento", "Naturalidade"],
+  ["nome_mae", "Nome da mãe"], ["nome_pai", "Nome do pai"], ["endereco", "Endereço"],
+  ["telefone", "Telefone"], ["email", "E-mail"],
+];
 
 function CandidatePage() {
   const { token } = Route.useParams();
@@ -196,6 +202,34 @@ function CandidatePage() {
       estado_civil: cand.estado_civil ?? "",
     });
   }, [cand]);
+  // Ao reabrir o portal, recupera os dados já lidos dos documentos enviados
+  // (só preenche campos vazios; nunca sobrescreve o que o candidato corrigiu).
+  const docsForOcr = q.data?.documents;
+  useEffect(() => {
+    if (!docsForOcr?.length) return;
+    const writes: Array<[keyof FormState, string]> = [];
+    for (const d of docsForOcr) {
+      if (d.dependent_id) continue;
+      const raw = (d as { ocr_data?: { values?: Record<string, string> } }).ocr_data;
+      const vals = raw?.values;
+      if (!vals) continue;
+      const map = OCR_TO_FORM[d.type as DocType];
+      if (map) for (const [ok, fk] of Object.entries(map)) if (fk && vals[ok]) writes.push([fk, vals[ok]]);
+      if (d.type === "comprovante_residencia") {
+        const e = buildEndereco(vals);
+        if (e) writes.push(["endereco", e]);
+      }
+    }
+    if (!writes.length) return;
+    setForm((f) => {
+      const n = { ...f };
+      const added: Array<keyof FormState> = [];
+      for (const [k, v] of writes) if (!n[k]) { n[k] = v; added.push(k); }
+      if (added.length) setAutoFilled((s) => new Set([...s, ...added]));
+      return n;
+    });
+  }, [docsForOcr]);
+  const [reviewing, setReviewing] = useState(false);
 
   if (q.isLoading) return <Center><Loader2 className="h-5 w-5 animate-spin" /></Center>;
   if (q.isError) return <Center><p className="text-sm text-rose-600">{(q.error as Error).message}</p></Center>;
@@ -746,6 +780,40 @@ function CandidatePage() {
               onChange={() => qc.invalidateQueries({ queryKey: ["c", token] })}
             />
 
+
+            <Card>
+              <CardContent className="space-y-3 p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-1.5 text-sm font-semibold">
+                      <Sparkles className="h-4 w-4 text-primary" /> Seus dados lidos dos documentos
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">Confira se está tudo certo. Você pode corrigir antes de enviar.</p>
+                  </div>
+                  <Button size="sm" variant={reviewing ? "default" : "outline"} onClick={() => setReviewing((v) => !v)}>
+                    {reviewing ? "Concluir revisão" : "Revisar e corrigir"}
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {REVIEW_FIELDS.map(([k, label]) => {
+                    const fromOcr = autoFilled.has(k);
+                    return (
+                      <div key={k} className="space-y-0.5">
+                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          {label}
+                          {fromOcr && <span className="rounded bg-primary/10 px-1 text-[10px] text-primary">lido do documento</span>}
+                        </div>
+                        {reviewing ? (
+                          <Input value={form[k]} onChange={(e) => setField(k, e.target.value)} className="h-9" />
+                        ) : (
+                          <div className="text-sm">{form[k] || <span className="text-muted-foreground">—</span>}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
 
             <Button className="w-full" disabled={!allUploaded} onClick={handleSubmit}>
               Enviar documentos
