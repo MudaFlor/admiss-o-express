@@ -449,14 +449,14 @@ function CandidatePage() {
           <div className="flex-1">
             <div className="text-sm font-semibold">Admissao Digital</div>
             <div className="text-[11px] text-muted-foreground">
-              {step < 4 ? `Etapa ${Math.min(step + 1, totalSteps)} de ${totalSteps}` : "Concluido"}
+              {step < 4 ? `Etapa ${(step === 0 ? 1 : 2)} de ${totalSteps}` : "Concluido"}
             </div>
           </div>
         </div>
         <div className="h-1 bg-muted">
           <div
             className="h-full bg-primary transition-all"
-            style={{ width: `${(Math.min(step + 1, totalSteps) / totalSteps) * 100}%` }}
+            style={{ width: `${((step === 0 ? 1 : 2) / totalSteps) * 100}%` }}
           />
         </div>
       </header>
