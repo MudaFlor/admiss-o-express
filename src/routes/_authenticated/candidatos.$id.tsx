@@ -715,8 +715,9 @@ function CandidatoDetailPage() {
                           type="button"
                           onClick={async () => {
                             try {
-                              const { url } = await receiptUrlFn({ data: { consentId: c.id } });
-                              window.open(url, "_blank", "noopener,noreferrer");
+                              await receiptUrlFn({ data: { consentId: c.id } }); // registra no histórico
+                              const { downloadConsentPdf } = await import("@/lib/lgpd-pdf");
+                              await downloadConsentPdf(c as never, q.data?.candidate ?? {});
                             } catch (e) {
                               toast.error(e instanceof Error ? e.message : "Não foi possível gerar o comprovante.");
                             }
