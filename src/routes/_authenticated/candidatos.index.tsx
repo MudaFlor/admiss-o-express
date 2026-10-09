@@ -1,3 +1,4 @@
+import { candidatePortalUrl } from "@/lib/public-url";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -56,7 +57,7 @@ function CandidatosPage() {
           cpf: "",
         },
       });
-      const link = `${window.location.origin}/c/${res.access_token}`;
+      const link = candidatePortalUrl(res.access_token);
       setCreated({ link, name: String(fd.get("full_name")), phone: String(fd.get("phone") ?? "") });
       qc.invalidateQueries({ queryKey: ["candidates"] });
       toast.success("Candidato criado. Compartilhe o link.");
@@ -83,7 +84,7 @@ function CandidatosPage() {
           cpf: "",
         },
       });
-      const link = `${window.location.origin}/c/${res.access_token}`;
+      const link = candidatePortalUrl(res.access_token);
       qc.invalidateQueries({ queryKey: ["candidates"] });
       window.open(link, "_blank", "noopener");
       toast.success("Portal do candidato aberto em nova aba.");
@@ -211,7 +212,7 @@ function CandidatosPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => copyLink(`${window.location.origin}/c/${c.access_token}`)}
+                        onClick={() => copyLink(candidatePortalUrl(c.access_token))}
                       >
                         <Copy className="h-3.5 w-3.5" /> Link
                       </Button>

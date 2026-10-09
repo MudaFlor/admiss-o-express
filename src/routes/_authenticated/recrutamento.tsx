@@ -1,3 +1,4 @@
+import { candidatePortalUrl } from "@/lib/public-url";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -178,7 +179,7 @@ function RecrutamentoPage() {
       });
       qc.invalidateQueries({ queryKey: ["candidates"] });
       setCreated({
-        link: `${window.location.origin}/c/${res.access_token}`,
+        link: candidatePortalUrl(res.access_token),
         name: draft.full_name,
         phone: draft.phone,
       });
@@ -405,7 +406,7 @@ function RecrutamentoPage() {
                 </TableRow>
               ) : (
                 q.data!.map((c) => {
-                  const link = typeof window !== "undefined" ? `${window.location.origin}/c/${c.access_token}` : "";
+                  const link = typeof window !== "undefined" ? candidatePortalUrl(c.access_token) : "";
                   return (
                     <TableRow key={c.id}>
                       <TableCell>
