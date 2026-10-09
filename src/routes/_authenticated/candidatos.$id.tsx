@@ -89,11 +89,29 @@ function CandidatoDetailPage() {
   const getNotif = useServerFn(getCandidateNotifications);
   const softDelete = useServerFn(softDeleteDocumentRH);
   const getDocLink = useServerFn(getDocumentLinkRH);
+  // Baixa o arquivo para a memória do navegador e abre/salva a partir dele.
+  // Evita o bloqueio do navegador ao abrir arquivos de outro endereço.
   const openDoc = async (documentId: string, download: boolean) => {
-    const w = window.open("", "_blank");
+    const w = download ? null : window.open("", "_blank");
     try {
-      const { url } = await getDocLink({ data: { document_id: documentId, download } });
-      if (w) w.location.href = url; else window.location.href = url;
+      const { url } = await getDocLink({ data: { document_id: documentId, download: false } });
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Não foi possível carregar o arquivo");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const d = q.data?.documents.find((x) => x.id === documentId);
+      const ext = d?.storage_path.split(".").pop() ?? "pdf";
+      if (download || !w) {
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = `${DOC_LABELS[d?.type ?? ""] ?? d?.type ?? "documento"}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } else {
+        w.location.href = blobUrl;
+      }
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } catch (e) {
       w?.close();
       toast.error(e instanceof Error ? e.message : "Erro ao abrir documento");
@@ -374,7 +392,7 @@ function CandidatoDetailPage() {
               <CardContent className="flex min-h-[400px] items-center justify-center bg-muted/30 p-2">
                 {doc?.signed_url ? (
                   /\.(pdf)$/i.test(doc.storage_path) ? (
-                    <iframe src={doc.signed_url} className="h-[600px] w-full" title="Documento" />
+                    <PdfBlobViewer url={doc.signed_url} />
                   ) : (
                     <img src={doc.signed_url} alt="Documento" className="max-h-[600px] w-auto rounded-md object-contain" />
                   )
