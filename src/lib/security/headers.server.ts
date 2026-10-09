@@ -14,6 +14,7 @@ const CSP = [
   `script-src 'self' 'unsafe-inline' https://cdn.gpteng.co`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
+  `frame-src 'self' blob: ${SUPABASE_ORIGIN}`,
   `img-src 'self' data: blob: ${SUPABASE_ORIGIN}`,
   `connect-src 'self' ${SUPABASE_ORIGIN} ${SUPABASE_WS} https://ai.gateway.lovable.dev`,
   "object-src 'none'",
