@@ -37,6 +37,7 @@ import {
   updateDocumentOcr,
   updateCandidateForm,
   softDeleteDocumentRH,
+  getDocumentLinkRH,
   restoreDocumentRH,
   purgeDocumentRH,
   listLgpdConsentsForCandidate,
@@ -357,6 +358,19 @@ function CandidatoDetailPage() {
             </Card>
 
             <Card className="overflow-hidden">
+              {doc && (
+                <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
+                  <span className="truncate text-sm font-medium">{DOC_LABELS[doc.type] ?? doc.type}</span>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => openDoc(doc.id, false)}>
+                      <ExternalLink className="h-3.5 w-3.5" /> Abrir
+                    </Button>
+                    <Button size="sm" onClick={() => openDoc(doc.id, true)}>
+                      <Download className="h-3.5 w-3.5" /> Baixar
+                    </Button>
+                  </div>
+                </div>
+              )}
               <CardContent className="flex min-h-[400px] items-center justify-center bg-muted/30 p-2">
                 {doc?.signed_url ? (
                   /\.(pdf)$/i.test(doc.storage_path) ? (
