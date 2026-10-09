@@ -4,7 +4,7 @@ import { getConsentReceiptUrl } from "@/lib/lgpd.functions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X, RotateCcw, AlertTriangle, Trash2, Undo2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X, RotateCcw, AlertTriangle, Trash2, Undo2, Download, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +37,7 @@ import {
   updateDocumentOcr,
   updateCandidateForm,
   softDeleteDocumentRH,
+  getDocumentLinkRH,
   restoreDocumentRH,
   purgeDocumentRH,
   listLgpdConsentsForCandidate,
@@ -87,6 +88,17 @@ function CandidatoDetailPage() {
   const updateOcr = useServerFn(updateDocumentOcr);
   const getNotif = useServerFn(getCandidateNotifications);
   const softDelete = useServerFn(softDeleteDocumentRH);
+  const getDocLink = useServerFn(getDocumentLinkRH);
+  const openDoc = async (documentId: string, download: boolean) => {
+    const w = window.open("", "_blank");
+    try {
+      const { url } = await getDocLink({ data: { document_id: documentId, download } });
+      if (w) w.location.href = url; else window.location.href = url;
+    } catch (e) {
+      w?.close();
+      toast.error(e instanceof Error ? e.message : "Erro ao abrir documento");
+    }
+  };
   const restoreDoc = useServerFn(restoreDocumentRH);
   const purgeDoc = useServerFn(purgeDocumentRH);
   const getConsents = useServerFn(listLgpdConsentsForCandidate);
@@ -346,6 +358,19 @@ function CandidatoDetailPage() {
             </Card>
 
             <Card className="overflow-hidden">
+              {doc && (
+                <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
+                  <span className="truncate text-sm font-medium">{DOC_LABELS[doc.type] ?? doc.type}</span>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => openDoc(doc.id, false)}>
+                      <ExternalLink className="h-3.5 w-3.5" /> Abrir
+                    </Button>
+                    <Button size="sm" onClick={() => openDoc(doc.id, true)}>
+                      <Download className="h-3.5 w-3.5" /> Baixar
+                    </Button>
+                  </div>
+                </div>
+              )}
               <CardContent className="flex min-h-[400px] items-center justify-center bg-muted/30 p-2">
                 {doc?.signed_url ? (
                   /\.(pdf)$/i.test(doc.storage_path) ? (

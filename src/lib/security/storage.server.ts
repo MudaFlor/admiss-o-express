@@ -53,6 +53,6 @@ export async function assertUploadedFileIsSafe(storagePath: string): Promise<voi
   }
   if (mime && !isAllowedMime(mime)) {
     await remove();
-    throw new Error("Tipo de arquivo não aceito. Envie PDF, DOCX ou foto.");
+    throw new Error("Tipo de arquivo não aceito. Envie PDF, JPG ou PNG.");
   }
 }

@@ -365,3 +365,25 @@ export const purgeDocumentRH = createServerFn({ method: "POST" })
     await logAudit({ actor_user_id: context.userId, action: "purge_doc", entity: "document", entity_id: doc.id });
     return { ok: true };
   });
+// Gera um link novo (5 min) para o RH abrir ou baixar o documento, com auditoria.
+export const getDocumentLinkRH = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ document_id: z.string().uuid(), download: z.boolean().default(false) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: doc, error } = await context.supabase
+      .from("documents")
+      .select("id, type, storage_path")
+      .eq("id", data.document_id)
+      .maybeSingle();
+    if (error) fail(error);
+    if (!doc) throw new Error("Documento não encontrado");
+    const ext = doc.storage_path.split(".").pop() ?? "pdf";
+    const { data: s } = await supabaseAdmin.storage
+      .from("candidate-documents")
+      .createSignedUrl(doc.storage_path, 5 * 60, data.download ? { download: `${doc.type}.${ext}` } : undefined);
+    if (!s?.signedUrl) throw new Error("Não foi possível gerar o link do documento");
+    await logAudit({ actor_user_id: context.userId, action: "view_document", entity: "document", entity_id: doc.id, metadata: { download: data.download } });
+    return { url: s.signedUrl };
+  });
