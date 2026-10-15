@@ -153,6 +153,7 @@ export type Database = {
           id: string
           last_reminder_at: string | null
           lgpd_accepted_at: string | null
+          origem: string
           phone: string | null
           position: string | null
           rejection_reason: string | null
@@ -168,6 +169,7 @@ export type Database = {
           token_revoked_at: string | null
           token_rotated_at: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           access_token?: string
@@ -183,6 +185,7 @@ export type Database = {
           id?: string
           last_reminder_at?: string | null
           lgpd_accepted_at?: string | null
+          origem?: string
           phone?: string | null
           position?: string | null
           rejection_reason?: string | null
@@ -198,6 +201,7 @@ export type Database = {
           token_revoked_at?: string | null
           token_rotated_at?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           access_token?: string
@@ -213,6 +217,7 @@ export type Database = {
           id?: string
           last_reminder_at?: string | null
           lgpd_accepted_at?: string | null
+          origem?: string
           phone?: string | null
           position?: string | null
           rejection_reason?: string | null
@@ -228,6 +233,7 @@ export type Database = {
           token_revoked_at?: string | null
           token_rotated_at?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -732,6 +738,21 @@ export type Database = {
         Returns: boolean
       }
       is_hr: { Args: { _user_id: string }; Returns: boolean }
+      save_my_candidate_profile: {
+        Args: {
+          _curriculo_texto: string
+          _data_nascimento: string
+          _email: string
+          _endereco: string
+          _full_name: string
+          _idade: string
+          _palavras: string[]
+          _phone: string
+          _position: string
+          _resumo: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       absence_reason:
