@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PortalRouteImport } from './routes/portal'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedColaboradoresRouteImport } from './routes/_authenticated/colaboradores'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
@@ -41,6 +42,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortalRoute = PortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -138,6 +144,7 @@ const ApiPublicHooksPurgeTrashRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/portal': typeof PortalRoute
   '/reset-password': typeof ResetPasswordRoute
   '/colaboradores': typeof AuthenticatedColaboradoresRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/portal': typeof PortalRoute
   '/reset-password': typeof ResetPasswordRoute
   '/colaboradores': typeof AuthenticatedColaboradoresRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/portal': typeof PortalRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/colaboradores': typeof AuthenticatedColaboradoresRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/portal'
     | '/reset-password'
     | '/colaboradores'
     | '/configuracoes'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/portal'
     | '/reset-password'
     | '/colaboradores'
     | '/configuracoes'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/portal'
     | '/reset-password'
     | '/_authenticated/colaboradores'
     | '/_authenticated/configuracoes'
@@ -263,6 +275,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  PortalRoute: typeof PortalRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   CTokenRoute: typeof CTokenRoute
   ApiConsentReceiptIdRoute: typeof ApiConsentReceiptIdRoute
@@ -291,6 +304,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portal': {
+      id: '/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof PortalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -453,6 +473,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  PortalRoute: PortalRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   CTokenRoute: CTokenRoute,
   ApiConsentReceiptIdRoute: ApiConsentReceiptIdRoute,

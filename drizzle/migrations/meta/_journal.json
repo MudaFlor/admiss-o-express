@@ -8,6 +8,13 @@
       "when": 1789853921895,
       "tag": "0000_restore_data_api_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792083190190,
+      "tag": "0001_candidate_self_service",
+      "breakpoints": true
     }
   ]
 }
