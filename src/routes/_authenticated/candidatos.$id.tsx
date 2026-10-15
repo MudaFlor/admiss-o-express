@@ -876,3 +876,41 @@ function CrossCheckCard({ result }: { result: CrossCheckResult }) {
     </Card>
   );
 }
+
+// Mostra o PDF dentro da página carregando o arquivo no navegador (blob),
+// evitando o bloqueio do navegador ao abrir o link assinado direto no iframe.
+function PdfBlobViewer({ url }: { url: string }) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let revoked: string | null = null;
+    let cancelled = false;
+    setObjectUrl(null);
+    setError(false);
+    fetch(url)
+      .then((r) => {
+        if (!r.ok) throw new Error("fetch failed");
+        return r.blob();
+      })
+      .then((blob) => {
+        if (cancelled) return;
+        const pdfBlob = new Blob([blob], { type: "application/pdf" });
+        revoked = URL.createObjectURL(pdfBlob);
+        setObjectUrl(revoked);
+      })
+      .catch(() => !cancelled && setError(true));
+    return () => {
+      cancelled = true;
+      if (revoked) URL.revokeObjectURL(revoked);
+    };
+  }, [url]);
+
+  if (error) {
+    return <p className="text-sm text-muted-foreground">Não foi possível carregar o PDF. Use o botão "Abrir".</p>;
+  }
+  if (!objectUrl) {
+    return <p className="text-sm text-muted-foreground">Carregando PDF…</p>;
+  }
+  return <iframe src={objectUrl} title="Documento PDF" className="h-[600px] w-full rounded-md border bg-white" />;
+}
