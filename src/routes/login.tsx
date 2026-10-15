@@ -49,7 +49,7 @@ function LoginPage() {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Bem-vindo de volta!");
-    navigate({ to: "/dashboard" });
+    navigate({ to: profile === "colab" ? "/portal" : "/dashboard" });
   }
 
   async function handleSignup(e: React.FormEvent<HTMLFormElement>) {
@@ -60,16 +60,21 @@ function LoginPage() {
       email: String(fd.get("email")),
       password: String(fd.get("password")),
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        emailRedirectTo: `${window.location.origin}/${profile === "colab" ? "portal" : "dashboard"}`,
         data: {
           full_name: String(fd.get("full_name") ?? ""),
           company_name: String(fd.get("company_name") ?? ""),
+          account_type: profile === "colab" ? "candidato" : "rh",
         },
       },
     });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Conta criada! Confirme seu email. O acesso ao painel precisa ser liberado por um administrador.");
+    toast.success(
+      profile === "colab"
+        ? "Conta criada! Confirme seu e-mail e entre para enviar seu currículo."
+        : "Conta criada! Confirme seu email. O acesso ao painel precisa ser liberado por um administrador.",
+    );
   }
 
   async function handleGoogle() {

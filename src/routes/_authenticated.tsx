@@ -19,6 +19,14 @@ export const Route = createFileRoute("/_authenticated")({
     if (!data.session) {
       throw redirect({ to: "/login", search: { redirect: location.href } as never });
     }
+    // Contas de candidato (sem papel de RH) vão direto ao portal restrito.
+    const uid = data.session.user.id;
+    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+    if (!roles || roles.length === 0) {
+      const isCandidate = data.session.user.user_metadata?.account_type === "candidato";
+      const { data: cand } = await supabase.from("candidates").select("id").eq("user_id", uid).maybeSingle();
+      if (isCandidate || cand) throw redirect({ to: "/portal" });
+    }
   },
   component: AuthenticatedLayout,
 });
