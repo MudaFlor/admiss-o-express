@@ -77,6 +77,9 @@ function AuthenticatedLayout() {
             >
               {claiming ? "Liberando..." : "Sou o administrador desta empresa"}
             </Button>
+            <Button variant="outline" onClick={() => navigate({ to: "/portal" })}>
+              Sou candidato
+            </Button>
             <Button
               variant="outline"
               onClick={async () => {
