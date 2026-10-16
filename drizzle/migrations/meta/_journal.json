@@ -15,6 +15,13 @@
       "when": 1792083190190,
       "tag": "0001_candidate_self_service",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792171311453,
+      "tag": "0002_candidate_merge",
+      "breakpoints": true
     }
   ]
 }
