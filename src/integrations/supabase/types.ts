@@ -725,6 +725,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _merge_candidates_core: {
+        Args: { _actor: string; _dup: string; _primary: string }
+        Returns: string
+      }
       bump_rate_limit: {
         Args: { _key: string; _window_start: string }
         Returns: number
@@ -738,6 +742,10 @@ export type Database = {
         Returns: boolean
       }
       is_hr: { Args: { _user_id: string }; Returns: boolean }
+      merge_candidates: {
+        Args: { _dup: string; _primary: string }
+        Returns: string
+      }
       save_my_candidate_profile: {
         Args: {
           _curriculo_texto: string

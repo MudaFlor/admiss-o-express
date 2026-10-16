@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import { logAudit } from "@/lib/audit.server";
 import { signedDocumentUrl } from "@/lib/security/storage.server";
+import { similarity, DUPLICATE_THRESHOLD, type DupProfile } from "@/lib/validation/duplicates";
 
 export const listLgpdConsentsForCandidate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -386,4 +387,54 @@ export const getDocumentLinkRH = createServerFn({ method: "POST" })
     if (!s?.signedUrl) throw new Error("Não foi possível gerar o link do documento");
     await logAudit({ actor_user_id: context.userId, action: "view_document", entity: "document", entity_id: doc.id, metadata: { download: data.download } });
     return { url: s.signedUrl };
+  });
+
+// ---------- Duplicidades ----------
+type CandRow = { id: string; full_name: string; cpf: string | null; email: string | null; phone: string | null; form_data: unknown; created_at: string };
+
+function profileOf(c: CandRow, docs: Array<{ candidate_id: string; ocr_data: unknown }>): DupProfile {
+  const fd = (c.form_data ?? {}) as Record<string, unknown>;
+  const pr = (fd.perfil_recrutamento ?? {}) as Record<string, unknown>;
+  const names = [c.full_name, typeof fd.full_name === "string" ? fd.full_name : ""];
+  let birth = (typeof fd.data_nascimento === "string" && fd.data_nascimento) || (typeof pr.data_nascimento === "string" && pr.data_nascimento) || null;
+  let cpf = c.cpf;
+  for (const d of docs.filter((x) => x.candidate_id === c.id)) {
+    const v = ((d.ocr_data ?? {}) as { values?: Record<string, unknown> }).values ?? {};
+    if (typeof v.nome === "string") names.push(v.nome);
+    if (!birth && typeof v.data_nascimento === "string") birth = v.data_nascimento;
+    if (!cpf && typeof v.cpf === "string" && v.cpf.replace(/\D/g, "").length === 11) cpf = v.cpf;
+  }
+  return { names, cpf, birth, email: c.email, phone: c.phone };
+}
+
+export const findDuplicateCandidates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("candidates").select("id, full_name, cpf, email, phone, form_data, created_at");
+    if (error) fail(error);
+    const all = (rows ?? []) as CandRow[];
+    const me = all.find((r) => r.id === data.id);
+    if (!me) return [];
+    const { data: docs } = await supabase
+      .from("documents").select("candidate_id, ocr_data")
+      .in("type", ["rg", "cpf", "cnh", "certidao"]).is("deleted_at", null).is("dependent_id", null);
+    const d = docs ?? [];
+    const mine = profileOf(me, d);
+    return all
+      .filter((r) => r.id !== me.id)
+      .map((r) => ({ id: r.id, full_name: r.full_name, email: r.email, phone: r.phone, created_at: r.created_at, ...similarity(mine, profileOf(r, d)) }))
+      .filter((r) => r.score >= DUPLICATE_THRESHOLD)
+      .sort((a, b) => b.score - a.score);
+  });
+
+export const mergeCandidates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ primary_id: z.string().uuid(), duplicate_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("merge_candidates", { _primary: data.primary_id, _dup: data.duplicate_id });
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
