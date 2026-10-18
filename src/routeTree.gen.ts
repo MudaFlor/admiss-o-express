@@ -20,6 +20,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated/gestao'
 import { Route as AuthenticatedRecrutamentoRouteImport } from './routes/_authenticated/recrutamento'
 import { Route as CTokenRouteImport } from './routes/c.$token'
+import { Route as DiscTokenRouteImport } from './routes/disc.$token'
 import { Route as AuthenticatedCandidatosIndexRouteImport } from './routes/_authenticated/candidatos.index'
 import { Route as AuthenticatedCandidatosIdRouteImport } from './routes/_authenticated/candidatos.$id'
 import { Route as AuthenticatedGestaoIndexRouteImport } from './routes/_authenticated/gestao.index'
@@ -87,6 +88,11 @@ const CTokenRoute = CTokenRouteImport.update({
   path: '/c/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DiscTokenRoute = DiscTokenRouteImport.update({
+  id: '/disc/$token',
+  path: '/disc/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedCandidatosIndexRoute =
   AuthenticatedCandidatosIndexRouteImport.update({
     id: '/candidatos/',
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/gestao': typeof AuthenticatedGestaoRouteWithChildren
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
+  '/disc/$token': typeof DiscTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
   '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
+  '/disc/$token': typeof DiscTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
   '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
@@ -195,6 +203,7 @@ export interface FileRoutesById {
   '/_authenticated/gestao': typeof AuthenticatedGestaoRouteWithChildren
   '/_authenticated/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
+  '/disc/$token': typeof DiscTokenRoute
   '/_authenticated/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
   '/_authenticated/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/_authenticated/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
@@ -218,6 +227,7 @@ export interface FileRouteTypes {
     | '/gestao'
     | '/recrutamento'
     | '/c/$token'
+    | '/disc/$token'
     | '/candidatos/$id'
     | '/gestao/absenteismo'
     | '/gestao/pipeline'
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/recrutamento'
     | '/c/$token'
+    | '/disc/$token'
     | '/candidatos/$id'
     | '/gestao/absenteismo'
     | '/gestao/pipeline'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/_authenticated/gestao'
     | '/_authenticated/recrutamento'
     | '/c/$token'
+    | '/disc/$token'
     | '/_authenticated/candidatos/$id'
     | '/_authenticated/gestao/absenteismo'
     | '/_authenticated/gestao/pipeline'
@@ -278,6 +290,7 @@ export interface RootRouteChildren {
   PortalRoute: typeof PortalRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   CTokenRoute: typeof CTokenRoute
+  DiscTokenRoute: typeof DiscTokenRoute
   ApiConsentReceiptIdRoute: typeof ApiConsentReceiptIdRoute
   ApiPublicHooksPurgeCandidatesRoute: typeof ApiPublicHooksPurgeCandidatesRoute
   ApiPublicHooksPurgeTrashRoute: typeof ApiPublicHooksPurgeTrashRoute
@@ -360,6 +373,13 @@ declare module '@tanstack/react-router' {
       path: '/c/$token'
       fullPath: '/c/$token'
       preLoaderRoute: typeof CTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/disc/$token': {
+      id: '/disc/$token'
+      path: '/disc/$token'
+      fullPath: '/disc/$token'
+      preLoaderRoute: typeof DiscTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/candidatos/': {
@@ -476,6 +496,7 @@ const rootRouteChildren: RootRouteChildren = {
   PortalRoute: PortalRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   CTokenRoute: CTokenRoute,
+  DiscTokenRoute: DiscTokenRoute,
   ApiConsentReceiptIdRoute: ApiConsentReceiptIdRoute,
   ApiPublicHooksPurgeCandidatesRoute: ApiPublicHooksPurgeCandidatesRoute,
   ApiPublicHooksPurgeTrashRoute: ApiPublicHooksPurgeTrashRoute,
