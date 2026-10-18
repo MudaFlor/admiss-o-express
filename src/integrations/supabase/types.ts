@@ -328,6 +328,72 @@ export type Database = {
           },
         ]
       }
+      disc_assessments: {
+        Row: {
+          answers: Json
+          candidate_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          employee_id: string | null
+          id: string
+          phone: string | null
+          profile: string | null
+          respondent_name: string
+          scores: Json | null
+          status: string
+          token: string
+          token_expires_at: string
+        }
+        Insert: {
+          answers?: Json
+          candidate_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          employee_id?: string | null
+          id?: string
+          phone?: string | null
+          profile?: string | null
+          respondent_name: string
+          scores?: Json | null
+          status?: string
+          token?: string
+          token_expires_at?: string
+        }
+        Update: {
+          answers?: Json
+          candidate_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          employee_id?: string | null
+          id?: string
+          phone?: string | null
+          profile?: string | null
+          respondent_name?: string
+          scores?: Json | null
+          status?: string
+          token?: string
+          token_expires_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disc_assessments_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disc_assessments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_requirements: {
         Row: {
           company_id: string | null

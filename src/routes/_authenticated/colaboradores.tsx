@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search, UserPlus, Users } from "lucide-react";
+import { Brain, Plus, Search, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DiscCard } from "@/components/DiscCard";
 import { createEmployee, listEmployees } from "@/lib/management.functions";
 import { listCandidates } from "@/lib/candidates.functions";
 
@@ -221,16 +222,17 @@ function ColaboradoresPage() {
                 <TableHead>Departamento</TableHead>
                 <TableHead>Admissão</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Perfil DISC</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {q.isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">Carregando…</TableCell>
+                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">Carregando…</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                     <div className="flex flex-col items-center gap-2 py-6">
                       <Users className="h-6 w-6 text-muted-foreground/60" />
                       Nenhum colaborador ainda. Importe um candidato aprovado ou cadastre manualmente.
@@ -254,6 +256,20 @@ function ColaboradoresPage() {
                           Ativo
                         </span>
                       )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline"><Brain className="mr-1 h-3 w-3" /> DISC</Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+                          <DialogHeader>
+                            <DialogTitle>{c.full_name}</DialogTitle>
+                            <DialogDescription>Envie o questionário e veja o histórico de perfis.</DialogDescription>
+                          </DialogHeader>
+                          <DiscCard employeeId={c.id} name={c.full_name} />
+                        </DialogContent>
+                      </Dialog>
                     </TableCell>
                   </TableRow>
                 ))

@@ -18,7 +18,7 @@ export type AuditAction =
   | "rotate_token"
   | "revoke_token"
   | "send_reminder"
-  | "view_document";
+  | "view_document" | "create_disc";
 
 export async function logAudit(params: {
   actor_user_id: string;
