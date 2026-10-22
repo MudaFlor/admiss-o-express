@@ -194,11 +194,64 @@ const createEmployeeSchema = z.object({
   candidate_id: z.string().uuid().optional(),
 });
 
+function str(v: unknown): string | null {
+  if (v == null) return null;
+  if (typeof v === "string") return v.trim() || null;
+  if (typeof v === "number") return String(v);
+  if (typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    const parts = [o.logradouro ?? o.rua, o.numero, o.complemento, o.bairro, o.cidade, o.uf ?? o.estado, o.cep]
+      .filter((x) => typeof x === "string" && x.trim());
+    return parts.length ? parts.join(", ") : null;
+  }
+  return null;
+}
+function isoDate(v: unknown): string | null {
+  const s = str(v);
+  if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
+}
+
 export const createEmployee = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => createEmployeeSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    // Cópia inicial (snapshot) dos dados do candidato aprovado; depois o cadastro é independente.
+    let snap: Record<string, unknown> = {};
+    if (data.candidate_id) {
+      const { data: c, error: ce } = await supabase
+        .from("candidates")
+        .select("full_name, cpf, email, phone, position, sexo, estado_civil, form_data")
+        .eq("id", data.candidate_id)
+        .maybeSingle();
+      if (ce) fail(ce);
+      if (c) {
+        const fd = (c.form_data ?? {}) as Record<string, unknown>;
+        const pr = (fd.perfil_recrutamento ?? {}) as Record<string, unknown>;
+        snap = {
+          cpf: c.cpf ?? str(fd.cpf),
+          rg: str(fd.rg),
+          birth_date: isoDate(fd.data_nascimento) ?? isoDate(pr.data_nascimento),
+          email: c.email ?? str(fd.email),
+          phone: c.phone ?? str(fd.telefone),
+          sexo: c.sexo,
+          estado_civil: c.estado_civil,
+          address: str(fd.endereco) ?? str(pr.endereco),
+          pis: str(fd.pis) ?? str(fd.pis_pasep),
+          ctps: str(fd.ctps) ?? str(fd.ctps_numero),
+          profile_data: {
+            nome_mae: str(fd.nome_mae),
+            nome_pai: str(fd.nome_pai),
+            local_nascimento: str(fd.local_nascimento),
+            rg_emissao: str(fd.rg_emissao),
+            importado_de_candidato_em: new Date().toISOString(),
+          },
+        };
+      }
+    }
     const { error, data: row } = await supabase
       .from("employees")
       .insert({
@@ -208,11 +261,136 @@ export const createEmployee = createServerFn({ method: "POST" })
         department: data.department || null,
         admission_date: data.admission_date,
         candidate_id: data.candidate_id ?? null,
+        ...snap,
       })
       .select("id")
       .single();
     if (error) fail(error);
+    if (data.candidate_id) {
+      const { data: docs } = await supabase
+        .from("documents")
+        .select("type, label, storage_path")
+        .eq("candidate_id", data.candidate_id)
+        .is("deleted_at", null);
+      if (docs?.length) {
+        await supabase.from("employee_documents").insert(
+          docs.map((d) => ({ employee_id: row.id, type: d.type, label: d.label, storage_path: d.storage_path, source: "admissao" })),
+        );
+      }
+    }
+    await supabase.from("employee_history").insert({
+      employee_id: row.id,
+      kind: "admissao",
+      description: data.candidate_id
+        ? `Admitido a partir do recrutamento (dados e ${""}documentos copiados).`
+        : "Cadastro manual de colaborador.",
+      actor_user_id: userId,
+    });
     return row;
+  });
+
+export const getEmployee = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const [e, h, d] = await Promise.all([
+      supabase.from("employees").select("*").eq("id", data.id).maybeSingle(),
+      supabase.from("employee_history").select("*").eq("employee_id", data.id).order("created_at", { ascending: false }),
+      supabase.from("employee_documents").select("*").eq("employee_id", data.id).order("created_at", { ascending: false }),
+    ]);
+    if (e.error) fail(e.error);
+    if (!e.data) throw new Error("Colaborador não encontrado");
+    return { employee: e.data, history: h.data ?? [], documents: d.data ?? [] };
+  });
+
+const EDITABLE = [
+  "full_name", "position", "department", "admission_date", "cpf", "rg", "birth_date", "email", "phone",
+  "sexo", "estado_civil", "address", "pis", "ctps", "salary", "contract_type", "work_schedule", "bank_info", "notes",
+] as const;
+const FIELD_LABELS: Record<string, string> = {
+  full_name: "Nome", position: "Cargo", department: "Departamento", admission_date: "Admissão", cpf: "CPF", rg: "RG",
+  birth_date: "Nascimento", email: "E-mail", phone: "Telefone", sexo: "Sexo", estado_civil: "Estado civil",
+  address: "Endereço", pis: "PIS", ctps: "CTPS", salary: "Salário", contract_type: "Contrato",
+  work_schedule: "Jornada", bank_info: "Dados bancários", notes: "Observações",
+};
+
+export const updateEmployeeProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      id: z.string().uuid(),
+      fields: z.record(z.string(), z.union([z.string().max(2000), z.number(), z.null()])),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: cur, error: ce } = await supabase.from("employees").select("*").eq("id", data.id).maybeSingle();
+    if (ce) fail(ce);
+    if (!cur) throw new Error("Colaborador não encontrado");
+    const patch: Record<string, unknown> = {};
+    const changes: Record<string, { de: unknown; para: unknown }> = {};
+    for (const k of EDITABLE) {
+      if (!(k in data.fields)) continue;
+      let v = data.fields[k];
+      if (typeof v === "string") v = v.trim() || null;
+      if (k === "salary" && v != null) {
+        const n = Number(String(v).replace(/\./g, "").replace(",", "."));
+        v = Number.isFinite(n) ? n : null;
+      }
+      if (k === "full_name" && !v) throw new Error("Nome é obrigatório");
+      if (k === "admission_date" && !v) throw new Error("Data de admissão é obrigatória");
+      const old = (cur as Record<string, unknown>)[k] ?? null;
+      if (String(old ?? "") !== String(v ?? "")) {
+        patch[k] = v;
+        changes[FIELD_LABELS[k] ?? k] = { de: old, para: v };
+      }
+    }
+    if (!Object.keys(patch).length) return { ok: true, changed: 0 };
+    const { error } = await supabase.from("employees").update(patch).eq("id", data.id);
+    if (error) fail(error);
+    await supabase.from("employee_history").insert({
+      employee_id: data.id,
+      kind: "atualizacao",
+      description: `Atualização: ${Object.keys(changes).join(", ")}`,
+      changes,
+      actor_user_id: userId,
+    });
+    return { ok: true, changed: Object.keys(patch).length };
+  });
+
+export const addEmployeeNote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      id: z.string().uuid(),
+      kind: z.enum(["anotacao", "promocao", "alteracao_salarial", "ferias", "advertencia", "outro"]),
+      description: z.string().trim().min(2).max(1000),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("employee_history").insert({
+      employee_id: data.id, kind: data.kind, description: data.description, actor_user_id: context.userId,
+    });
+    if (error) fail(error);
+    return { ok: true };
+  });
+
+export const getEmployeeDocumentLink = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid(), download: z.boolean().default(false) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: doc, error } = await context.supabase
+      .from("employee_documents").select("id, type, storage_path").eq("id", data.id).maybeSingle();
+    if (error) fail(error);
+    if (!doc) throw new Error("Documento não encontrado");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const ext = doc.storage_path.split(".").pop() ?? "pdf";
+    const { data: s } = await supabaseAdmin.storage
+      .from("candidate-documents")
+      .createSignedUrl(doc.storage_path, 5 * 60, data.download ? { download: `${doc.type}.${ext}` } : undefined);
+    if (!s?.signedUrl) throw new Error("Não foi possível gerar o link do documento");
+    return { url: s.signedUrl };
   });
 
 const admissionSchema = z.object({
