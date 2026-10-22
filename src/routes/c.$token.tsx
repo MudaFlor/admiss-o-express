@@ -400,7 +400,7 @@ function CandidatePage() {
       }
       qc.invalidateQueries({ queryKey: ["c", token] });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro no upload");
+      toast.error(err instanceof Error ? err.message : "Erro no upload", { duration: 10000 });
     } finally {
       setUploading(null);
     }

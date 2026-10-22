@@ -5,6 +5,7 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import { runOcr } from "@/lib/ocr/provider.server";
+import { isIllegible, ILLEGIBLE_MESSAGE } from "@/lib/ocr/legibility";
 import { parseResumeFromStorage } from "@/lib/ai/resume-parser.server";
 import { LGPD_TERMS_TEXT, LGPD_TERMS_VERSION, hashTerms } from "@/lib/lgpd/terms";
 import { assertRateLimitPersisted } from "@/lib/rate-limit.server";
@@ -205,7 +206,16 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
     await assertUploadedFileIsSafe(data.storage_path);
 
     // Run OCR (no-op para tipos sem extração)
-    const ocr = await runOcr(data.type, data.storage_path);
+    let ocr: Awaited<ReturnType<typeof runOcr>>;
+    try {
+      ocr = await runOcr(data.type, data.storage_path);
+    } catch {
+      throw new Error("Não foi possível analisar o documento agora, tente novamente em instantes.");
+    }
+    if (isIllegible(data.type, ocr)) {
+      await supabaseAdmin.storage.from("candidate-documents").remove([data.storage_path]);
+      throw new Error(ILLEGIBLE_MESSAGE);
+    }
 
     // Tipos single-file: substitui o anterior. Multi-file: mantém histórico.
     if (!MULTI_FILE_TYPES.has(data.type)) {
