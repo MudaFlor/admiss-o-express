@@ -347,13 +347,13 @@ export const updateEmployeeProfile = createServerFn({ method: "POST" })
       }
     }
     if (!Object.keys(patch).length) return { ok: true, changed: 0 };
-    const { error } = await supabase.from("employees").update(patch).eq("id", data.id);
+    const { error } = await supabase.from("employees").update(patch as never).eq("id", data.id);
     if (error) fail(error);
     await supabase.from("employee_history").insert({
       employee_id: data.id,
       kind: "atualizacao",
       description: `Atualização: ${Object.keys(changes).join(", ")}`,
-      changes,
+      changes: changes as never,
       actor_user_id: userId,
     });
     return { ok: true, changed: Object.keys(patch).length };

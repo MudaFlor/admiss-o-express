@@ -23,6 +23,7 @@ import { Route as DiscTokenRouteImport } from './routes/disc.$token'
 import { Route as AuthenticatedCandidatosIndexRouteImport } from './routes/_authenticated/candidatos.index'
 import { Route as AuthenticatedCandidatosIdRouteImport } from './routes/_authenticated/candidatos.$id'
 import { Route as AuthenticatedColaboradoresIndexRouteImport } from './routes/_authenticated/colaboradores.index'
+import { Route as AuthenticatedColaboradoresIdRouteImport } from './routes/_authenticated/colaboradores.$id'
 import { Route as AuthenticatedGestaoIndexRouteImport } from './routes/_authenticated/gestao.index'
 import { Route as AuthenticatedGestaoAbsenteismoRouteImport } from './routes/_authenticated/gestao.absenteismo'
 import { Route as AuthenticatedGestaoPipelineRouteImport } from './routes/_authenticated/gestao.pipeline'
@@ -105,6 +106,12 @@ const AuthenticatedColaboradoresIndexRoute =
     path: '/colaboradores/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedColaboradoresIdRoute =
+  AuthenticatedColaboradoresIdRouteImport.update({
+    id: '/colaboradores/$id',
+    path: '/colaboradores/$id',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedGestaoIndexRoute =
   AuthenticatedGestaoIndexRouteImport.update({
     id: '/',
@@ -159,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/c/$token': typeof CTokenRoute
   '/disc/$token': typeof DiscTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
+  '/colaboradores/$id': typeof AuthenticatedColaboradoresIdRoute
   '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
   '/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
@@ -180,6 +188,7 @@ export interface FileRoutesByTo {
   '/c/$token': typeof CTokenRoute
   '/disc/$token': typeof DiscTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
+  '/colaboradores/$id': typeof AuthenticatedColaboradoresIdRoute
   '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
   '/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
@@ -204,6 +213,7 @@ export interface FileRoutesById {
   '/c/$token': typeof CTokenRoute
   '/disc/$token': typeof DiscTokenRoute
   '/_authenticated/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
+  '/_authenticated/colaboradores/$id': typeof AuthenticatedColaboradoresIdRoute
   '/_authenticated/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/_authenticated/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
   '/_authenticated/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
@@ -228,6 +238,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/disc/$token'
     | '/candidatos/$id'
+    | '/colaboradores/$id'
     | '/gestao/absenteismo'
     | '/gestao/pipeline'
     | '/gestao/rotatividade'
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/disc/$token'
     | '/candidatos/$id'
+    | '/colaboradores/$id'
     | '/gestao/absenteismo'
     | '/gestao/pipeline'
     | '/gestao/rotatividade'
@@ -272,6 +284,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/disc/$token'
     | '/_authenticated/candidatos/$id'
+    | '/_authenticated/colaboradores/$id'
     | '/_authenticated/gestao/absenteismo'
     | '/_authenticated/gestao/pipeline'
     | '/_authenticated/gestao/rotatividade'
@@ -396,6 +409,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedColaboradoresIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/colaboradores/$id': {
+      id: '/_authenticated/colaboradores/$id'
+      path: '/colaboradores/$id'
+      fullPath: '/colaboradores/$id'
+      preLoaderRoute: typeof AuthenticatedColaboradoresIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/gestao/': {
       id: '/_authenticated/gestao/'
       path: '/'
@@ -471,6 +491,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedGestaoRoute: typeof AuthenticatedGestaoRouteWithChildren
   AuthenticatedRecrutamentoRoute: typeof AuthenticatedRecrutamentoRoute
   AuthenticatedCandidatosIdRoute: typeof AuthenticatedCandidatosIdRoute
+  AuthenticatedColaboradoresIdRoute: typeof AuthenticatedColaboradoresIdRoute
   AuthenticatedCandidatosIndexRoute: typeof AuthenticatedCandidatosIndexRoute
   AuthenticatedColaboradoresIndexRoute: typeof AuthenticatedColaboradoresIndexRoute
 }
@@ -481,6 +502,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedGestaoRoute: AuthenticatedGestaoRouteWithChildren,
   AuthenticatedRecrutamentoRoute: AuthenticatedRecrutamentoRoute,
   AuthenticatedCandidatosIdRoute: AuthenticatedCandidatosIdRoute,
+  AuthenticatedColaboradoresIdRoute: AuthenticatedColaboradoresIdRoute,
   AuthenticatedCandidatosIndexRoute: AuthenticatedCandidatosIndexRoute,
   AuthenticatedColaboradoresIndexRoute: AuthenticatedColaboradoresIndexRoute,
 }
