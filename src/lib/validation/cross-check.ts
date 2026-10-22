@@ -226,3 +226,22 @@ export function extractDeclaredFromFormData(formData: Record<string, unknown> | 
     nome_mae: pick("nome_mae"),
   };
 }
+// Campos de referência obrigatórios para envio dos documentos pelo candidato.
+export const REQUIRED_REFERENCE_FIELDS = ["full_name", "cpf", "data_nascimento", "nome_mae"] as const;
+
+// Retorna, por campo, a mensagem de erro que bloqueia o envio.
+export function blockingIssues(
+  result: CrossCheckResult,
+  declared: CrossCheckInput["declared"],
+): Record<string, string> {
+  const issues: Record<string, string> = {};
+  for (const campo of REQUIRED_REFERENCE_FIELDS) {
+    if (!getDeclared(campo, declared)) issues[campo] = "Campo obrigatório não preenchido.";
+  }
+  for (const f of result.fields) {
+    if (f.status !== "divergente" || issues[f.campo]) continue;
+    const docs = f.valores.filter((v) => v.origem !== "declarado").map((v) => v.origem_label);
+    issues[f.campo] = `Dados incorretos: diverge de ${docs.join(", ") || "outro documento"}. Corrija ou reenvie o documento.`;
+  }
+  return issues;
+}

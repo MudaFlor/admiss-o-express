@@ -30,7 +30,7 @@ import {
   upsertDependent,
   getRequiredDocuments,
 } from "@/lib/candidate-public.functions";
-import { crossCheckCandidate, extractDeclaredFromFormData } from "@/lib/validation/cross-check";
+import { crossCheckCandidate, extractDeclaredFromFormData, blockingIssues } from "@/lib/validation/cross-check";
 import { AlertTriangle } from "lucide-react";
 import { LGPD_TERMS_TEXT, LGPD_TERMS_VERSION } from "@/lib/lgpd/terms";
 import { CORRECTION_FIELD_LABEL } from "@/lib/corrections";
@@ -277,14 +277,17 @@ function CandidatePage() {
   const totalSteps = 2;
 
   // ---- Validação cruzada (UI) ----
+  const declaredData = extractDeclaredFromFormData(form as unknown as Record<string, unknown>, {
+    full_name: candidate.full_name,
+    cpf: candidate.cpf,
+  });
   const crossCheck = crossCheckCandidate({
-    declared: extractDeclaredFromFormData(form as unknown as Record<string, unknown>, {
-      full_name: candidate.full_name,
-      cpf: candidate.cpf,
-    }),
+    declared: declaredData,
     documents: documents.map((d) => ({ type: d.type, dependent_id: d.dependent_id, ocr_data: (d as { ocr_data?: unknown }).ocr_data })),
   });
   const hasDivergence = crossCheck.summary.divergente > 0;
+  const issues = blockingIssues(crossCheck, declaredData);
+  const issueCount = Object.keys(issues).length;
 
   function setField<K extends keyof FormState>(k: K, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -447,6 +450,11 @@ function CandidatePage() {
   }
 
   async function handleSubmit() {
+    if (Object.keys(issues).length > 0) {
+      setReviewing(true);
+      toast.error("Dados incorretos. Corrija os campos destacados em vermelho antes de enviar.", { duration: 10000 });
+      return;
+    }
     try {
       await submit({ data: {
         token,
@@ -605,18 +613,18 @@ function CandidatePage() {
               </div>
 
               <Section title="Dados pessoais">
-                <SmartField label="Nome completo" k="full_name" form={form} setField={setField} autoFilled={autoFilled} />
-                <SmartField label="CPF" k="cpf" form={form} setField={setField} autoFilled={autoFilled} />
+                <SmartField label="Nome completo" k="full_name" form={form} setField={setField} autoFilled={autoFilled} error={issues["full_name"]} />
+                <SmartField label="CPF" k="cpf" form={form} setField={setField} autoFilled={autoFilled} error={issues["cpf"]} />
                 <Grid2>
                   <SmartField label="RG" k="rg" form={form} setField={setField} autoFilled={autoFilled} />
                   <SmartField label="Data de emissao" k="rg_emissao" form={form} setField={setField} autoFilled={autoFilled} placeholder="DD/MM/AAAA" />
                 </Grid2>
                 <Grid2>
-                  <SmartField label="Data de nascimento" k="data_nascimento" form={form} setField={setField} autoFilled={autoFilled} placeholder="DD/MM/AAAA" />
+                  <SmartField label="Data de nascimento" k="data_nascimento" form={form} setField={setField} autoFilled={autoFilled} error={issues["data_nascimento"]} placeholder="DD/MM/AAAA" />
                   <SmartField label="Local de nascimento" k="local_nascimento" form={form} setField={setField} autoFilled={autoFilled} />
                 </Grid2>
-                <SmartField label="Nome do pai" k="nome_pai" form={form} setField={setField} autoFilled={autoFilled} />
-                <SmartField label="Nome da mae" k="nome_mae" form={form} setField={setField} autoFilled={autoFilled} />
+                <SmartField label="Nome do pai" k="nome_pai" form={form} setField={setField} autoFilled={autoFilled} error={issues["nome_pai"]} />
+                <SmartField label="Nome da mae" k="nome_mae" form={form} setField={setField} autoFilled={autoFilled} error={issues["nome_mae"]} />
               </Section>
 
               <Section title="Contato">
@@ -797,6 +805,7 @@ function CandidatePage() {
                 <div className="space-y-2">
                   {REVIEW_FIELDS.map(([k, label]) => {
                     const fromOcr = autoFilled.has(k);
+                    const err = issues[k as string];
                     return (
                       <div key={k} className="space-y-0.5">
                         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -804,10 +813,11 @@ function CandidatePage() {
                           {fromOcr && <span className="rounded bg-primary/10 px-1 text-[10px] text-primary">lido do documento</span>}
                         </div>
                         {reviewing ? (
-                          <Input value={form[k]} onChange={(e) => setField(k, e.target.value)} className="h-9" />
+                          <Input value={form[k]} onChange={(e) => setField(k, e.target.value)} aria-invalid={!!err} className={err ? "h-9 border-destructive bg-destructive/5" : "h-9"} />
                         ) : (
-                          <div className="text-sm">{form[k] || <span className="text-muted-foreground">—</span>}</div>
+                          <div className={err ? "rounded border border-destructive bg-destructive/5 px-2 py-1 text-sm" : "text-sm"}>{form[k] || <span className="text-muted-foreground">—</span>}</div>
                         )}
+                        {err && <p className="text-[11px] font-medium text-destructive">{err}</p>}
                       </div>
                     );
                   })}
@@ -815,7 +825,16 @@ function CandidatePage() {
               </CardContent>
             </Card>
 
-            <Button className="w-full" disabled={!allUploaded} onClick={handleSubmit}>
+            {issueCount > 0 && (
+              <div role="alert" className="flex items-start gap-2 rounded-md border border-destructive bg-destructive/10 p-3 text-xs text-destructive">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div>
+                  <div className="font-semibold">Dados incorretos</div>
+                  Há {issueCount} campo(s) em vermelho não preenchido(s) ou divergente(s) dos documentos. Corrija antes de enviar.
+                </div>
+              </div>
+            )}
+            <Button className="w-full" disabled={!allUploaded || issueCount > 0} onClick={handleSubmit}>
               Enviar documentos
             </Button>
           </>
@@ -872,9 +891,9 @@ function Grid2({ children }: { children: React.ReactNode }) {
 
 function SmartField<K extends keyof FormState>(props: {
   label: string; k: K; form: FormState; setField: (k: K, v: string) => void;
-  autoFilled: Set<keyof FormState>; type?: string; placeholder?: string;
+  autoFilled: Set<keyof FormState>; type?: string; placeholder?: string; error?: string;
 }) {
-  const { label, k, form, setField, autoFilled, type, placeholder } = props;
+  const { label, k, form, setField, autoFilled, type, placeholder, error } = props;
   const filled = autoFilled.has(k);
   return (
     <div className="space-y-1.5">
@@ -885,8 +904,10 @@ function SmartField<K extends keyof FormState>(props: {
       <Input
         id={k} name={k} type={type} placeholder={placeholder}
         value={form[k]} onChange={(e) => setField(k, e.target.value)}
-        className={filled ? "border-primary/40 bg-primary/5" : ""}
+        aria-invalid={!!error}
+        className={error ? "border-destructive bg-destructive/5" : filled ? "border-primary/40 bg-primary/5" : ""}
       />
+      {error && <p className="text-[11px] font-medium text-destructive">{error}</p>}
     </div>
   );
 }
