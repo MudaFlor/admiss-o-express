@@ -18,9 +18,9 @@ export interface OcrResult {
 
 // Campos esperados por tipo de documento. Tipos com lista vazia não passam por OCR.
 const FIELDS_BY_TYPE: Record<DocumentType, string[]> = {
-  rg: ["nome", "rg", "cpf", "orgao_emissor", "data_nascimento", "naturalidade", "nome_mae", "nome_pai", "data_emissao", "validade"],
-  cpf: ["nome", "cpf", "data_nascimento"],
-  cnh: ["nome", "cpf", "numero_registro", "categoria", "data_emissao", "validade", "data_nascimento"],
+  rg: ["nome", "rg", "cpf", "orgao_emissor", "data_emissao", "sexo", "data_nascimento", "nacionalidade", "naturalidade", "nome_mae", "nome_pai", "validade"],
+  cpf: ["nome", "cpf", "data_emissao", "sexo", "data_nascimento", "nacionalidade"],
+  cnh: ["nome", "cpf", "numero_registro", "categoria", "data_emissao", "sexo", "data_nascimento", "nacionalidade", "validade"],
   comprovante_residencia: ["titular", "logradouro", "numero", "complemento", "bairro", "cidade", "uf", "cep", "emissor", "data_emissao"],
   titulo_eleitor: ["nome", "inscricao", "zona", "secao", "data_nascimento"],
   certidao: ["nome", "nome_pai", "nome_mae", "data_nascimento", "estado_civil", "conjuge", "registro", "livro", "folha", "termo"],
@@ -137,6 +137,8 @@ Observações importantes:
 - Documentos brasileiros podem aparecer em formatos diversos. Identifique o formato e extraia o que estiver visível.
 - "FILIAÇÃO" contém normalmente nome do pai e nome da mãe (em linhas separadas ou separados por vírgula). Extraia cada um quando claramente identificável; do contrário, retorne null.
 - Ignore textos de marca d'água ou rótulos como "MODELO DE TESTE" / "ESPÉCIME" — não são dados do titular.
+- "data_emissao" = data de expedição/emissão do documento (rótulos "DATA DE EXPEDIÇÃO", "EMISSÃO", "DATA EMISSÃO"). Não confunda com nascimento ou validade.
+- "sexo" = conteúdo do campo SEXO (M/F). "nacionalidade" = campo NACIONALIDADE (ex.: BRASILEIRA). Só preencha se o rótulo estiver visível.
 - Para cada campo, retorne também "confianca" entre 0 e 1 indicando o quão certo está da extração. Use valor baixo (<0.9) sempre que houver qualquer ambiguidade, borrão ou caractere duvidoso.
 Siga rigorosamente as regras: sem suposições, sem invenções. Para cada campo, retorne null se não houver evidência visível e legível.`;
 }
@@ -148,6 +150,12 @@ function isValidDateBR(s: string): boolean {
 function validateField(field: string, value: string): string | null {
   const v = value.trim();
   if (!v) return null;
+  if (field === "sexo") {
+    const s = v.toUpperCase();
+    if (s === "M" || s.startsWith("MASC")) return "masculino";
+    if (s === "F" || s.startsWith("FEM")) return "feminino";
+    return null;
+  }
   if (field === "cpf") {
     const n = normalizeCpf(v);
     return isValidCpf(n) ? v : null;
