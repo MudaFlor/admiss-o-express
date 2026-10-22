@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Brain, Plus, Search, UserPlus, Users } from "lucide-react";
+import { Brain, FolderOpen, Pencil, Plus, Search, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DiscCard } from "@/components/DiscCard";
-import { createEmployee, listEmployees } from "@/lib/management.functions";
+import { createEmployee, listEmployees, updateEmployeeAdmission } from "@/lib/management.functions";
 import { listCandidates } from "@/lib/candidates.functions";
 
 export const Route = createFileRoute("/_authenticated/colaboradores")({
@@ -31,7 +31,10 @@ function ColaboradoresPage() {
   const list = useServerFn(listEmployees);
   const listCands = useServerFn(listCandidates);
   const create = useServerFn(createEmployee);
+  const updAdm = useServerFn(updateEmployeeAdmission);
   const qc = useQueryClient();
+  const today = new Date().toISOString().slice(0, 10);
+  const [importDate, setImportDate] = useState(today);
 
   const [search, setSearch] = useState("");
   const [manualOpen, setManualOpen] = useState(false);
@@ -78,11 +81,11 @@ function ColaboradoresPage() {
         data: {
           full_name: c.full_name,
           position: c.position ?? "",
-          admission_date: new Date().toISOString().slice(0, 10),
+          admission_date: importDate,
           candidate_id: c.id,
         },
       });
-      toast.success(`${c.full_name} importado como colaborador.`);
+      toast.success(`${c.full_name} importado com documentos, termo LGPD e histórico.`);
       qc.invalidateQueries({ queryKey: ["employees"] });
       qc.invalidateQueries({ queryKey: ["candidates"] });
     } catch (err) {
@@ -114,9 +117,13 @@ function ColaboradoresPage() {
               <DialogHeader>
                 <DialogTitle>Importar candidato aprovado</DialogTitle>
                 <DialogDescription>
-                  Selecione um candidato aprovado para virar colaborador com a data de admissão de hoje.
+                  Defina a data de admissão e importe. Documentos, termo LGPD, DISC e histórico seguem para a pasta do colaborador.
                 </DialogDescription>
               </DialogHeader>
+              <div className="space-y-1.5">
+                <Label htmlFor="import_date">Data de admissão</Label>
+                <Input id="import_date" type="date" value={importDate} onChange={(e) => setImportDate(e.target.value)} className="max-w-xs" />
+              </div>
               <div className="flex items-center gap-2">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <Input
@@ -222,7 +229,7 @@ function ColaboradoresPage() {
                 <TableHead>Departamento</TableHead>
                 <TableHead>Admissão</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Perfil DISC</TableHead>
+                <TableHead className="text-right">Pasta / DISC</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -245,7 +252,20 @@ function ColaboradoresPage() {
                     <TableCell className="font-medium">{c.full_name}</TableCell>
                     <TableCell>{c.position ?? "—"}</TableCell>
                     <TableCell>{c.department ?? "—"}</TableCell>
-                    <TableCell>{new Date(c.admission_date).toLocaleDateString("pt-BR")}</TableCell>
+                    <TableCell>
+                      <AdmissionEditor
+                        value={c.admission_date}
+                        onSave={async (d) => {
+                          try {
+                            await updAdm({ data: { employee_id: c.id, admission_date: d } });
+                            toast.success("Data de admissão atualizada.");
+                            qc.invalidateQueries({ queryKey: ["employees"] });
+                          } catch (err) {
+                            toast.error(err instanceof Error ? err.message : "Erro ao salvar");
+                          }
+                        }}
+                      />
+                    </TableCell>
                     <TableCell>
                       {c.termination_date ? (
                         <span className="inline-flex items-center rounded-full border border-accent/40 px-2 py-0.5 text-[11px] text-accent">
@@ -257,7 +277,14 @@ function ColaboradoresPage() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="space-x-1 whitespace-nowrap text-right">
+                      {c.candidate_id && (
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to="/candidatos/$id" params={{ id: c.candidate_id }}>
+                            <FolderOpen className="mr-1 h-3 w-3" /> Pasta
+                          </Link>
+                        </Button>
+                      )}
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button size="sm" variant="outline"><Brain className="mr-1 h-3 w-3" /> DISC</Button>
@@ -278,6 +305,24 @@ function ColaboradoresPage() {
           </Table>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+function AdmissionEditor({ value, onSave }: { value: string; onSave: (d: string) => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [v, setV] = useState(value.slice(0, 10));
+  if (!editing)
+    return (
+      <button type="button" className="inline-flex items-center gap-1 hover:text-primary" onClick={() => setEditing(true)} title="Editar data de admissão">
+        {new Date(value.slice(0, 10) + "T12:00:00").toLocaleDateString("pt-BR")}
+        <Pencil className="h-3 w-3" />
+      </button>
+    );
+  return (
+    <div className="flex items-center gap-1">
+      <Input type="date" value={v} onChange={(e) => setV(e.target.value)} className="h-8 w-36" />
+      <Button size="sm" onClick={async () => { await onSave(v); setEditing(false); }}>OK</Button>
+      <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>×</Button>
     </div>
   );
 }
