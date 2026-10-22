@@ -29,6 +29,13 @@
       "when": 1792331970996,
       "tag": "0003_disc_assessments",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792675592799,
+      "tag": "0004_employee_independent_record",
+      "breakpoints": true
     }
   ]
 }
