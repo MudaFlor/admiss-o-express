@@ -14,7 +14,6 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as AuthenticatedColaboradoresRouteImport } from './routes/_authenticated/colaboradores'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated/gestao'
@@ -23,6 +22,8 @@ import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as DiscTokenRouteImport } from './routes/disc.$token'
 import { Route as AuthenticatedCandidatosIndexRouteImport } from './routes/_authenticated/candidatos.index'
 import { Route as AuthenticatedCandidatosIdRouteImport } from './routes/_authenticated/candidatos.$id'
+import { Route as AuthenticatedColaboradoresIndexRouteImport } from './routes/_authenticated/colaboradores.index'
+import { Route as AuthenticatedColaboradoresIdRouteImport } from './routes/_authenticated/colaboradores.$id'
 import { Route as AuthenticatedGestaoIndexRouteImport } from './routes/_authenticated/gestao.index'
 import { Route as AuthenticatedGestaoAbsenteismoRouteImport } from './routes/_authenticated/gestao.absenteismo'
 import { Route as AuthenticatedGestaoPipelineRouteImport } from './routes/_authenticated/gestao.pipeline'
@@ -55,12 +56,6 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedColaboradoresRoute =
-  AuthenticatedColaboradoresRouteImport.update({
-    id: '/colaboradores',
-    path: '/colaboradores',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedConfiguracoesRoute =
   AuthenticatedConfiguracoesRouteImport.update({
     id: '/configuracoes',
@@ -103,6 +98,18 @@ const AuthenticatedCandidatosIdRoute =
   AuthenticatedCandidatosIdRouteImport.update({
     id: '/candidatos/$id',
     path: '/candidatos/$id',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedColaboradoresIndexRoute =
+  AuthenticatedColaboradoresIndexRouteImport.update({
+    id: '/colaboradores/',
+    path: '/colaboradores/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedColaboradoresIdRoute =
+  AuthenticatedColaboradoresIdRouteImport.update({
+    id: '/colaboradores/$id',
+    path: '/colaboradores/$id',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedGestaoIndexRoute =
@@ -152,7 +159,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/colaboradores': typeof AuthenticatedColaboradoresRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/gestao': typeof AuthenticatedGestaoRouteWithChildren
@@ -160,11 +166,13 @@ export interface FileRoutesByFullPath {
   '/c/$token': typeof CTokenRoute
   '/disc/$token': typeof DiscTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
+  '/colaboradores/$id': typeof AuthenticatedColaboradoresIdRoute
   '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
   '/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/api/consent-receipt/$id': typeof ApiConsentReceiptIdRoute
   '/candidatos/': typeof AuthenticatedCandidatosIndexRoute
+  '/colaboradores/': typeof AuthenticatedColaboradoresIndexRoute
   '/gestao/': typeof AuthenticatedGestaoIndexRoute
   '/api/public/hooks/purge-candidates': typeof ApiPublicHooksPurgeCandidatesRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
@@ -174,18 +182,19 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/colaboradores': typeof AuthenticatedColaboradoresRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/c/$token': typeof CTokenRoute
   '/disc/$token': typeof DiscTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
+  '/colaboradores/$id': typeof AuthenticatedColaboradoresIdRoute
   '/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
   '/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/api/consent-receipt/$id': typeof ApiConsentReceiptIdRoute
   '/candidatos': typeof AuthenticatedCandidatosIndexRoute
+  '/colaboradores': typeof AuthenticatedColaboradoresIndexRoute
   '/gestao': typeof AuthenticatedGestaoIndexRoute
   '/api/public/hooks/purge-candidates': typeof ApiPublicHooksPurgeCandidatesRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
@@ -197,7 +206,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/_authenticated/colaboradores': typeof AuthenticatedColaboradoresRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/gestao': typeof AuthenticatedGestaoRouteWithChildren
@@ -205,11 +213,13 @@ export interface FileRoutesById {
   '/c/$token': typeof CTokenRoute
   '/disc/$token': typeof DiscTokenRoute
   '/_authenticated/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
+  '/_authenticated/colaboradores/$id': typeof AuthenticatedColaboradoresIdRoute
   '/_authenticated/gestao/absenteismo': typeof AuthenticatedGestaoAbsenteismoRoute
   '/_authenticated/gestao/pipeline': typeof AuthenticatedGestaoPipelineRoute
   '/_authenticated/gestao/rotatividade': typeof AuthenticatedGestaoRotatividadeRoute
   '/api/consent-receipt/$id': typeof ApiConsentReceiptIdRoute
   '/_authenticated/candidatos/': typeof AuthenticatedCandidatosIndexRoute
+  '/_authenticated/colaboradores/': typeof AuthenticatedColaboradoresIndexRoute
   '/_authenticated/gestao/': typeof AuthenticatedGestaoIndexRoute
   '/api/public/hooks/purge-candidates': typeof ApiPublicHooksPurgeCandidatesRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
@@ -221,7 +231,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/portal'
     | '/reset-password'
-    | '/colaboradores'
     | '/configuracoes'
     | '/dashboard'
     | '/gestao'
@@ -229,11 +238,13 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/disc/$token'
     | '/candidatos/$id'
+    | '/colaboradores/$id'
     | '/gestao/absenteismo'
     | '/gestao/pipeline'
     | '/gestao/rotatividade'
     | '/api/consent-receipt/$id'
     | '/candidatos/'
+    | '/colaboradores/'
     | '/gestao/'
     | '/api/public/hooks/purge-candidates'
     | '/api/public/hooks/purge-trash'
@@ -243,18 +254,19 @@ export interface FileRouteTypes {
     | '/login'
     | '/portal'
     | '/reset-password'
-    | '/colaboradores'
     | '/configuracoes'
     | '/dashboard'
     | '/recrutamento'
     | '/c/$token'
     | '/disc/$token'
     | '/candidatos/$id'
+    | '/colaboradores/$id'
     | '/gestao/absenteismo'
     | '/gestao/pipeline'
     | '/gestao/rotatividade'
     | '/api/consent-receipt/$id'
     | '/candidatos'
+    | '/colaboradores'
     | '/gestao'
     | '/api/public/hooks/purge-candidates'
     | '/api/public/hooks/purge-trash'
@@ -265,7 +277,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/portal'
     | '/reset-password'
-    | '/_authenticated/colaboradores'
     | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/gestao'
@@ -273,11 +284,13 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/disc/$token'
     | '/_authenticated/candidatos/$id'
+    | '/_authenticated/colaboradores/$id'
     | '/_authenticated/gestao/absenteismo'
     | '/_authenticated/gestao/pipeline'
     | '/_authenticated/gestao/rotatividade'
     | '/api/consent-receipt/$id'
     | '/_authenticated/candidatos/'
+    | '/_authenticated/colaboradores/'
     | '/_authenticated/gestao/'
     | '/api/public/hooks/purge-candidates'
     | '/api/public/hooks/purge-trash'
@@ -333,13 +346,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/colaboradores': {
-      id: '/_authenticated/colaboradores'
-      path: '/colaboradores'
-      fullPath: '/colaboradores'
-      preLoaderRoute: typeof AuthenticatedColaboradoresRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/configuracoes': {
       id: '/_authenticated/configuracoes'
       path: '/configuracoes'
@@ -394,6 +400,20 @@ declare module '@tanstack/react-router' {
       path: '/candidatos/$id'
       fullPath: '/candidatos/$id'
       preLoaderRoute: typeof AuthenticatedCandidatosIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/colaboradores/': {
+      id: '/_authenticated/colaboradores/'
+      path: '/colaboradores'
+      fullPath: '/colaboradores/'
+      preLoaderRoute: typeof AuthenticatedColaboradoresIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/colaboradores/$id': {
+      id: '/_authenticated/colaboradores/$id'
+      path: '/colaboradores/$id'
+      fullPath: '/colaboradores/$id'
+      preLoaderRoute: typeof AuthenticatedColaboradoresIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/gestao/': {
@@ -466,23 +486,25 @@ const AuthenticatedGestaoRouteWithChildren =
   AuthenticatedGestaoRoute._addFileChildren(AuthenticatedGestaoRouteChildren)
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedColaboradoresRoute: typeof AuthenticatedColaboradoresRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedGestaoRoute: typeof AuthenticatedGestaoRouteWithChildren
   AuthenticatedRecrutamentoRoute: typeof AuthenticatedRecrutamentoRoute
   AuthenticatedCandidatosIdRoute: typeof AuthenticatedCandidatosIdRoute
+  AuthenticatedColaboradoresIdRoute: typeof AuthenticatedColaboradoresIdRoute
   AuthenticatedCandidatosIndexRoute: typeof AuthenticatedCandidatosIndexRoute
+  AuthenticatedColaboradoresIndexRoute: typeof AuthenticatedColaboradoresIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedColaboradoresRoute: AuthenticatedColaboradoresRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedGestaoRoute: AuthenticatedGestaoRouteWithChildren,
   AuthenticatedRecrutamentoRoute: AuthenticatedRecrutamentoRoute,
   AuthenticatedCandidatosIdRoute: AuthenticatedCandidatosIdRoute,
+  AuthenticatedColaboradoresIdRoute: AuthenticatedColaboradoresIdRoute,
   AuthenticatedCandidatosIndexRoute: AuthenticatedCandidatosIndexRoute,
+  AuthenticatedColaboradoresIndexRoute: AuthenticatedColaboradoresIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

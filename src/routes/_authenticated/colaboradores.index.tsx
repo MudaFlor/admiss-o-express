@@ -22,7 +22,7 @@ import { DiscCard } from "@/components/DiscCard";
 import { createEmployee, listEmployees, updateEmployeeAdmission } from "@/lib/management.functions";
 import { listCandidates } from "@/lib/candidates.functions";
 
-export const Route = createFileRoute("/_authenticated/colaboradores")({
+export const Route = createFileRoute("/_authenticated/colaboradores/")({
   head: () => ({ meta: [{ title: "Colaboradores — FlowRH" }] }),
   component: ColaboradoresPage,
 });
@@ -85,7 +85,7 @@ function ColaboradoresPage() {
           candidate_id: c.id,
         },
       });
-      toast.success(`${c.full_name} importado com documentos, termo LGPD e histórico.`);
+      toast.success(`${c.full_name} admitido. Dados e documentos copiados para a ficha do colaborador.`);
       qc.invalidateQueries({ queryKey: ["employees"] });
       qc.invalidateQueries({ queryKey: ["candidates"] });
     } catch (err) {
@@ -278,10 +278,10 @@ function ColaboradoresPage() {
                       )}
                     </TableCell>
                     <TableCell className="space-x-1 whitespace-nowrap text-right">
-                      {c.candidate_id && (
+                      {(
                         <Button size="sm" variant="outline" asChild>
-                          <Link to="/candidatos/$id" params={{ id: c.candidate_id }}>
-                            <FolderOpen className="mr-1 h-3 w-3" /> Pasta
+                          <Link to="/colaboradores/$id" params={{ id: c.id }}>
+                            <FolderOpen className="mr-1 h-3 w-3" /> Ficha
                           </Link>
                         </Button>
                       )}

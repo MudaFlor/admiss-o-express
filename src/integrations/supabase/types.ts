@@ -487,51 +487,175 @@ export type Database = {
           },
         ]
       }
+      employee_documents: {
+        Row: {
+          created_at: string
+          employee_id: string
+          id: string
+          label: string | null
+          source: string
+          storage_path: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          id?: string
+          label?: string | null
+          source?: string
+          storage_path: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          id?: string
+          label?: string | null
+          source?: string
+          storage_path?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_history: {
+        Row: {
+          actor_user_id: string | null
+          changes: Json
+          created_at: string
+          description: string
+          employee_id: string
+          id: string
+          kind: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          changes?: Json
+          created_at?: string
+          description: string
+          employee_id: string
+          id?: string
+          kind?: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          changes?: Json
+          created_at?: string
+          description?: string
+          employee_id?: string
+          id?: string
+          kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_history_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
+          address: string | null
           admission_date: string
+          bank_info: string | null
+          birth_date: string | null
           candidate_id: string | null
+          contract_type: string | null
+          cpf: string | null
           created_at: string
           created_by: string
+          ctps: string | null
           department: string | null
+          email: string | null
+          estado_civil: string | null
           full_name: string
           id: string
+          notes: string | null
+          phone: string | null
+          pis: string | null
           position: string | null
+          profile_data: Json
+          rg: string | null
+          salary: number | null
+          sexo: string | null
           termination_date: string | null
           termination_reason:
             | Database["public"]["Enums"]["termination_reason"]
             | null
           updated_at: string
+          work_schedule: string | null
         }
         Insert: {
+          address?: string | null
           admission_date: string
+          bank_info?: string | null
+          birth_date?: string | null
           candidate_id?: string | null
+          contract_type?: string | null
+          cpf?: string | null
           created_at?: string
           created_by: string
+          ctps?: string | null
           department?: string | null
+          email?: string | null
+          estado_civil?: string | null
           full_name: string
           id?: string
+          notes?: string | null
+          phone?: string | null
+          pis?: string | null
           position?: string | null
+          profile_data?: Json
+          rg?: string | null
+          salary?: number | null
+          sexo?: string | null
           termination_date?: string | null
           termination_reason?:
             | Database["public"]["Enums"]["termination_reason"]
             | null
           updated_at?: string
+          work_schedule?: string | null
         }
         Update: {
+          address?: string | null
           admission_date?: string
+          bank_info?: string | null
+          birth_date?: string | null
           candidate_id?: string | null
+          contract_type?: string | null
+          cpf?: string | null
           created_at?: string
           created_by?: string
+          ctps?: string | null
           department?: string | null
+          email?: string | null
+          estado_civil?: string | null
           full_name?: string
           id?: string
+          notes?: string | null
+          phone?: string | null
+          pis?: string | null
           position?: string | null
+          profile_data?: Json
+          rg?: string | null
+          salary?: number | null
+          sexo?: string | null
           termination_date?: string | null
           termination_reason?:
             | Database["public"]["Enums"]["termination_reason"]
             | null
           updated_at?: string
+          work_schedule?: string | null
         }
         Relationships: [
           {
