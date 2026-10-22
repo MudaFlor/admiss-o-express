@@ -282,7 +282,7 @@ export const createEmployee = createServerFn({ method: "POST" })
       employee_id: row.id,
       kind: "admissao",
       description: data.candidate_id
-        ? `Admitido a partir do recrutamento (dados e ${""}documentos copiados).`
+        ? `Admitido a partir do recrutamento (dados e documentos copiados).`
         : "Cadastro manual de colaborador.",
       actor_user_id: userId,
     });
