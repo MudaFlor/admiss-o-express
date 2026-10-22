@@ -620,7 +620,7 @@ function CandidatePage() {
                   <SmartField label="Data de emissao" k="rg_emissao" form={form} setField={setField} autoFilled={autoFilled} placeholder="DD/MM/AAAA" />
                 </Grid2>
                 <Grid2>
-                  <SmartField label="Data de nascimento" k="data_nascimento" form={form} setField={setField} autoFilled={autoFilled} placeholder="DD/MM/AAAA" />
+                  <SmartField label="Data de nascimento" k="data_nascimento" form={form} setField={setField} autoFilled={autoFilled} error={issues["data_nascimento"]} placeholder="DD/MM/AAAA" />
                   <SmartField label="Local de nascimento" k="local_nascimento" form={form} setField={setField} autoFilled={autoFilled} />
                 </Grid2>
                 <SmartField label="Nome do pai" k="nome_pai" form={form} setField={setField} autoFilled={autoFilled} error={issues["nome_pai"]} />
