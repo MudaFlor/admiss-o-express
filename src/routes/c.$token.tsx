@@ -113,13 +113,13 @@ const emptyForm = (): FormState => ({
 // Só campos aplicáveis ao formulário do candidato.
 const OCR_TO_FORM: Partial<Record<DocType, Partial<Record<string, keyof FormState>>>> = {
   rg: {
-    nome: "full_name", rg: "rg", cpf: "cpf",
+    nome: "full_name", rg: "rg", cpf: "cpf", sexo: "sexo",
     data_emissao: "rg_emissao", data_nascimento: "data_nascimento",
     naturalidade: "local_nascimento", nome_pai: "nome_pai", nome_mae: "nome_mae",
   },
-  cpf: { nome: "full_name", cpf: "cpf", data_nascimento: "data_nascimento" },
+  cpf: { nome: "full_name", cpf: "cpf", sexo: "sexo", data_nascimento: "data_nascimento" },
   cnh: {
-    nome: "full_name", cpf: "cpf",
+    nome: "full_name", cpf: "cpf", sexo: "sexo",
     data_emissao: "rg_emissao", data_nascimento: "data_nascimento",
   },
   certidao: {
