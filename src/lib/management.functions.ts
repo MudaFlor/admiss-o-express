@@ -215,6 +215,23 @@ export const createEmployee = createServerFn({ method: "POST" })
     return row;
   });
 
+const admissionSchema = z.object({
+  employee_id: z.string().uuid(),
+  admission_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+export const updateEmployeeAdmission = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => admissionSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("employees")
+      .update({ admission_date: data.admission_date })
+      .eq("id", data.employee_id);
+    if (error) fail(error);
+    return { ok: true };
+  });
+
 const terminateSchema = z.object({
   employee_id: z.string().uuid(),
   termination_date: z.string().min(8).max(20),
