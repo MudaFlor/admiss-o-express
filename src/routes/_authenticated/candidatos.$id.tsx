@@ -830,30 +830,20 @@ function Field({ label, value }: { label: string; value: string }) {
 
 function FichaForm({
   initial,
+  origem,
   editing,
   setEditing,
   onSave,
   disabled,
 }: {
   initial: Record<string, string>;
+  origem: Record<string, string>;
   editing: Record<string, string>;
   setEditing: (v: Record<string, string>) => void;
   onSave: (data: Record<string, string>) => Promise<void>;
   disabled?: boolean;
 }) {
   const merged = { ...initial, ...editing };
-  const fields: Array<[string, string]> = [
-    ["full_name", "Nome completo"],
-    ["cpf", "CPF"],
-    ["email", "Email"],
-    ["phone", "Telefone"],
-    ["data_nascimento", "Data de nascimento"],
-    ["endereco", "Endereço"],
-    ["cidade", "Cidade"],
-    ["uf", "UF"],
-    ["cep", "CEP"],
-    ["ctps_emissao", "Data de emissão da CTPS"],
-  ];
   return (
     <form
       onSubmit={async (e) => {
@@ -862,7 +852,7 @@ function FichaForm({
       }}
       className="grid gap-3 md:grid-cols-2"
     >
-      {fields.map(([k, label]) => (
+      {FICHA_FIELDS.map(([k, label]) => (
         <div key={k} className="space-y-1.5">
           <Label>{label}</Label>
           <Input
@@ -870,6 +860,7 @@ function FichaForm({
             disabled={disabled}
             onChange={(e) => setEditing({ ...editing, [k]: e.target.value })}
           />
+          {origem[k] && <p className="text-[10px] text-muted-foreground">Fonte: {ORIGEM_LABEL[origem[k]] ?? origem[k]}</p>}
         </div>
       ))}
       <div className="space-y-1.5">
