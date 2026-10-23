@@ -50,6 +50,13 @@
       "when": 1792757595223,
       "tag": "0006_candidate_code_employee_registration",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792757619743,
+      "tag": "0007_candidate_code_seq_reset",
+      "breakpoints": true
     }
   ]
 }
