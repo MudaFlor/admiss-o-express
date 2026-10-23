@@ -4,7 +4,9 @@ import { getConsentReceiptUrl } from "@/lib/lgpd.functions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X, RotateCcw, AlertTriangle, Trash2, Undo2, Download, ExternalLink } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X, RotateCcw, AlertTriangle, Trash2, Undo2, Download, ExternalLink, Printer } from "lucide-react";
+import { consolidateFicha, FICHA_FIELDS, ORIGEM_LABEL } from "@/lib/ficha-consolidation";
+import { downloadFichaPdf } from "@/lib/ficha-pdf";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -579,6 +581,8 @@ function CandidatoDetailPage() {
               </section>}
             </CardContent>
           </Card>
+            );
+          })()}
         </TabsContent>
 
         <TabsContent value="conferencia">
