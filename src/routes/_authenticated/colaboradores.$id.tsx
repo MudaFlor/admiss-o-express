@@ -121,7 +121,18 @@ function EmployeePage() {
       {defs.map((d) => (
         <div key={d.key} className={`space-y-1.5 ${d.wide ? "sm:col-span-2" : ""}`}>
           <Label htmlFor={d.key}>{d.label}</Label>
-          {d.area ? (
+          {d.key === "sexo" ? (
+            <select
+              id={d.key}
+              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+              value={form[d.key] ?? ""}
+              onChange={(e) => setForm({ ...form, [d.key]: e.target.value })}
+            >
+              <option value="">Selecione…</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Feminino">Feminino</option>
+            </select>
+          ) : d.area ? (
             <Textarea id={d.key} value={form[d.key] ?? ""} onChange={(e) => setForm({ ...form, [d.key]: e.target.value })} />
           ) : (
             <Input id={d.key} type={d.type ?? "text"} value={form[d.key] ?? ""} onChange={(e) => setForm({ ...form, [d.key]: e.target.value })} />
