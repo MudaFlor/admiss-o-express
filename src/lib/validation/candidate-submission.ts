@@ -33,7 +33,7 @@ export const reviewedDocumentsSchema = z.record(
 );
 
 // Keep original OCR/evidence intact; corrections are a separate candidate declaration.
-export function reviewedOcrData(raw: unknown, reviewed?: Record<string, string>) {
+export function reviewedOcrData(raw: unknown, reviewed?: Record<string, string>): Record<string, unknown> & { values: Record<string, unknown> } {
   const data = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
   const values = data.values && typeof data.values === "object"
     ? data.values as Record<string, unknown> : {};
