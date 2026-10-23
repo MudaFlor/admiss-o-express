@@ -1,0 +1,15 @@
+ALTER TABLE public.candidates
+  ADD COLUMN IF NOT EXISTS cidade text,
+  ADD COLUMN IF NOT EXISTS departamento text,
+  ADD COLUMN IF NOT EXISTS recrutador text,
+  ADD COLUMN IF NOT EXISTS data_entrevista date,
+  ADD COLUMN IF NOT EXISTS situacao_entrevista text,
+  ADD COLUMN IF NOT EXISTS observacoes_entrevista text,
+  ADD COLUMN IF NOT EXISTS teste text,
+  ADD COLUMN IF NOT EXISTS admitido text,
+  ADD COLUMN IF NOT EXISTS categoria text,
+  ADD COLUMN IF NOT EXISTS integracao text,
+  ADD COLUMN IF NOT EXISTS observacoes_rh text,
+  ADD COLUMN IF NOT EXISTS meio_recebimento text,
+  ADD COLUMN IF NOT EXISTS indicacao_colaborador text,
+  ADD COLUMN IF NOT EXISTS recontratar text;

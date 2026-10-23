@@ -73,13 +73,28 @@ export const createCandidate = createServerFn({ method: "POST" })
     return created;
   });
 
+const filterText = z.string().trim().max(120).optional();
+
 export const listCandidates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z
       .object({
         status: z.enum(["pendente", "em_analise", "aprovado", "rejeitado"]).optional(),
-        search: z.string().trim().max(120).optional(),
+        search: filterText,
+        cidade: filterText,
+        position: filterText,
+        departamento: filterText,
+        recrutador: filterText,
+        situacao_entrevista: filterText,
+        teste: filterText,
+        admitido: filterText,
+        categoria: filterText,
+        integracao: filterText,
+        meio_recebimento: filterText,
+        recontratar: filterText,
+        entrevista_de: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
+        entrevista_ate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
       })
       .parse(input ?? {}),
   )
@@ -87,13 +102,59 @@ export const listCandidates = createServerFn({ method: "POST" })
     const { supabase } = context;
     let q = supabase
       .from("candidates")
-      .select("id, full_name, email, phone, cpf, position, status, created_at, updated_at, access_token")
+      .select("id, full_name, email, phone, cpf, position, status, created_at, updated_at, access_token, cidade, departamento, recrutador, data_entrevista, situacao_entrevista, teste, admitido, categoria, integracao, meio_recebimento, indicacao_colaborador, recontratar")
       .order("created_at", { ascending: false });
+    const esc = (s: string) => s.replace(/[%_,()]/g, " ");
     if (data.status) q = q.eq("status", data.status);
-    if (data.search) q = q.ilike("full_name", `%${data.search}%`);
+    if (data.search) q = q.ilike("full_name", `%${esc(data.search)}%`);
+    for (const k of ["cidade", "position", "departamento", "recrutador"] as const) {
+      const v = data[k];
+      if (v) q = q.ilike(k, `%${esc(v)}%`);
+    }
+    for (const k of ["situacao_entrevista", "teste", "admitido", "categoria", "integracao", "meio_recebimento", "recontratar"] as const) {
+      const v = data[k];
+      if (v) q = q.eq(k, v);
+    }
+    if (data.entrevista_de) q = q.gte("data_entrevista", data.entrevista_de);
+    if (data.entrevista_ate) q = q.lte("data_entrevista", data.entrevista_ate);
     const { data: rows, error } = await q;
     if (error) fail(error);
     return rows ?? [];
+  });
+
+const hrStr = (max: number) => z.string().trim().max(max).optional().nullable();
+export const updateCandidateHrIndicators = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        cidade: hrStr(120),
+        departamento: hrStr(120),
+        recrutador: hrStr(120),
+        data_entrevista: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable().or(z.literal("")),
+        situacao_entrevista: hrStr(60),
+        observacoes_entrevista: hrStr(4000),
+        teste: hrStr(60),
+        admitido: hrStr(60),
+        categoria: hrStr(60),
+        integracao: hrStr(60),
+        observacoes_rh: hrStr(4000),
+        meio_recebimento: hrStr(60),
+        indicacao_colaborador: hrStr(160),
+        recontratar: hrStr(30),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { id, ...rest } = data;
+    const patch: Record<string, string | null> = {};
+    for (const [k, v] of Object.entries(rest)) patch[k] = v ? String(v) : null;
+    if (!(patch.meio_recebimento ?? "").toLowerCase().startsWith("indica")) patch.indicacao_colaborador = null;
+    const { error } = await context.supabase.from("candidates").update(patch as never).eq("id", id);
+    if (error) fail(error);
+    await logAudit({ actor_user_id: context.userId, action: "edit_hr_indicators", entity: "candidate", entity_id: id });
+    return { ok: true };
   });
 
 export const getDashboardStats = createServerFn({ method: "GET" })
