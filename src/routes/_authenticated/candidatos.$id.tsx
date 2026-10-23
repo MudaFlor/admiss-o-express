@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CandidateStatusBadge } from "@/components/CandidateStatusBadge";
 import { crossCheckCandidate, extractDeclaredFromFormData, type CrossCheckResult } from "@/lib/validation/cross-check";
+import { RACE_OPTIONS } from "@/lib/validation/candidate-submission";
 import {
   approveCandidate,
   getCandidateById,
@@ -46,7 +47,14 @@ import {
 } from "@/lib/candidates.functions";
 
 export const Route = createFileRoute("/_authenticated/candidatos/$id")({
-  head: () => ({ meta: [{ title: "Revisão do candidato" }] }),
+  head: () => ({ meta: [
+    { title: "Ficha do candidato | Mudaflor People OS" },
+    { name: "description", content: "Ficha consolidada, documentos e histórico de admissão do candidato." },
+    { property: "og:title", content: "Ficha do candidato | Mudaflor People OS" },
+    { property: "og:description", content: "Ficha consolidada, documentos e histórico de admissão do candidato." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: CandidatoDetailPage,
 });
 
@@ -195,6 +203,7 @@ function CandidatoDetailPage() {
   if (q.isError || !candidate) return <p className="text-sm text-rose-600">Erro ao carregar candidato.</p>;
 
   const formData = (candidate.form_data ?? {}) as Record<string, string>;
+  const reviewedDocuments = (candidate.form_data as Record<string, unknown> | null)?.documentos_revisados as Record<string, Record<string, string>> | undefined;
   const hasSubmitted = Object.keys(formData).length > 0;
 
   return (
@@ -532,6 +541,18 @@ function CandidatoDetailPage() {
                   qc.invalidateQueries({ queryKey: ["candidate", id] });
                 }}
               />
+              {reviewedDocuments && Object.keys(reviewedDocuments).length > 0 && <section className="mt-5 space-y-3 border-t pt-4">
+                <h3 className="text-sm font-medium">Dados dos documentos revisados pelo candidato</h3>
+                {q.data?.documents.filter((document) => reviewedDocuments[document.id]).map((document) => <div key={document.id} className="space-y-2">
+                  <h4 className="text-xs font-medium">{DOC_LABELS[document.type] ?? document.type}</h4>
+                  <dl className="grid gap-2 sm:grid-cols-2">
+                    {Object.entries(reviewedDocuments[document.id]).map(([key, value]) => <div key={key} className="min-w-0">
+                      <dt className="text-xs text-muted-foreground">{key.replace(/_/g, " ")}</dt>
+                      <dd className="break-words text-sm">{value || "—"}</dd>
+                    </div>)}
+                  </dl>
+                </div>)}
+              </section>}
             </CardContent>
           </Card>
         </TabsContent>
@@ -803,6 +824,7 @@ function FichaForm({
     ["cidade", "Cidade"],
     ["uf", "UF"],
     ["cep", "CEP"],
+    ["ctps_emissao", "Data de emissão da CTPS"],
   ];
   return (
     <form
@@ -822,6 +844,13 @@ function FichaForm({
           />
         </div>
       ))}
+      <div className="space-y-1.5">
+        <Label htmlFor="rh-cor-raca">Raça/cor (autodeclaração)</Label>
+        <select id="rh-cor-raca" disabled={disabled} className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={merged.cor_raca ?? ""} onChange={(event) => setEditing({ ...editing, cor_raca: event.target.value })}>
+          <option value="">Não preenchido</option>
+          {RACE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        </select>
+      </div>
       <div className="md:col-span-2">
         <Button type="submit" disabled={disabled}>
           <Save className="h-4 w-4" /> Salvar ficha
