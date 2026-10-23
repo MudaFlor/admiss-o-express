@@ -520,9 +520,20 @@ function CandidatoDetailPage() {
         </TabsContent>
 
         <TabsContent value="ficha">
+          {(() => {
+            const fichaDocs = q.data!.documents.map((d) => ({ type: d.type as string, dependent_id: d.dependent_id, ocr_data: d.ocr_data }));
+            const consolidated = consolidateFicha(
+              { ...(candidate.form_data as Record<string, unknown> ?? {}), full_name: (formData.full_name || candidate.full_name), cpf: formData.cpf || candidate.cpf || "", email: formData.email || candidate.email || "", phone: formData.telefone || candidate.phone || "" },
+              fichaDocs,
+            );
+            return (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-sm">Ficha consolidada</CardTitle>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => downloadFichaPdf(candidate, { ...consolidated.data, ...editing }, consolidated.origem, RACE_OPTIONS.find((o) => o.value === (editing.cor_raca ?? consolidated.data.cor_raca))?.label ?? "")}>
+                  <Printer className="h-3.5 w-3.5" /> Imprimir PDF
+                </Button>
               {!editingFicha ? (
                 <Button size="sm" variant="outline" onClick={() => setEditingFicha(true)}>
                   <Pencil className="h-3.5 w-3.5" /> Editar
@@ -532,16 +543,24 @@ function CandidatoDetailPage() {
                   <X className="h-3.5 w-3.5" /> Cancelar
                 </Button>
               )}
+              </div>
             </CardHeader>
             <CardContent>
+              <p className="mb-3 text-xs text-muted-foreground">Preenchida com os dados dos documentos oficiais (RG, CNH, CPF, comprovante…). A origem aparece abaixo de cada campo; correções do RH prevalecem.</p>
               <FichaForm
                 disabled={!editingFicha}
-                initial={{ ...formData, full_name: candidate.full_name, cpf: candidate.cpf ?? "", email: candidate.email ?? "", phone: candidate.phone ?? "" }}
+                initial={consolidated.data}
+                origem={consolidated.origem}
                 editing={editing}
                 setEditing={setEditing}
                 onSave={async (data) => {
-                  await updateForm({ data: { id, form_data: data } });
+                  const fd = (candidate.form_data ?? {}) as Record<string, unknown>;
+                  const prev = new Set(Array.isArray(fd._rh_overrides) ? (fd._rh_overrides as string[]) : []);
+                  for (const k of Object.keys(editing)) if (editing[k] !== consolidated.data[k]) prev.add(k);
+                  const { phone, ...rest } = data;
+                  await updateForm({ data: { id, form_data: { ...rest, telefone: phone, _rh_overrides: [...prev] } as never } });
                   toast.success("Ficha salva");
+                  setEditing({});
                   setEditingFicha(false);
                   qc.invalidateQueries({ queryKey: ["candidate", id] });
                 }}
