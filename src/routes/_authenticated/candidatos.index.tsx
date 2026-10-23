@@ -4,7 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search, Copy, MessageCircle, FlaskConical } from "lucide-react";
+import { Plus, Search, Copy, MessageCircle, FlaskConical, SlidersHorizontal } from "lucide-react";
+import { HR_LABELS, HR_SELECT_OPTIONS } from "@/lib/hr-indicators";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,13 +36,18 @@ function CandidatosPage() {
   const create = useServerFn(createCandidate);
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [showFilters, setShowFilters] = useState(false);
   const [open, setOpen] = useState(false);
   const [created, setCreated] = useState<{ link: string; name: string; phone: string } | null>(null);
   const [testing, setTesting] = useState(false);
+  const setF = (k: string, v: string) => setFilters((p) => ({ ...p, [k]: v }));
+  const activeFilters = Object.fromEntries(Object.entries(filters).filter(([, v]) => v.trim()));
+  const activeCount = Object.keys(activeFilters).length;
 
   const q = useQuery({
-    queryKey: ["candidates", search],
-    queryFn: () => list({ data: { search } }),
+    queryKey: ["candidates", search, activeFilters],
+    queryFn: () => list({ data: { search, ...activeFilters } }),
   });
 
   async function onCreate(e: React.FormEvent<HTMLFormElement>) {
@@ -174,7 +180,7 @@ function CandidatosPage() {
 
       <Card>
         <CardContent className="p-4">
-          <div className="mb-3 flex items-center gap-2">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por nome…"
@@ -182,21 +188,61 @@ function CandidatosPage() {
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-sm"
             />
+            <Button variant="outline" size="sm" onClick={() => setShowFilters((v) => !v)}>
+              <SlidersHorizontal className="h-4 w-4" /> Filtros{activeCount ? ` (${activeCount})` : ""}
+            </Button>
+            {activeCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={() => setFilters({})}>Limpar filtros</Button>
+            )}
           </div>
+          {showFilters && (
+            <div className="mb-4 grid gap-3 rounded-md border p-3 sm:grid-cols-2 lg:grid-cols-4">
+              {(["cidade", "position", "departamento", "recrutador"] as const).map((k) => (
+                <div key={k} className="space-y-1">
+                  <Label className="text-xs">{k === "position" ? "Cargo" : HR_LABELS[k]}</Label>
+                  <Input value={filters[k] ?? ""} onChange={(e) => setF(k, e.target.value)} />
+                </div>
+              ))}
+              <div className="space-y-1">
+                <Label className="text-xs">Entrevista de</Label>
+                <Input type="date" value={filters.entrevista_de ?? ""} onChange={(e) => setF("entrevista_de", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Entrevista até</Label>
+                <Input type="date" value={filters.entrevista_ate ?? ""} onChange={(e) => setF("entrevista_ate", e.target.value)} />
+              </div>
+              {(Object.keys(HR_SELECT_OPTIONS) as Array<keyof typeof HR_SELECT_OPTIONS>).map((k) => (
+                <div key={k} className="space-y-1">
+                  <Label className="text-xs">{k === "meio_recebimento" ? "Meio de recebimento" : HR_LABELS[k]}</Label>
+                  <select
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                    value={filters[k] ?? ""}
+                    onChange={(e) => setF(k, e.target.value)}
+                  >
+                    <option value="">Todos</option>
+                    {HR_SELECT_OPTIONS[k].map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Cargo</TableHead>
+                <TableHead>Cargo / Depto.</TableHead>
+                <TableHead>Cidade</TableHead>
+                <TableHead>Recrutador</TableHead>
+                <TableHead>Entrevista</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {q.isLoading ? (
-                <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground">Carregando…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground">Carregando…</TableCell></TableRow>
               ) : (q.data?.length ?? 0) === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground">Nenhum candidato ainda. Clique em "Novo candidato".</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground">{activeCount || search ? "Nenhum candidato encontrado com esses filtros." : 'Nenhum candidato ainda. Clique em "Novo candidato".'}</TableCell></TableRow>
               ) : (
                 q.data!.map((c) => (
                   <TableRow key={c.id}>
@@ -206,7 +252,16 @@ function CandidatosPage() {
                       </Link>
                       <div className="text-xs text-muted-foreground">{c.email ?? c.phone ?? "—"}</div>
                     </TableCell>
-                    <TableCell>{c.position ?? "—"}</TableCell>
+                    <TableCell>
+                      {c.position ?? "—"}
+                      {c.departamento && <div className="text-xs text-muted-foreground">{c.departamento}</div>}
+                    </TableCell>
+                    <TableCell>{c.cidade ?? "—"}</TableCell>
+                    <TableCell>{c.recrutador ?? "—"}</TableCell>
+                    <TableCell>
+                      {c.data_entrevista ? c.data_entrevista.split("-").reverse().join("/") : "—"}
+                      {c.situacao_entrevista && <div className="text-xs text-muted-foreground">{c.situacao_entrevista}</div>}
+                    </TableCell>
                     <TableCell><CandidateStatusBadge status={c.status as never} /></TableCell>
                     <TableCell className="text-right">
                       <Button
