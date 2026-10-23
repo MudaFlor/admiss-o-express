@@ -1029,7 +1029,6 @@ function CandidatePage() {
                         <input
                           type="file"
                           accept="application/pdf,image/jpeg,image/png"
-                          capture="environment"
                           className="hidden"
                           disabled={uploading === uploadKey}
                           onChange={(e) => {
