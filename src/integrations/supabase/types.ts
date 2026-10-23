@@ -141,30 +141,44 @@ export type Database = {
       candidates: {
         Row: {
           access_token: string
+          admitido: string | null
+          categoria: string | null
+          cidade: string | null
           cor_raca: string | null
           cpf: string | null
           created_at: string
           created_by: string
+          data_entrevista: string | null
           deletion_requested_at: string | null
+          departamento: string | null
           email: string | null
           estado_civil: string | null
           form_data: Json
           full_name: string
           id: string
+          indicacao_colaborador: string | null
+          integracao: string | null
           last_reminder_at: string | null
           lgpd_accepted_at: string | null
+          meio_recebimento: string | null
+          observacoes_entrevista: string | null
+          observacoes_rh: string | null
           origem: string
           phone: string | null
           position: string | null
+          recontratar: string | null
+          recrutador: string | null
           rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           sexo: string | null
+          situacao_entrevista: string | null
           stage: Database["public"]["Enums"]["candidate_stage"]
           stage_note: string | null
           stage_updated_at: string
           stage_updated_by: string | null
           status: Database["public"]["Enums"]["candidate_status"]
+          teste: string | null
           token_expires_at: string
           token_revoked_at: string | null
           token_rotated_at: string | null
@@ -173,30 +187,44 @@ export type Database = {
         }
         Insert: {
           access_token?: string
+          admitido?: string | null
+          categoria?: string | null
+          cidade?: string | null
           cor_raca?: string | null
           cpf?: string | null
           created_at?: string
           created_by: string
+          data_entrevista?: string | null
           deletion_requested_at?: string | null
+          departamento?: string | null
           email?: string | null
           estado_civil?: string | null
           form_data?: Json
           full_name: string
           id?: string
+          indicacao_colaborador?: string | null
+          integracao?: string | null
           last_reminder_at?: string | null
           lgpd_accepted_at?: string | null
+          meio_recebimento?: string | null
+          observacoes_entrevista?: string | null
+          observacoes_rh?: string | null
           origem?: string
           phone?: string | null
           position?: string | null
+          recontratar?: string | null
+          recrutador?: string | null
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           sexo?: string | null
+          situacao_entrevista?: string | null
           stage?: Database["public"]["Enums"]["candidate_stage"]
           stage_note?: string | null
           stage_updated_at?: string
           stage_updated_by?: string | null
           status?: Database["public"]["Enums"]["candidate_status"]
+          teste?: string | null
           token_expires_at?: string
           token_revoked_at?: string | null
           token_rotated_at?: string | null
@@ -205,30 +233,44 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          admitido?: string | null
+          categoria?: string | null
+          cidade?: string | null
           cor_raca?: string | null
           cpf?: string | null
           created_at?: string
           created_by?: string
+          data_entrevista?: string | null
           deletion_requested_at?: string | null
+          departamento?: string | null
           email?: string | null
           estado_civil?: string | null
           form_data?: Json
           full_name?: string
           id?: string
+          indicacao_colaborador?: string | null
+          integracao?: string | null
           last_reminder_at?: string | null
           lgpd_accepted_at?: string | null
+          meio_recebimento?: string | null
+          observacoes_entrevista?: string | null
+          observacoes_rh?: string | null
           origem?: string
           phone?: string | null
           position?: string | null
+          recontratar?: string | null
+          recrutador?: string | null
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           sexo?: string | null
+          situacao_entrevista?: string | null
           stage?: Database["public"]["Enums"]["candidate_stage"]
           stage_note?: string | null
           stage_updated_at?: string
           stage_updated_by?: string | null
           status?: Database["public"]["Enums"]["candidate_status"]
+          teste?: string | null
           token_expires_at?: string
           token_revoked_at?: string | null
           token_rotated_at?: string | null
