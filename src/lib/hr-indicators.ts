@@ -5,7 +5,17 @@ export const HR_SELECT_OPTIONS = {
   admitido: ["Sim", "Não", "Em processo", "Banco de talentos"],
   categoria: ["CLT", "PJ", "Estágio", "Aprendiz", "Temporário"],
   integracao: ["Agendada", "Realizada", "Pendente", "Não aplicável"],
-  meio_recebimento: ["Indicação de colaborador", "LinkedIn", "Site / Trabalhe conosco", "WhatsApp", "E-mail", "Portal de vagas", "Presencial", "Outro"],
+  meio_recebimento: [
+    "Indicação de colaborador",
+    "LinkedIn",
+    "Site / Trabalhe conosco",
+    "WhatsApp",
+    "E-mail",
+    "Portal de vagas",
+    "Presencial",
+    "Redes sociais",
+    "Outro",
+  ],
   recontratar: ["Sim", "Não", "Avaliar"],
 } as const;
 
@@ -20,9 +30,20 @@ export type HrField =
   | "indicacao_colaborador";
 
 export const HR_FIELDS: HrField[] = [
-  "cidade", "departamento", "recrutador", "data_entrevista", "situacao_entrevista",
-  "observacoes_entrevista", "teste", "admitido", "categoria", "integracao",
-  "observacoes_rh", "meio_recebimento", "indicacao_colaborador", "recontratar",
+  "cidade",
+  "departamento",
+  "recrutador",
+  "data_entrevista",
+  "situacao_entrevista",
+  "observacoes_entrevista",
+  "teste",
+  "admitido",
+  "categoria",
+  "integracao",
+  "observacoes_rh",
+  "meio_recebimento",
+  "indicacao_colaborador",
+  "recontratar",
 ];
 
 export const HR_LABELS: Record<HrField, string> = {
