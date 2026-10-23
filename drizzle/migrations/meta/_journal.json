@@ -57,6 +57,13 @@
       "when": 1792757619743,
       "tag": "0007_candidate_code_seq_reset",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792761820437,
+      "tag": "0008_candidate_status_admitido",
+      "breakpoints": true
     }
   ]
 }
