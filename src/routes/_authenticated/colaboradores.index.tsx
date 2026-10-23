@@ -155,7 +155,7 @@ function ColaboradoresPage() {
                     ) : (
                       approvedFiltered.map((c) => (
                         <TableRow key={c.id}>
-                          <TableCell className="font-medium">{c.full_name}</TableCell>
+                          <TableCell className="font-medium">{c.full_name}{"matricula_esocial" in c && c.matricula_esocial ? <div className="text-xs text-muted-foreground">ID eSocial: {c.matricula_esocial}</div> : null}</TableCell>
                           <TableCell>{c.position ?? "—"}</TableCell>
                           <TableCell className="text-right">
                             <Button size="sm" onClick={() => importCandidate(c)}>
@@ -249,7 +249,7 @@ function ColaboradoresPage() {
               ) : (
                 filtered.map((c) => (
                   <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.full_name}</TableCell>
+                    <TableCell className="font-medium">{c.full_name}{"matricula_esocial" in c && c.matricula_esocial ? <div className="text-xs text-muted-foreground">ID eSocial: {c.matricula_esocial}</div> : null}</TableCell>
                     <TableCell>{c.position ?? "—"}</TableCell>
                     <TableCell>{c.department ?? "—"}</TableCell>
                     <TableCell>

@@ -464,7 +464,7 @@ export const listEmployees = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data, error } = await supabase
       .from("employees")
-      .select("id, full_name, position, department, admission_date, candidate_id, termination_date, termination_reason")
+      .select("id, matricula_esocial, full_name, position, department, admission_date, candidate_id, termination_date, termination_reason")
       .order("admission_date", { ascending: false })
       .limit(500);
     if (error) fail(error);
