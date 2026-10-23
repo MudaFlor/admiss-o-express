@@ -1,6 +1,14 @@
 // Indicadores do RH no cadastro do candidato (campos editáveis e filtráveis).
 export const HR_SELECT_OPTIONS = {
-  situacao_entrevista: ["Agendada", "Realizada", "Aprovado", "Reprovado", "Cancelada", "Não compareceu"],
+  situacao_entrevista: [
+    "Agendamento pendente",
+    "Agendada",
+    "Realizada",
+    "Aprovado",
+    "Reprovado",
+    "Cancelada",
+    "Não compareceu",
+  ],
   teste: ["Pendente", "Aprovado", "Reprovado", "Não aplicável"],
   admitido: ["Sim", "Não", "Em processo", "Banco de talentos"],
   categoria: ["CLT", "PJ", "Estágio", "Aprendiz", "Temporário"],
