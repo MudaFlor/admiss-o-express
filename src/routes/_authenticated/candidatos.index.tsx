@@ -229,6 +229,7 @@ function CandidatosPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-14">ID</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Cargo / Depto.</TableHead>
                 <TableHead>Cidade</TableHead>
@@ -240,12 +241,13 @@ function CandidatosPage() {
             </TableHeader>
             <TableBody>
               {q.isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground">Carregando…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground">Carregando…</TableCell></TableRow>
               ) : (q.data?.length ?? 0) === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground">{activeCount || search ? "Nenhum candidato encontrado com esses filtros." : 'Nenhum candidato ainda. Clique em "Novo candidato".'}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground">{activeCount || search ? "Nenhum candidato encontrado com esses filtros." : 'Nenhum candidato ainda. Clique em "Novo candidato".'}</TableCell></TableRow>
               ) : (
                 q.data!.map((c) => (
                   <TableRow key={c.id}>
+                    <TableCell className="font-mono text-sm text-muted-foreground">#{c.codigo ?? "—"}</TableCell>
                     <TableCell>
                       <Link to="/candidatos/$id" params={{ id: c.id }} className="font-medium hover:underline">
                         {c.full_name}

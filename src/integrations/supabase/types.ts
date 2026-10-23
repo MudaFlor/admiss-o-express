@@ -144,6 +144,7 @@ export type Database = {
           admitido: string | null
           categoria: string | null
           cidade: string | null
+          codigo: number | null
           cor_raca: string | null
           cpf: string | null
           created_at: string
@@ -190,6 +191,7 @@ export type Database = {
           admitido?: string | null
           categoria?: string | null
           cidade?: string | null
+          codigo?: number | null
           cor_raca?: string | null
           cpf?: string | null
           created_at?: string
@@ -236,6 +238,7 @@ export type Database = {
           admitido?: string | null
           categoria?: string | null
           cidade?: string | null
+          codigo?: number | null
           cor_raca?: string | null
           cpf?: string | null
           created_at?: string
@@ -622,6 +625,7 @@ export type Database = {
           estado_civil: string | null
           full_name: string
           id: string
+          matricula_esocial: string | null
           notes: string | null
           phone: string | null
           pis: string | null
@@ -653,6 +657,7 @@ export type Database = {
           estado_civil?: string | null
           full_name: string
           id?: string
+          matricula_esocial?: string | null
           notes?: string | null
           phone?: string | null
           pis?: string | null
@@ -684,6 +689,7 @@ export type Database = {
           estado_civil?: string | null
           full_name?: string
           id?: string
+          matricula_esocial?: string | null
           notes?: string | null
           phone?: string | null
           pis?: string | null

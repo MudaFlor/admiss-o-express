@@ -1,0 +1,1 @@
+SELECT setval('public.candidates_code_seq', GREATEST((SELECT COALESCE(MAX(codigo),0) FROM public.candidates),1), (SELECT COUNT(*) > 0 FROM public.candidates));
