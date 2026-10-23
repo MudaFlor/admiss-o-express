@@ -102,7 +102,7 @@ export const listCandidates = createServerFn({ method: "POST" })
     const { supabase } = context;
     let q = supabase
       .from("candidates")
-      .select("id, full_name, email, phone, cpf, position, status, created_at, updated_at, access_token, cidade, departamento, recrutador, data_entrevista, situacao_entrevista, teste, admitido, categoria, integracao, meio_recebimento, indicacao_colaborador, recontratar")
+      .select("id, codigo, full_name, email, phone, cpf, position, status, stage, created_at, updated_at, access_token, cidade, departamento, recrutador, data_entrevista, situacao_entrevista, teste, admitido, categoria, integracao, meio_recebimento, indicacao_colaborador, recontratar")
       .order("created_at", { ascending: false });
     const esc = (s: string) => s.replace(/[%_,()]/g, " ");
     if (data.status) q = q.eq("status", data.status);

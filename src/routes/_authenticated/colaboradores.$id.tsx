@@ -36,6 +36,7 @@ const PERSONAL: FieldDef[] = [
   { key: "address", label: "Endereço", wide: true },
 ];
 const FUNCTIONAL: FieldDef[] = [
+  { key: "matricula_esocial", label: "ID / Matrícula eSocial" },
   { key: "position", label: "Cargo" },
   { key: "department", label: "Departamento" },
   { key: "admission_date", label: "Data de admissão", type: "date" },

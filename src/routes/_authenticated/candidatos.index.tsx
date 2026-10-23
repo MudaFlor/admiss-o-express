@@ -229,6 +229,7 @@ function CandidatosPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-14">ID</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Cargo / Depto.</TableHead>
                 <TableHead>Cidade</TableHead>
@@ -246,6 +247,7 @@ function CandidatosPage() {
               ) : (
                 q.data!.map((c) => (
                   <TableRow key={c.id}>
+                    <TableCell className="font-mono text-sm text-muted-foreground">#{c.codigo ?? "—"}</TableCell>
                     <TableCell>
                       <Link to="/candidatos/$id" params={{ id: c.id }} className="font-medium hover:underline">
                         {c.full_name}

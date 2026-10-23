@@ -212,7 +212,10 @@ function CandidatoDetailPage() {
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="sm"><Link to="/candidatos"><ArrowLeft className="h-4 w-4" /> Voltar</Link></Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-semibold">{candidate.full_name}</h1>
+          <h1 className="text-2xl font-semibold">
+            {candidate.codigo != null && <span className="mr-2 font-mono text-muted-foreground">#{candidate.codigo}</span>}
+            {candidate.full_name}
+          </h1>
           <p className="text-sm text-muted-foreground">{candidate.position ?? "—"} · {candidate.email ?? "sem email"}</p>
         </div>
         <CandidateStatusBadge status={candidate.status as never} />

@@ -267,6 +267,7 @@ export const createEmployee = createServerFn({ method: "POST" })
       .single();
     if (error) fail(error);
     if (data.candidate_id) {
+      await supabase.from("candidates").update({ stage: "admitido", admitido: "Sim" }).eq("id", data.candidate_id);
       const { data: docs } = await supabase
         .from("documents")
         .select("type, label, storage_path")
@@ -305,10 +306,11 @@ export const getEmployee = createServerFn({ method: "POST" })
   });
 
 const EDITABLE = [
-  "full_name", "position", "department", "admission_date", "cpf", "rg", "birth_date", "email", "phone",
+  "matricula_esocial", "full_name", "position", "department", "admission_date", "cpf", "rg", "birth_date", "email", "phone",
   "sexo", "estado_civil", "address", "pis", "ctps", "salary", "contract_type", "work_schedule", "bank_info", "notes",
 ] as const;
 const FIELD_LABELS: Record<string, string> = {
+  matricula_esocial: "ID / Matrícula eSocial",
   full_name: "Nome", position: "Cargo", department: "Departamento", admission_date: "Admissão", cpf: "CPF", rg: "RG",
   birth_date: "Nascimento", email: "E-mail", phone: "Telefone", sexo: "Sexo", estado_civil: "Estado civil",
   address: "Endereço", pis: "PIS", ctps: "CTPS", salary: "Salário", contract_type: "Contrato",
