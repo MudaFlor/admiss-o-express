@@ -104,12 +104,13 @@ const DOC_LABEL: Record<string, string> = {
   pis_pasep: "PIS/PASEP",
   cartao_sus: "Cartão SUS",
   curriculo: "Currículo",
+  ctps: "CTPS",
 };
 
 // Quais documentos contribuem para cada campo (em ordem de prioridade — primeiro = referência)
 const SOURCES: Record<string, string[]> = {
-  cpf: ["cpf", "rg", "cnh"],
-  full_name: ["rg", "cpf", "cnh", "certidao", "titulo_eleitor", "pis_pasep", "cartao_sus"],
+  cpf: ["cpf", "rg", "cnh", "ctps"],
+  full_name: ["rg", "cpf", "cnh", "ctps", "certidao", "titulo_eleitor", "pis_pasep", "cartao_sus"],
   data_nascimento: ["rg", "cpf", "cnh", "certidao", "titulo_eleitor"],
   nome_mae: ["rg", "certidao"],
   nome_pai: ["rg", "certidao"],
@@ -119,7 +120,7 @@ const SOURCES: Record<string, string[]> = {
 // Default: mesma chave do campo.
 const FIELD_KEY_IN_DOC: Record<string, Record<string, string>> = {
   full_name: {
-    rg: "nome", cpf: "nome", cnh: "nome", certidao: "nome",
+    rg: "nome", cpf: "nome", cnh: "nome", ctps: "nome", certidao: "nome",
     titulo_eleitor: "nome", pis_pasep: "nome", cartao_sus: "nome",
   },
 };

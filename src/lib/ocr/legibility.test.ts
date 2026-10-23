@@ -11,7 +11,10 @@ describe("isIllegible", () => {
   it("aceita RG com dados extraídos", () => {
     expect(isIllegible("rg", { status: "sucesso", fields: { nome: "A" } })).toBe(false);
   });
-  it("aceita CTPS mesmo sem leitura", () => {
-    expect(isIllegible("ctps", { status: "sucesso", fields: {} })).toBe(false);
+  it("recusa CTPS sem leitura", () => {
+    expect(isIllegible("ctps", { status: "sucesso", fields: {} })).toBe(true);
+  });
+  it("aceita CTPS com nome, emissão e CPF extraídos", () => {
+    expect(isIllegible("ctps", { status: "sucesso", fields: { nome: "MARTA DE LIMA", data_emissao: "01/02/2020", cpf: "52998224725" } })).toBe(false);
   });
 });
