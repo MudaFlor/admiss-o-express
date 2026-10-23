@@ -43,6 +43,13 @@
       "when": 1792756086688,
       "tag": "0005_candidate_hr_indicators",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792757595223,
+      "tag": "0006_candidate_code_employee_registration",
+      "breakpoints": true
     }
   ]
 }
