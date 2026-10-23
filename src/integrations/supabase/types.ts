@@ -1019,7 +1019,12 @@ export type Database = {
         | "aguardando_aprovacao"
         | "aprovado"
         | "admitido"
-      candidate_status: "pendente" | "em_analise" | "aprovado" | "rejeitado"
+      candidate_status:
+        | "pendente"
+        | "em_analise"
+        | "aprovado"
+        | "rejeitado"
+        | "admitido"
       document_status: "pendente" | "processado" | "aprovado" | "rejeitado"
       document_type:
         | "rg"
@@ -1194,7 +1199,13 @@ export const Constants = {
         "aprovado",
         "admitido",
       ],
-      candidate_status: ["pendente", "em_analise", "aprovado", "rejeitado"],
+      candidate_status: [
+        "pendente",
+        "em_analise",
+        "aprovado",
+        "rejeitado",
+        "admitido",
+      ],
       document_status: ["pendente", "processado", "aprovado", "rejeitado"],
       document_type: [
         "rg",

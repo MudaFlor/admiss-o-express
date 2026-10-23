@@ -267,7 +267,7 @@ export const createEmployee = createServerFn({ method: "POST" })
       .single();
     if (error) fail(error);
     if (data.candidate_id) {
-      await supabase.from("candidates").update({ stage: "admitido", admitido: "Sim" }).eq("id", data.candidate_id);
+      await supabase.from("candidates").update({ stage: "admitido", status: "admitido", admitido: "Sim" }).eq("id", data.candidate_id);
       const { data: docs } = await supabase
         .from("documents")
         .select("type, label, storage_path")

@@ -80,7 +80,7 @@ export const listCandidates = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
-        status: z.enum(["pendente", "em_analise", "aprovado", "rejeitado"]).optional(),
+        status: z.enum(["pendente", "em_analise", "aprovado", "rejeitado", "admitido"]).optional(),
         search: filterText,
         cidade: filterText,
         position: filterText,
