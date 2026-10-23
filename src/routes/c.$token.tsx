@@ -3,9 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import {
-  Upload, CheckCircle2, ShieldCheck, FileText, Loader2, Sparkles, Trash2, Lock,
-} from "lucide-react";
+import { Upload, CheckCircle2, ShieldCheck, FileText, Loader2, Sparkles, Trash2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,8 +11,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
@@ -39,8 +43,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { candidateContactIssues, RACE_OPTIONS, reviewedOcrData } from "@/lib/validation/candidate-submission";
 
 type SignatureDeviceInfo = {
-  user_agent?: string; platform?: string; language?: string; timezone?: string;
-  screen?: { w: number; h: number }; device_type?: "mobile" | "tablet" | "desktop";
+  user_agent?: string;
+  platform?: string;
+  language?: string;
+  timezone?: string;
+  screen?: { w: number; h: number };
+  device_type?: "mobile" | "tablet" | "desktop";
 };
 function collectDeviceInfo(): SignatureDeviceInfo {
   if (typeof window === "undefined") return {};
@@ -68,22 +76,39 @@ function requestGeolocation(): Promise<{ lat: number; lng: number; accuracy?: nu
 }
 
 export const Route = createFileRoute("/c/$token")({
-  head: () => ({ meta: [
-    { title: "Documentos de admissão | Mudaflor People OS" },
-    { name: "description", content: "Envie seus documentos de admissão e revise seus dados com segurança." },
-    { property: "og:title", content: "Documentos de admissão | Mudaflor People OS" },
-    { property: "og:description", content: "Envie seus documentos de admissão e revise seus dados com segurança." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Documentos de admissão | Mudaflor People OS" },
+      { name: "description", content: "Envie seus documentos de admissão e revise seus dados com segurança." },
+      { property: "og:title", content: "Documentos de admissão | Mudaflor People OS" },
+      { property: "og:description", content: "Envie seus documentos de admissão e revise seus dados com segurança." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: CandidatePage,
 });
 
 type DocType =
-  | "rg" | "cpf" | "cnh" | "ctps" | "titulo_eleitor" | "foto_3x4" | "certidao"
-  | "reservista" | "pis_pasep" | "comprovante_residencia" | "escolaridade"
-  | "certificado_curso" | "vacinacao_covid" | "cartao_sus" | "curriculo"
-  | "dependente_certidao" | "dependente_rg_cpf" | "dependente_vacinacao" | "dependente_escolar";
+  | "rg"
+  | "cpf"
+  | "cnh"
+  | "ctps"
+  | "titulo_eleitor"
+  | "foto_3x4"
+  | "certidao"
+  | "reservista"
+  | "pis_pasep"
+  | "comprovante_residencia"
+  | "escolaridade"
+  | "certificado_curso"
+  | "vacinacao_covid"
+  | "cartao_sus"
+  | "curriculo"
+  | "dependente_certidao"
+  | "dependente_rg_cpf"
+  | "dependente_vacinacao"
+  | "dependente_escolar";
 
 type DocDef = { type: DocType; label: string; hint?: string; optional?: boolean; multi?: boolean };
 
@@ -105,42 +130,85 @@ const HOLDER_DOCS: ReadonlyArray<DocDef> = [
 ];
 
 interface FormState {
-  full_name: string; cpf: string; rg: string; rg_emissao: string;
-  data_nascimento: string; local_nascimento: string; nome_pai: string; nome_mae: string;
-  email: string; telefone: string; endereco: string; linkedin: string;
-  formacao: string; experiencias: string; competencias: string;
-  sexo: string; cor_raca: string; estado_civil: string;
+  full_name: string;
+  cpf: string;
+  rg: string;
+  rg_emissao: string;
+  data_nascimento: string;
+  local_nascimento: string;
+  nome_pai: string;
+  nome_mae: string;
+  email: string;
+  telefone: string;
+  endereco: string;
+  linkedin: string;
+  formacao: string;
+  experiencias: string;
+  competencias: string;
+  sexo: string;
+  cor_raca: string;
+  estado_civil: string;
   ctps_emissao: string;
 }
 const emptyForm = (): FormState => ({
-  full_name: "", cpf: "", rg: "", rg_emissao: "", data_nascimento: "", local_nascimento: "",
-  nome_pai: "", nome_mae: "", email: "", telefone: "", endereco: "", linkedin: "",
-  formacao: "", experiencias: "", competencias: "",
-  sexo: "", cor_raca: "", estado_civil: "", ctps_emissao: "",
+  full_name: "",
+  cpf: "",
+  rg: "",
+  rg_emissao: "",
+  data_nascimento: "",
+  local_nascimento: "",
+  nome_pai: "",
+  nome_mae: "",
+  email: "",
+  telefone: "",
+  endereco: "",
+  linkedin: "",
+  formacao: "",
+  experiencias: "",
+  competencias: "",
+  sexo: "",
+  cor_raca: "",
+  estado_civil: "",
+  ctps_emissao: "",
 });
 
 // Mapeamento OCR (campo do documento) -> campo do FormState.
 // Só campos aplicáveis ao formulário do candidato.
 const OCR_TO_FORM: Partial<Record<DocType, Partial<Record<string, keyof FormState>>>> = {
   rg: {
-    nome: "full_name", rg: "rg", cpf: "cpf", sexo: "sexo",
-    data_emissao: "rg_emissao", data_nascimento: "data_nascimento",
-    naturalidade: "local_nascimento", nome_pai: "nome_pai", nome_mae: "nome_mae",
+    nome: "full_name",
+    rg: "rg",
+    cpf: "cpf",
+    sexo: "sexo",
+    data_emissao: "rg_emissao",
+    data_nascimento: "data_nascimento",
+    naturalidade: "local_nascimento",
+    nome_pai: "nome_pai",
+    nome_mae: "nome_mae",
   },
   cpf: { nome: "full_name", cpf: "cpf", sexo: "sexo", data_nascimento: "data_nascimento" },
   ctps: { nome: "full_name", cpf: "cpf", data_emissao: "ctps_emissao" },
   cnh: {
-    nome: "full_name", cpf: "cpf", sexo: "sexo",
-    data_emissao: "rg_emissao", data_nascimento: "data_nascimento",
+    nome: "full_name",
+    cpf: "cpf",
+    sexo: "sexo",
+    data_emissao: "rg_emissao",
+    data_nascimento: "data_nascimento",
   },
   certidao: {
-    nome: "full_name", nome_pai: "nome_pai", nome_mae: "nome_mae",
+    nome: "full_name",
+    nome_pai: "nome_pai",
+    nome_mae: "nome_mae",
     data_nascimento: "data_nascimento",
   },
   comprovante_residencia: {},
 };
 const DOC_LABEL: Partial<Record<DocType, string>> = {
-  rg: "RG/CIN", cpf: "CPF", cnh: "CNH", ctps: "CTPS", certidao: "certidão",
+  rg: "RG/CIN",
+  cpf: "CPF",
+  cnh: "CNH",
+  ctps: "CTPS",
+  certidao: "certidão",
   comprovante_residencia: "comprovante de residência",
 };
 function buildEndereco(fields: Record<string, string>): string | null {
@@ -150,10 +218,17 @@ function buildEndereco(fields: Record<string, string>): string | null {
   return parts.length ? parts.join(" — ") : null;
 }
 const REVIEW_FIELDS: ReadonlyArray<[keyof FormState, string]> = [
-  ["full_name", "Nome completo"], ["cpf", "CPF"], ["rg", "RG"], ["rg_emissao", "Data de emissão do RG"],
-  ["data_nascimento", "Data de nascimento"], ["local_nascimento", "Naturalidade"],
-  ["nome_mae", "Nome da mãe"], ["nome_pai", "Nome do pai"], ["endereco", "Endereço"],
-  ["telefone", "Telefone"], ["email", "E-mail"],
+  ["full_name", "Nome completo"],
+  ["cpf", "CPF"],
+  ["rg", "RG"],
+  ["rg_emissao", "Data de emissão do RG"],
+  ["data_nascimento", "Data de nascimento"],
+  ["local_nascimento", "Naturalidade"],
+  ["nome_mae", "Nome da mãe"],
+  ["nome_pai", "Nome do pai"],
+  ["endereco", "Endereço"],
+  ["telefone", "Telefone"],
+  ["email", "E-mail"],
   ["ctps_emissao", "Data de emissão da CTPS"],
 ];
 
@@ -205,26 +280,35 @@ function CandidatePage() {
   // Fluxo expresso: ficha base vem do cadastro do RH; OCR completa o resto.
   useEffect(() => {
     if (!cand) return;
-    const saved = cand.form_data && typeof cand.form_data === "object" && !Array.isArray(cand.form_data)
-      ? cand.form_data as Record<string, unknown> : {};
+    const saved =
+      cand.form_data && typeof cand.form_data === "object" && !Array.isArray(cand.form_data)
+        ? (cand.form_data as Record<string, unknown>)
+        : {};
     const savedForm: Partial<FormState> = {};
     for (const key of Object.keys(emptyForm()) as Array<keyof FormState>) {
       if (typeof saved[key] === "string") savedForm[key] = saved[key];
     }
     if (saved.documentos_revisados && typeof saved.documentos_revisados === "object") {
-      setReviewedDocs((current) => ({ ...saved.documentos_revisados as Record<string, Record<string, string>>, ...current }));
+      setReviewedDocs((current) => ({
+        ...(saved.documentos_revisados as Record<string, Record<string, string>>),
+        ...current,
+      }));
     }
-    setForm((f) => f.full_name ? f : {
-      ...f,
-      full_name: cand.full_name ?? "",
-      cpf: cand.cpf ?? "",
-      email: cand.email ?? "",
-      telefone: cand.phone ?? "",
-      sexo: cand.sexo ?? "",
-      cor_raca: cand.cor_raca ?? "",
-      estado_civil: cand.estado_civil ?? "",
-      ...savedForm,
-    });
+    setForm((f) =>
+      f.full_name
+        ? f
+        : {
+            ...f,
+            full_name: cand.full_name ?? "",
+            cpf: cand.cpf ?? "",
+            email: cand.email ?? "",
+            telefone: cand.phone ?? "",
+            sexo: cand.sexo ?? "",
+            cor_raca: cand.cor_raca ?? "",
+            estado_civil: cand.estado_civil ?? "",
+            ...savedForm,
+          },
+    );
   }, [cand]);
   // Ao reabrir o portal, recupera os dados já lidos dos documentos enviados
   // (só preenche campos vazios; nunca sobrescreve o que o candidato corrigiu).
@@ -240,7 +324,9 @@ function CandidatePage() {
       const vals = reviewedOcrData(raw, reviewed?.[d.id]).values;
       if (!vals) continue;
       const map = OCR_TO_FORM[d.type as DocType];
-      if (map) for (const [ok, fk] of Object.entries(map)) if (fk && typeof vals[ok] === "string") writes.push([fk, vals[ok] as string]);
+      if (map)
+        for (const [ok, fk] of Object.entries(map))
+          if (fk && typeof vals[ok] === "string") writes.push([fk, vals[ok] as string]);
       if (d.type === "comprovante_residencia") {
         const e = buildEndereco(vals as Record<string, string>);
         if (e) writes.push(["endereco", e]);
@@ -250,24 +336,42 @@ function CandidatePage() {
     setForm((f) => {
       const n = { ...f };
       const added: Array<keyof FormState> = [];
-      for (const [k, v] of writes) if (!n[k]) { n[k] = v; added.push(k); }
+      for (const [k, v] of writes)
+        if (!n[k]) {
+          n[k] = v;
+          added.push(k);
+        }
       if (added.length) setAutoFilled((s) => new Set([...s, ...added]));
       return n;
     });
   }, [docsForOcr]);
   const [reviewing, setReviewing] = useState(false);
 
-  if (q.isLoading) return <Center><Loader2 className="h-5 w-5 animate-spin" /></Center>;
-  if (q.isError) return <Center><p className="text-sm text-rose-600">{(q.error as Error).message}</p></Center>;
+  if (q.isLoading)
+    return (
+      <Center>
+        <Loader2 className="h-5 w-5 animate-spin" />
+      </Center>
+    );
+  if (q.isError)
+    return (
+      <Center>
+        <p className="text-sm text-rose-600">{(q.error as Error).message}</p>
+      </Center>
+    );
 
   if (!q.data) return null;
   const { candidate, documents, correction } = q.data;
 
   if (candidate.deletion_requested_at) {
-    return <Done title="Solicitacao registrada" desc="Recebemos sua solicitacao de exclusao. O RH entrara em contato." />;
+    return (
+      <Done title="Solicitacao registrada" desc="Recebemos sua solicitacao de exclusao. O RH entrara em contato." />
+    );
   }
-  if ((candidate.status === "aprovado" || candidate.status === "admitido")) return <Done title="Admissao aprovada!" desc="Voce recebera os proximos passos por email." />;
-  if (candidate.status === "rejeitado") return <Done title="Cadastro encerrado" desc="Entre em contato com o RH para mais informacoes." />;
+  if (candidate.status === "aprovado" || candidate.status === "admitido")
+    return <Done title="Admissao aprovada!" desc="Voce recebera os proximos passos por email." />;
+  if (candidate.status === "rejeitado")
+    return <Done title="Cadastro encerrado" desc="Entre em contato com o RH para mais informacoes." />;
 
   const sexo = candidate.sexo ?? "";
   const requireReservista = sexo === "masculino";
@@ -310,7 +414,11 @@ function CandidatePage() {
   });
   const crossCheck = crossCheckCandidate({
     declared: declaredData,
-    documents: documents.map((d) => ({ type: d.type, dependent_id: d.dependent_id, ocr_data: reviewedOcrData(d.ocr_data, reviewedDocs[d.id]) })),
+    documents: documents.map((d) => ({
+      type: d.type,
+      dependent_id: d.dependent_id,
+      ocr_data: reviewedOcrData(d.ocr_data, reviewedDocs[d.id]),
+    })),
   });
   const hasDivergence = crossCheck.summary.divergente > 0;
   const issues = { ...blockingIssues(crossCheck, declaredData), ...candidateContactIssues(form) };
@@ -320,7 +428,9 @@ function CandidatePage() {
     setForm((f) => ({ ...f, [k]: v }));
     setAutoFilled((s) => {
       if (!s.has(k)) return s;
-      const n = new Set(s); n.delete(k); return n;
+      const n = new Set(s);
+      n.delete(k);
+      return n;
     });
   }
 
@@ -356,7 +466,6 @@ function CandidatePage() {
       if (invalid) throw new Error(invalid);
       const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
 
-
       const sig = await createUpload({ data: { token, type: "curriculo", ext } });
       const up = await fetch(sig.signedUrl, { method: "PUT", body: file, headers: { "content-type": file.type } });
       if (!up.ok) throw new Error("Upload falhou");
@@ -377,7 +486,9 @@ function CandidatePage() {
         endereco: parsed.endereco ?? "",
         linkedin: parsed.linkedin ?? "",
         formacao: (parsed.formacao ?? []).map((f) => `${f.curso} - ${f.instituicao} (${f.periodo})`).join("\n"),
-        experiencias: (parsed.experiencias ?? []).map((e) => `${e.cargo} @ ${e.empresa} (${e.periodo})\n${e.descricao}`).join("\n\n"),
+        experiencias: (parsed.experiencias ?? [])
+          .map((e) => `${e.cargo} @ ${e.empresa} (${e.periodo})\n${e.descricao}`)
+          .join("\n\n"),
         competencias: (parsed.competencias ?? []).join(", "),
         sexo: candidate.sexo ?? "",
         cor_raca: candidate.cor_raca ?? "",
@@ -385,7 +496,13 @@ function CandidatePage() {
         ctps_emissao: form.ctps_emissao,
       };
       setForm(mapped);
-      setAutoFilled(new Set(Object.entries(mapped).filter(([, v]) => v && String(v).trim()).map(([k]) => k as keyof FormState)));
+      setAutoFilled(
+        new Set(
+          Object.entries(mapped)
+            .filter(([, v]) => v && String(v).trim())
+            .map(([k]) => k as keyof FormState),
+        ),
+      );
       const found = Object.values(mapped).filter((v) => v && String(v).trim()).length;
       toast.success(`${found} campos preenchidos automaticamente`);
       setStep(2);
@@ -416,7 +533,9 @@ function CandidatePage() {
       const sig = await createUpload({ data: { token, type, ext } });
       const up = await fetch(sig.signedUrl, { method: "PUT", body: file, headers: { "content-type": file.type } });
       if (!up.ok) throw new Error("Upload falhou");
-      const result = await finalize({ data: { token, type, storage_path: sig.path, dependent_id: opts?.dependent_id, label: opts?.label } });
+      const result = await finalize({
+        data: { token, type, storage_path: sig.path, dependent_id: opts?.dependent_id, label: opts?.label },
+      });
       if (Object.keys(result.ocr_fields).length) setEditingDoc(result.id);
       // Pré-preenchimento do formulário com os campos extraídos por OCR do documento.
       // Só para documentos do titular (não dependente).
@@ -485,13 +604,15 @@ function CandidatePage() {
       return;
     }
     try {
-      await submit({ data: {
-        token,
-        form_data: { ...form, documentos_revisados: reviewedDocs } as unknown as Record<string, unknown>,
-        sexo: form.sexo || undefined,
-        cor_raca: form.cor_raca || undefined,
-        estado_civil: form.estado_civil || undefined,
-      } });
+      await submit({
+        data: {
+          token,
+          form_data: { ...form, documentos_revisados: reviewedDocs } as unknown as Record<string, unknown>,
+          sexo: form.sexo || undefined,
+          cor_raca: form.cor_raca || undefined,
+          estado_civil: form.estado_civil || undefined,
+        },
+      });
       toast.success("Cadastro enviado!");
       qc.invalidateQueries({ queryKey: ["c", token] });
       setStep(4);
@@ -520,7 +641,7 @@ function CandidatePage() {
           <div className="flex-1">
             <div className="text-sm font-semibold">Admissao Digital</div>
             <div className="text-[11px] text-muted-foreground">
-              {step < 4 ? `Etapa ${(step === 0 ? 1 : 2)} de ${totalSteps}` : "Concluido"}
+              {step < 4 ? `Etapa ${step === 0 ? 1 : 2} de ${totalSteps}` : "Concluido"}
             </div>
           </div>
         </div>
@@ -563,17 +684,31 @@ function CandidatePage() {
                 <h1 className="text-lg font-semibold">Termo de consentimento — LGPD</h1>
               </div>
               <p className="text-sm">
-                Olá, <strong>{candidate.full_name}</strong>! Para enviar seus documentos de admissão, precisamos do seu consentimento para tratar seus dados pessoais.
+                Olá, <strong>{candidate.full_name}</strong>! Para enviar seus documentos de admissão, precisamos do seu
+                consentimento para tratar seus dados pessoais.
               </p>
               <details className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
-                <summary className="cursor-pointer font-medium text-foreground">Ler o termo completo (versão {LGPD_TERMS_VERSION})</summary>
-                <div className="mt-2 max-h-60 overflow-y-auto whitespace-pre-wrap leading-relaxed">{LGPD_TERMS_TEXT}</div>
+                <summary className="cursor-pointer font-medium text-foreground">
+                  Ler o termo completo (versão {LGPD_TERMS_VERSION})
+                </summary>
+                <div className="mt-2 max-h-60 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+                  {LGPD_TERMS_TEXT}
+                </div>
               </details>
 
               {!candidate.cpf && (
                 <div className="space-y-1">
-                  <Label htmlFor="sig-cpf" className="text-xs">Seu CPF</Label>
-                  <Input id="sig-cpf" inputMode="numeric" value={sigCpf} onChange={(e) => setSigCpf(e.target.value)} placeholder="000.000.000-00" autoComplete="off" />
+                  <Label htmlFor="sig-cpf" className="text-xs">
+                    Seu CPF
+                  </Label>
+                  <Input
+                    id="sig-cpf"
+                    inputMode="numeric"
+                    value={sigCpf}
+                    onChange={(e) => setSigCpf(e.target.value)}
+                    placeholder="000.000.000-00"
+                    autoComplete="off"
+                  />
                 </div>
               )}
 
@@ -598,7 +733,9 @@ function CandidatePage() {
               <p className="text-sm text-muted-foreground">
                 Vamos ler seu curriculo automaticamente e preencher o formulario pra voce. Aceitamos PDF, JPG e PNG.
               </p>
-              <label className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors ${parsing ? "opacity-60" : "hover:border-primary hover:bg-primary/5"}`}>
+              <label
+                className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors ${parsing ? "opacity-60" : "hover:border-primary hover:bg-primary/5"}`}
+              >
                 <input
                   type="file"
                   accept="application/pdf,image/jpeg,image/png"
@@ -642,38 +779,128 @@ function CandidatePage() {
               </div>
 
               <Section title="Dados pessoais">
-                <SmartField label="Nome completo" k="full_name" form={form} setField={setField} autoFilled={autoFilled} error={issues["full_name"]} />
-                <SmartField label="CPF" k="cpf" form={form} setField={setField} autoFilled={autoFilled} error={issues["cpf"]} />
+                <SmartField
+                  label="Nome completo"
+                  k="full_name"
+                  form={form}
+                  setField={setField}
+                  autoFilled={autoFilled}
+                  error={issues["full_name"]}
+                />
+                <SmartField
+                  label="CPF"
+                  k="cpf"
+                  form={form}
+                  setField={setField}
+                  autoFilled={autoFilled}
+                  error={issues["cpf"]}
+                />
                 <Grid2>
                   <SmartField label="RG" k="rg" form={form} setField={setField} autoFilled={autoFilled} />
-                  <SmartField label="Data de emissao" k="rg_emissao" form={form} setField={setField} autoFilled={autoFilled} placeholder="DD/MM/AAAA" />
+                  <SmartField
+                    label="Data de emissao"
+                    k="rg_emissao"
+                    form={form}
+                    setField={setField}
+                    autoFilled={autoFilled}
+                    placeholder="DD/MM/AAAA"
+                  />
                 </Grid2>
                 <Grid2>
-                  <SmartField label="Data de nascimento" k="data_nascimento" form={form} setField={setField} autoFilled={autoFilled} error={issues["data_nascimento"]} placeholder="DD/MM/AAAA" />
-                  <SmartField label="Local de nascimento" k="local_nascimento" form={form} setField={setField} autoFilled={autoFilled} />
+                  <SmartField
+                    label="Data de nascimento"
+                    k="data_nascimento"
+                    form={form}
+                    setField={setField}
+                    autoFilled={autoFilled}
+                    error={issues["data_nascimento"]}
+                    placeholder="DD/MM/AAAA"
+                  />
+                  <SmartField
+                    label="Local de nascimento"
+                    k="local_nascimento"
+                    form={form}
+                    setField={setField}
+                    autoFilled={autoFilled}
+                  />
                 </Grid2>
-                <SmartField label="Nome do pai" k="nome_pai" form={form} setField={setField} autoFilled={autoFilled} error={issues["nome_pai"]} />
-                <SmartField label="Nome da mae" k="nome_mae" form={form} setField={setField} autoFilled={autoFilled} error={issues["nome_mae"]} />
+                <SmartField
+                  label="Nome do pai"
+                  k="nome_pai"
+                  form={form}
+                  setField={setField}
+                  autoFilled={autoFilled}
+                  error={issues["nome_pai"]}
+                />
+                <SmartField
+                  label="Nome da mae"
+                  k="nome_mae"
+                  form={form}
+                  setField={setField}
+                  autoFilled={autoFilled}
+                  error={issues["nome_mae"]}
+                />
               </Section>
 
               <Section title="Contato">
-                <SmartField label="E-mail (obrigatório)" k="email" form={form} setField={setField} autoFilled={autoFilled} type="email" error={issues.email} />
+                <SmartField
+                  label="E-mail (obrigatório)"
+                  k="email"
+                  form={form}
+                  setField={setField}
+                  autoFilled={autoFilled}
+                  type="email"
+                  error={issues.email}
+                />
                 <SmartField label="Telefone" k="telefone" form={form} setField={setField} autoFilled={autoFilled} />
                 <SmartField label="Endereco" k="endereco" form={form} setField={setField} autoFilled={autoFilled} />
-                <SmartField label="LinkedIn" k="linkedin" form={form} setField={setField} autoFilled={autoFilled} placeholder="linkedin.com/in/seu-perfil" />
+                <SmartField
+                  label="LinkedIn"
+                  k="linkedin"
+                  form={form}
+                  setField={setField}
+                  autoFilled={autoFilled}
+                  placeholder="linkedin.com/in/seu-perfil"
+                />
               </Section>
 
               <Section title="Trajetoria">
-                <SmartArea label="Formacao academica" k="formacao" form={form} setField={setField} autoFilled={autoFilled} rows={3} />
-                <SmartArea label="Experiencias profissionais" k="experiencias" form={form} setField={setField} autoFilled={autoFilled} rows={5} />
-                <SmartArea label="Competencias" k="competencias" form={form} setField={setField} autoFilled={autoFilled} rows={2} placeholder="Separe por virgula" />
+                <SmartArea
+                  label="Formacao academica"
+                  k="formacao"
+                  form={form}
+                  setField={setField}
+                  autoFilled={autoFilled}
+                  rows={3}
+                />
+                <SmartArea
+                  label="Experiencias profissionais"
+                  k="experiencias"
+                  form={form}
+                  setField={setField}
+                  autoFilled={autoFilled}
+                  rows={5}
+                />
+                <SmartArea
+                  label="Competencias"
+                  k="competencias"
+                  form={form}
+                  setField={setField}
+                  autoFilled={autoFilled}
+                  rows={2}
+                  placeholder="Separe por virgula"
+                />
               </Section>
 
               <Section title="Informações complementares">
                 <Grid2>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Sexo</Label>
-                    <select className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={form.sexo} onChange={(e) => setField("sexo", e.target.value)}>
+                    <select
+                      className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                      value={form.sexo}
+                      onChange={(e) => setField("sexo", e.target.value)}
+                    >
                       <option value="">Selecione</option>
                       <option value="masculino">Masculino</option>
                       <option value="feminino">Feminino</option>
@@ -682,7 +909,11 @@ function CandidatePage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Estado civil</Label>
-                    <select className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={form.estado_civil} onChange={(e) => setField("estado_civil", e.target.value)}>
+                    <select
+                      className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                      value={form.estado_civil}
+                      onChange={(e) => setField("estado_civil", e.target.value)}
+                    >
                       <option value="">Selecione</option>
                       <option value="solteiro">Solteiro(a)</option>
                       <option value="casado">Casado(a)</option>
@@ -693,7 +924,11 @@ function CandidatePage() {
                   </div>
                 </Grid2>
                 <div className="space-y-1.5">
-                  <RaceField value={form.cor_raca} onChange={(value) => setField("cor_raca", value)} error={issues.cor_raca} />
+                  <RaceField
+                    value={form.cor_raca}
+                    onChange={(value) => setField("cor_raca", value)}
+                    error={issues.cor_raca}
+                  />
                 </div>
               </Section>
 
@@ -723,7 +958,10 @@ function CandidatePage() {
                 ) : (
                   <ul className="flex flex-wrap gap-1.5">
                     {pendingRequired.map((t) => (
-                      <li key={t} className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-800">
+                      <li
+                        key={t}
+                        className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-800"
+                      >
                         {dynamicRules.find((r) => r.document_type === t)?.label ??
                           DOCS.find((d) => d.type === t)?.label ??
                           t}
@@ -753,24 +991,37 @@ function CandidatePage() {
                             />
                           </a>
                         ) : (
-                          <div className={`flex h-14 w-14 items-center justify-center rounded-md ${done ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
+                          <div
+                            className={`flex h-14 w-14 items-center justify-center rounded-md ${done ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}
+                          >
                             {done ? <CheckCircle2 className="h-5 w-5" /> : <FileText className="h-4 w-4" />}
                           </div>
                         )}
                         <div>
                           <div className="text-sm font-medium">
                             {d.label}
-                            {isOptional && <span className="ml-1 text-[10px] uppercase text-muted-foreground">(opcional)</span>}
+                            {isOptional && (
+                              <span className="ml-1 text-[10px] uppercase text-muted-foreground">(opcional)</span>
+                            )}
                           </div>
                           {d.hint && <div className="text-[11px] text-muted-foreground">{d.hint}</div>}
                           <div className="text-xs text-muted-foreground">
                             {done ? (
                               uploaded?.signed_url ? (
-                                <a href={uploaded.signed_url} target="_blank" rel="noreferrer" className="text-primary underline">
+                                <a
+                                  href={uploaded.signed_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-primary underline"
+                                >
                                   {isPdf ? "Visualizar PDF" : "Ver em tamanho real"}
                                 </a>
-                              ) : "Enviado"
-                            ) : "Pendente"}
+                              ) : (
+                                "Enviado"
+                              )
+                            ) : (
+                              "Pendente"
+                            )}
                           </div>
                         </div>
                       </div>
@@ -787,20 +1038,32 @@ function CandidatePage() {
                           }}
                         />
                         <span className="inline-flex h-9 cursor-pointer items-center gap-1 rounded-md border bg-background px-3 text-sm hover:bg-accent">
-                          {uploading === uploadKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                          {uploading === uploadKey ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Upload className="h-4 w-4" />
+                          )}
                           {done ? "Trocar" : "Enviar"}
                         </span>
                       </label>
-                      {uploaded && <DocumentExtraction
-                        documentId={uploaded.id} type={d.type} raw={uploaded.ocr_data}
-                        reviewed={reviewedDocs[uploaded.id]} editing={editingDoc === uploaded.id}
-                        onToggle={() => setEditingDoc(editingDoc === uploaded.id ? null : uploaded.id)}
-                        onChange={(key, value) => {
-                          setReviewedDocs((current) => ({ ...current, [uploaded.id]: { ...current[uploaded.id], [key]: value } }));
-                          const formKey = OCR_TO_FORM[d.type]?.[key];
-                          if (formKey) setField(formKey, value);
-                        }}
-                      />}
+                      {uploaded && (
+                        <DocumentExtraction
+                          documentId={uploaded.id}
+                          type={d.type}
+                          raw={uploaded.ocr_data}
+                          reviewed={reviewedDocs[uploaded.id]}
+                          editing={editingDoc === uploaded.id}
+                          onToggle={() => setEditingDoc(editingDoc === uploaded.id ? null : uploaded.id)}
+                          onChange={(key, value) => {
+                            setReviewedDocs((current) => ({
+                              ...current,
+                              [uploaded.id]: { ...current[uploaded.id], [key]: value },
+                            }));
+                            const formKey = OCR_TO_FORM[d.type]?.[key];
+                            if (formKey) setField(formKey, value);
+                          }}
+                        />
+                      )}
                     </CardContent>
                   </Card>
                 );
@@ -819,7 +1082,6 @@ function CandidatePage() {
               onChange={() => qc.invalidateQueries({ queryKey: ["c", token] })}
             />
 
-
             <Card>
               <CardContent className="space-y-3 p-4">
                 <div className="flex items-center justify-between gap-2">
@@ -827,7 +1089,9 @@ function CandidatePage() {
                     <div className="flex items-center gap-1.5 text-sm font-semibold">
                       <Sparkles className="h-4 w-4 text-primary" /> Seus dados lidos dos documentos
                     </div>
-                    <p className="text-[11px] text-muted-foreground">Confira se está tudo certo. Você pode corrigir antes de enviar.</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Confira se está tudo certo. Você pode corrigir antes de enviar.
+                    </p>
                   </div>
                   <Button size="sm" variant={reviewing ? "default" : "outline"} onClick={() => setReviewing((v) => !v)}>
                     {reviewing ? "Concluir revisão" : "Revisar e corrigir"}
@@ -839,40 +1103,76 @@ function CandidatePage() {
                     const err = issues[k as string];
                     return (
                       <div key={k} className="space-y-0.5">
-                        <Label htmlFor={`review-${k}`} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <Label
+                          htmlFor={`review-${k}`}
+                          className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
+                        >
                           {k === "email" ? "E-mail (obrigatório)" : label}
-                          {fromOcr && <span className="rounded bg-primary/10 px-1 text-[10px] text-primary">lido do documento</span>}
+                          {fromOcr && (
+                            <span className="rounded bg-primary/10 px-1 text-[10px] text-primary">
+                              lido do documento
+                            </span>
+                          )}
                         </Label>
                         {reviewing ? (
-                          <Input id={`review-${k}`} type={k === "email" ? "email" : "text"} required={k === "email"} maxLength={k === "email" ? 255 : 500} value={form[k]} onChange={(e) => setField(k, e.target.value)} aria-invalid={!!err} className={err ? "h-9 border-destructive bg-destructive/5" : "h-9"} />
+                          <Input
+                            id={`review-${k}`}
+                            type={k === "email" ? "email" : "text"}
+                            required={k === "email"}
+                            maxLength={k === "email" ? 255 : 500}
+                            value={form[k]}
+                            onChange={(e) => setField(k, e.target.value)}
+                            aria-invalid={!!err}
+                            className={err ? "h-9 border-destructive bg-destructive/5" : "h-9"}
+                          />
                         ) : (
-                          <div className={err ? "rounded border border-destructive bg-destructive/5 px-2 py-1 text-sm" : "text-sm"}>{form[k] || <span className="text-muted-foreground">—</span>}</div>
+                          <div
+                            className={
+                              err ? "rounded border border-destructive bg-destructive/5 px-2 py-1 text-sm" : "text-sm"
+                            }
+                          >
+                            {form[k] || <span className="text-muted-foreground">—</span>}
+                          </div>
                         )}
                         {err && <p className="text-[11px] font-medium text-destructive">{err}</p>}
                       </div>
                     );
                   })}
                 </div>
-                <RaceField value={form.cor_raca} onChange={(value) => setField("cor_raca", value)} error={issues.cor_raca} />
+                <RaceField
+                  value={form.cor_raca}
+                  onChange={(value) => setField("cor_raca", value)}
+                  error={issues.cor_raca}
+                />
               </CardContent>
             </Card>
 
             {issueCount > 0 && (
-              <div role="alert" className="flex items-start gap-2 rounded-md border border-destructive bg-destructive/10 p-3 text-xs text-destructive">
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-md border border-destructive bg-destructive/10 p-3 text-xs text-destructive"
+              >
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <div>
                   <div className="font-semibold">Dados incorretos</div>
-                  Há {issueCount} campo(s) em vermelho não preenchido(s) ou divergente(s) dos documentos. Corrija antes de enviar.
+                  Há {issueCount} campo(s) em vermelho não preenchido(s) ou divergente(s) dos documentos. Corrija antes
+                  de enviar.
                 </div>
               </div>
             )}
-            <Button className="w-full" disabled={!allUploaded || issueCount > 0 || uploading !== null} onClick={handleSubmit}>
+            <Button
+              className="w-full"
+              disabled={!allUploaded || issueCount > 0 || uploading !== null}
+              onClick={handleSubmit}
+            >
               Enviar documentos
             </Button>
           </>
         )}
 
-        {step === 4 && <Done title="Tudo certo!" desc="Seu cadastro foi enviado para analise. Voce recebera retorno em breve." />}
+        {step === 4 && (
+          <Done title="Tudo certo!" desc="Seu cadastro foi enviado para analise. Voce recebera retorno em breve." />
+        )}
 
         {step < 4 && (
           <div className="rounded-md border bg-background/60 p-3 text-[11px] text-muted-foreground">
@@ -890,7 +1190,8 @@ function CandidatePage() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Solicitar exclusao de dados?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Esta acao envia uma solicitacao ao RH para que seus dados e documentos sejam excluidos. Voce nao podera continuar com este cadastro depois.
+                        Esta acao envia uma solicitacao ao RH para que seus dados e documentos sejam excluidos. Voce nao
+                        podera continuar com este cadastro depois.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -922,8 +1223,14 @@ function Grid2({ children }: { children: React.ReactNode }) {
 }
 
 function SmartField<K extends keyof FormState>(props: {
-  label: string; k: K; form: FormState; setField: (k: K, v: string) => void;
-  autoFilled: Set<keyof FormState>; type?: string; placeholder?: string; error?: string;
+  label: string;
+  k: K;
+  form: FormState;
+  setField: (k: K, v: string) => void;
+  autoFilled: Set<keyof FormState>;
+  type?: string;
+  placeholder?: string;
+  error?: string;
 }) {
   const { label, k, form, setField, autoFilled, type, placeholder, error } = props;
   const filled = autoFilled.has(k);
@@ -934,8 +1241,12 @@ function SmartField<K extends keyof FormState>(props: {
         {filled && <Sparkles className="h-3 w-3 text-primary" />}
       </Label>
       <Input
-        id={k} name={k} type={type} placeholder={placeholder}
-        value={form[k]} onChange={(e) => setField(k, e.target.value)}
+        id={k}
+        name={k}
+        type={type}
+        placeholder={placeholder}
+        value={form[k]}
+        onChange={(e) => setField(k, e.target.value)}
         aria-invalid={!!error}
         className={error ? "border-destructive bg-destructive/5" : filled ? "border-primary/40 bg-primary/5" : ""}
       />
@@ -945,8 +1256,13 @@ function SmartField<K extends keyof FormState>(props: {
 }
 
 function SmartArea<K extends keyof FormState>(props: {
-  label: string; k: K; form: FormState; setField: (k: K, v: string) => void;
-  autoFilled: Set<keyof FormState>; rows?: number; placeholder?: string;
+  label: string;
+  k: K;
+  form: FormState;
+  setField: (k: K, v: string) => void;
+  autoFilled: Set<keyof FormState>;
+  rows?: number;
+  placeholder?: string;
 }) {
   const { label, k, form, setField, autoFilled, rows, placeholder } = props;
   const filled = autoFilled.has(k);
@@ -957,8 +1273,12 @@ function SmartArea<K extends keyof FormState>(props: {
         {filled && <Sparkles className="h-3 w-3 text-primary" />}
       </Label>
       <Textarea
-        id={k} name={k} rows={rows} placeholder={placeholder}
-        value={form[k]} onChange={(e) => setField(k, e.target.value)}
+        id={k}
+        name={k}
+        rows={rows}
+        placeholder={placeholder}
+        value={form[k]}
+        onChange={(e) => setField(k, e.target.value)}
         className={filled ? "border-primary/40 bg-primary/5" : ""}
       />
     </div>
@@ -966,42 +1286,95 @@ function SmartArea<K extends keyof FormState>(props: {
 }
 
 function RaceField({ value, onChange, error }: { value: string; onChange: (value: string) => void; error?: string }) {
-  return <fieldset className="space-y-2">
-    <legend className="text-xs font-medium">Raça/cor (autodeclaração)</legend>
-    <RadioGroup aria-label="Raça/cor (autodeclaração)" value={value} onValueChange={onChange} aria-invalid={!!error} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      {RACE_OPTIONS.map((option) => <div key={option.value} className="flex items-center gap-2">
-        <RadioGroupItem id={`race-${option.value}`} value={option.value} />
-        <Label htmlFor={`race-${option.value}`} className="text-xs">{option.label}</Label>
-      </div>)}
-    </RadioGroup>
-    {error && <p className="text-xs text-destructive">{error}</p>}
-  </fieldset>;
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-xs font-medium">Raça/cor (autodeclaração)</legend>
+      <RadioGroup
+        aria-label="Raça/cor (autodeclaração)"
+        value={value}
+        onValueChange={onChange}
+        aria-invalid={!!error}
+        className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+      >
+        {RACE_OPTIONS.map((option) => (
+          <div key={option.value} className="flex items-center gap-2">
+            <RadioGroupItem id={`race-${option.value}`} value={option.value} />
+            <Label htmlFor={`race-${option.value}`} className="text-xs">
+              {option.label}
+            </Label>
+          </div>
+        ))}
+      </RadioGroup>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </fieldset>
+  );
 }
 
-function DocumentExtraction({ documentId, type, raw, reviewed, editing, onToggle, onChange }: {
-  documentId: string; type: string; raw: unknown; reviewed?: Record<string, string>; editing: boolean;
-  onToggle: () => void; onChange: (key: string, value: string) => void;
+function DocumentExtraction({
+  documentId,
+  type,
+  raw,
+  reviewed,
+  editing,
+  onToggle,
+  onChange,
+}: {
+  documentId: string;
+  type: string;
+  raw: unknown;
+  reviewed?: Record<string, string>;
+  editing: boolean;
+  onToggle: () => void;
+  onChange: (key: string, value: string) => void;
 }) {
   const values = reviewedOcrData(raw, reviewed).values;
   const entries = Object.entries(values).filter((entry): entry is [string, string] => typeof entry[1] === "string");
   if (!entries.length) return null;
   const labels: Record<string, string> = {
-    nome: "Nome", cpf: "CPF", data_emissao: "Data de emissão", data_nascimento: "Data de nascimento",
-    nome_mae: "Nome da mãe", nome_pai: "Nome do pai", sexo: "Sexo", nacionalidade: "Nacionalidade",
+    nome: "Nome",
+    cpf: "CPF",
+    data_emissao: "Data de emissão",
+    data_nascimento: "Data de nascimento",
+    nome_mae: "Nome da mãe",
+    nome_pai: "Nome do pai",
+    sexo: "Sexo",
+    nacionalidade: "Nacionalidade",
   };
-  return <section aria-label={`Dados extraídos de ${type}`} className="w-full space-y-3 border-t pt-3">
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <h3 className="flex items-center gap-1 text-xs font-medium"><Sparkles className="h-3 w-3 text-primary" /> Dados extraídos</h3>
-      <Button size="sm" variant="outline" onClick={onToggle}>{editing ? "Concluir revisão" : "Revisar e corrigir"}</Button>
-    </div>
-    <dl className="grid gap-3 sm:grid-cols-2">
-      {entries.map(([key, value]) => <div key={key} className="min-w-0 space-y-1">
-        <dt><Label htmlFor={`ocr-${documentId}-${key}`} className="text-xs text-muted-foreground">{labels[key] ?? key.replace(/_/g, " ")}</Label></dt>
-        <dd>{editing ? <Input id={`ocr-${documentId}-${key}`} maxLength={1000} value={value} onChange={(event) => onChange(key, event.target.value)} />
-          : <span className="break-words text-sm">{value || "—"}</span>}</dd>
-      </div>)}
-    </dl>
-  </section>;
+  return (
+    <section aria-label={`Dados extraídos de ${type}`} className="w-full space-y-3 border-t pt-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex items-center gap-1 text-xs font-medium">
+          <Sparkles className="h-3 w-3 text-primary" /> Dados extraídos
+        </h3>
+        <Button size="sm" variant="outline" onClick={onToggle}>
+          {editing ? "Concluir revisão" : "Revisar e corrigir"}
+        </Button>
+      </div>
+      <dl className="grid gap-3 sm:grid-cols-2">
+        {entries.map(([key, value]) => (
+          <div key={key} className="min-w-0 space-y-1">
+            <dt>
+              <Label htmlFor={`ocr-${documentId}-${key}`} className="text-xs text-muted-foreground">
+                {labels[key] ?? key.replace(/_/g, " ")}
+              </Label>
+            </dt>
+            <dd>
+              {editing ? (
+                <Input
+                  id={`ocr-${documentId}-${key}`}
+                  maxLength={1000}
+                  value={value}
+                  onChange={(event) => onChange(key, event.target.value)}
+                />
+              ) : (
+                <span className="break-words text-sm">{value || "—"}</span>
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
 }
 
 function Center({ children }: { children: React.ReactNode }) {
@@ -1059,8 +1432,21 @@ function CrossCheckPanel({ result, onEdit }: { result: ReturnType<typeof crossCh
   );
 }
 
-type DependentRow = { id: string; full_name: string; relationship: string | null; birth_date: string | null; cpf: string | null; rg: string | null };
-type DocRow = { id: string; type: string; storage_path: string; signed_url: string | null; dependent_id: string | null };
+type DependentRow = {
+  id: string;
+  full_name: string;
+  relationship: string | null;
+  birth_date: string | null;
+  cpf: string | null;
+  rg: string | null;
+};
+type DocRow = {
+  id: string;
+  type: string;
+  storage_path: string;
+  signed_url: string | null;
+  dependent_id: string | null;
+};
 
 function DependentsBlock(props: {
   token: string;
@@ -1068,7 +1454,17 @@ function DependentsBlock(props: {
   documents: DocRow[];
   uploadDoc: (type: DocType, file: File, opts?: { dependent_id?: string; label?: string }) => Promise<void>;
   uploading: string | null;
-  saveDependent: (args: { data: { token: string; id?: string; full_name: string; relationship?: string; birth_date?: string; cpf?: string; rg?: string } }) => Promise<DependentRow>;
+  saveDependent: (args: {
+    data: {
+      token: string;
+      id?: string;
+      full_name: string;
+      relationship?: string;
+      birth_date?: string;
+      cpf?: string;
+      rg?: string;
+    };
+  }) => Promise<DependentRow>;
   dropDependent: (args: { data: { token: string; id: string } }) => Promise<{ ok: boolean }>;
   dropDoc: (args: { data: { token: string; id: string } }) => Promise<{ ok: boolean }>;
   onChange: () => void;
@@ -1100,8 +1496,12 @@ function DependentsBlock(props: {
             <div className="text-xs text-muted-foreground">Possui filhos ou dependentes?</div>
           </div>
           <div className="flex gap-1">
-            <Button size="sm" variant={hasDeps === "sim" ? "default" : "outline"} onClick={() => setHasDeps("sim")}>Sim</Button>
-            <Button size="sm" variant={hasDeps === "nao" ? "default" : "outline"} onClick={() => setHasDeps("nao")}>Não</Button>
+            <Button size="sm" variant={hasDeps === "sim" ? "default" : "outline"} onClick={() => setHasDeps("sim")}>
+              Sim
+            </Button>
+            <Button size="sm" variant={hasDeps === "nao" ? "default" : "outline"} onClick={() => setHasDeps("nao")}>
+              Não
+            </Button>
           </div>
         </div>
 
@@ -1109,7 +1509,9 @@ function DependentsBlock(props: {
           <div className="space-y-2">
             {dependents.map((dep) => {
               const depDocs = documents.filter((d) => d.dependent_id === dep.id);
-              const age = dep.birth_date ? Math.floor((Date.now() - new Date(dep.birth_date).getTime()) / (365.25 * 24 * 3600 * 1000)) : null;
+              const age = dep.birth_date
+                ? Math.floor((Date.now() - new Date(dep.birth_date).getTime()) / (365.25 * 24 * 3600 * 1000))
+                : null;
               const needsRgCpf = age !== null && age >= 21;
               const needsVacina = age !== null && age < 7;
               const depDocList: Array<{ type: DocType; label: string; required: boolean }> = [
@@ -1127,11 +1529,15 @@ function DependentsBlock(props: {
                         {dep.relationship ?? "—"} {age !== null ? `· ${age} anos` : ""}
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost" onClick={async () => {
-                      if (!confirm("Remover este dependente?")) return;
-                      await dropDependent({ data: { token, id: dep.id } });
-                      onChange();
-                    }}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={async () => {
+                        if (!confirm("Remover este dependente?")) return;
+                        await dropDependent({ data: { token, id: dep.id } });
+                        onChange();
+                      }}
+                    >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -1148,19 +1554,45 @@ function DependentsBlock(props: {
                               {files.length === 0 ? "Nenhum arquivo" : `${files.length} arquivo(s)`}
                               {files.map((f) => (
                                 <span key={f.id} className="ml-1">
-                                  · <a href={f.signed_url ?? "#"} target="_blank" rel="noreferrer" className="text-primary underline">ver</a>
-                                  <button className="ml-1 text-rose-600" onClick={async () => { await dropDoc({ data: { token, id: f.id } }); onChange(); }}>×</button>
+                                  ·{" "}
+                                  <a
+                                    href={f.signed_url ?? "#"}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-primary underline"
+                                  >
+                                    ver
+                                  </a>
+                                  <button
+                                    className="ml-1 text-rose-600"
+                                    onClick={async () => {
+                                      await dropDoc({ data: { token, id: f.id } });
+                                      onChange();
+                                    }}
+                                  >
+                                    ×
+                                  </button>
                                 </span>
                               ))}
                             </div>
                           </div>
                           <label className="cursor-pointer">
-                            <input type="file" accept="application/pdf,image/jpeg,image/png" capture="environment" className="hidden"
+                            <input
+                              type="file"
+                              accept="application/pdf,image/jpeg,image/png"
+                              className="hidden"
                               disabled={uploading === key}
-                              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(dd.type, f, { dependent_id: dep.id }); }}
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) uploadDoc(dd.type, f, { dependent_id: dep.id });
+                              }}
                             />
                             <span className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border bg-background px-2 text-xs hover:bg-accent">
-                              {uploading === key ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                              {uploading === key ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Upload className="h-3 w-3" />
+                              )}
                               Enviar
                             </span>
                           </label>
@@ -1174,22 +1606,46 @@ function DependentsBlock(props: {
 
             {adding ? (
               <div className="space-y-2 rounded-md border bg-muted/30 p-3">
-                <Input placeholder="Nome completo" value={draft.full_name} onChange={(e) => setDraft({ ...draft, full_name: e.target.value })} />
+                <Input
+                  placeholder="Nome completo"
+                  value={draft.full_name}
+                  onChange={(e) => setDraft({ ...draft, full_name: e.target.value })}
+                />
                 <Grid2>
-                  <select className="h-9 rounded-md border bg-background px-2 text-sm" value={draft.relationship} onChange={(e) => setDraft({ ...draft, relationship: e.target.value })}>
+                  <select
+                    className="h-9 rounded-md border bg-background px-2 text-sm"
+                    value={draft.relationship}
+                    onChange={(e) => setDraft({ ...draft, relationship: e.target.value })}
+                  >
                     <option value="filho">Filho(a)</option>
                     <option value="conjuge">Cônjuge</option>
                     <option value="outro">Outro</option>
                   </select>
-                  <Input type="date" value={draft.birth_date} onChange={(e) => setDraft({ ...draft, birth_date: e.target.value })} />
+                  <Input
+                    type="date"
+                    value={draft.birth_date}
+                    onChange={(e) => setDraft({ ...draft, birth_date: e.target.value })}
+                  />
                 </Grid2>
                 <Grid2>
-                  <Input placeholder="CPF (opcional)" value={draft.cpf} onChange={(e) => setDraft({ ...draft, cpf: e.target.value })} />
-                  <Input placeholder="RG (opcional)" value={draft.rg} onChange={(e) => setDraft({ ...draft, rg: e.target.value })} />
+                  <Input
+                    placeholder="CPF (opcional)"
+                    value={draft.cpf}
+                    onChange={(e) => setDraft({ ...draft, cpf: e.target.value })}
+                  />
+                  <Input
+                    placeholder="RG (opcional)"
+                    value={draft.rg}
+                    onChange={(e) => setDraft({ ...draft, rg: e.target.value })}
+                  />
                 </Grid2>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="ghost" className="flex-1" onClick={() => setAdding(false)}>Cancelar</Button>
-                  <Button size="sm" className="flex-1" onClick={addDep}>Adicionar</Button>
+                  <Button size="sm" variant="ghost" className="flex-1" onClick={() => setAdding(false)}>
+                    Cancelar
+                  </Button>
+                  <Button size="sm" className="flex-1" onClick={addDep}>
+                    Adicionar
+                  </Button>
                 </div>
               </div>
             ) : (
