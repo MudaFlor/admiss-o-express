@@ -8,6 +8,10 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "FlowRH — Plataforma premium de RH e Departamento Pessoal" },
+      { property: "og:title", content: "FlowRH — Plataforma premium de RH e Departamento Pessoal" },
+      { property: "og:description", content: "Colaboradores, documentos, férias e recrutamento em uma única plataforma moderna." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       {
         name: "description",
         content:

@@ -3,7 +3,7 @@ export const ILLEGIBLE_MESSAGE =
   "Imagem do documento está ilegível, por gentileza reenviar documento.";
 
 export const OCR_TYPES = new Set([
-  "rg", "cpf", "cnh", "comprovante_residencia", "titulo_eleitor", "certidao",
+  "rg", "cpf", "cnh", "ctps", "comprovante_residencia", "titulo_eleitor", "certidao",
   "pis_pasep", "cartao_sus", "dependente_certidao", "dependente_rg_cpf",
 ]);
 

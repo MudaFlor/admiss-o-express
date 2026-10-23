@@ -35,6 +35,8 @@ import { AlertTriangle } from "lucide-react";
 import { LGPD_TERMS_TEXT, LGPD_TERMS_VERSION } from "@/lib/lgpd/terms";
 import { CORRECTION_FIELD_LABEL } from "@/lib/corrections";
 import { validateFile } from "@/lib/upload-rules";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { candidateContactIssues, RACE_OPTIONS, reviewedOcrData } from "@/lib/validation/candidate-submission";
 
 type SignatureDeviceInfo = {
   user_agent?: string; platform?: string; language?: string; timezone?: string;
@@ -66,7 +68,14 @@ function requestGeolocation(): Promise<{ lat: number; lng: number; accuracy?: nu
 }
 
 export const Route = createFileRoute("/c/$token")({
-  head: () => ({ meta: [{ title: "Sua admissao digital" }] }),
+  head: () => ({ meta: [
+    { title: "Documentos de admissão | Mudaflor People OS" },
+    { name: "description", content: "Envie seus documentos de admissão e revise seus dados com segurança." },
+    { property: "og:title", content: "Documentos de admissão | Mudaflor People OS" },
+    { property: "og:description", content: "Envie seus documentos de admissão e revise seus dados com segurança." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: CandidatePage,
 });
 
@@ -101,12 +110,13 @@ interface FormState {
   email: string; telefone: string; endereco: string; linkedin: string;
   formacao: string; experiencias: string; competencias: string;
   sexo: string; cor_raca: string; estado_civil: string;
+  ctps_emissao: string;
 }
 const emptyForm = (): FormState => ({
   full_name: "", cpf: "", rg: "", rg_emissao: "", data_nascimento: "", local_nascimento: "",
   nome_pai: "", nome_mae: "", email: "", telefone: "", endereco: "", linkedin: "",
   formacao: "", experiencias: "", competencias: "",
-  sexo: "", cor_raca: "", estado_civil: "",
+  sexo: "", cor_raca: "", estado_civil: "", ctps_emissao: "",
 });
 
 // Mapeamento OCR (campo do documento) -> campo do FormState.
@@ -118,6 +128,7 @@ const OCR_TO_FORM: Partial<Record<DocType, Partial<Record<string, keyof FormStat
     naturalidade: "local_nascimento", nome_pai: "nome_pai", nome_mae: "nome_mae",
   },
   cpf: { nome: "full_name", cpf: "cpf", sexo: "sexo", data_nascimento: "data_nascimento" },
+  ctps: { nome: "full_name", cpf: "cpf", data_emissao: "ctps_emissao" },
   cnh: {
     nome: "full_name", cpf: "cpf", sexo: "sexo",
     data_emissao: "rg_emissao", data_nascimento: "data_nascimento",
@@ -129,7 +140,7 @@ const OCR_TO_FORM: Partial<Record<DocType, Partial<Record<string, keyof FormStat
   comprovante_residencia: {},
 };
 const DOC_LABEL: Partial<Record<DocType, string>> = {
-  rg: "RG/CIN", cpf: "CPF", cnh: "CNH", certidao: "certidão",
+  rg: "RG/CIN", cpf: "CPF", cnh: "CNH", ctps: "CTPS", certidao: "certidão",
   comprovante_residencia: "comprovante de residência",
 };
 function buildEndereco(fields: Record<string, string>): string | null {
@@ -143,6 +154,7 @@ const REVIEW_FIELDS: ReadonlyArray<[keyof FormState, string]> = [
   ["data_nascimento", "Data de nascimento"], ["local_nascimento", "Naturalidade"],
   ["nome_mae", "Nome da mãe"], ["nome_pai", "Nome do pai"], ["endereco", "Endereço"],
   ["telefone", "Telefone"], ["email", "E-mail"],
+  ["ctps_emissao", "Data de emissão da CTPS"],
 ];
 
 function CandidatePage() {
@@ -182,6 +194,8 @@ function CandidatePage() {
   const [form, setForm] = useState<FormState>(emptyForm());
   const [autoFilled, setAutoFilled] = useState<Set<keyof FormState>>(new Set());
   const [step, setStep] = useState(0);
+  const [reviewedDocs, setReviewedDocs] = useState<Record<string, Record<string, string>>>({});
+  const [editingDoc, setEditingDoc] = useState<string | null>(null);
 
   const lgpdAt = q.data?.candidate.lgpd_accepted_at;
   const cand = q.data?.candidate;
@@ -191,6 +205,15 @@ function CandidatePage() {
   // Fluxo expresso: ficha base vem do cadastro do RH; OCR completa o resto.
   useEffect(() => {
     if (!cand) return;
+    const saved = cand.form_data && typeof cand.form_data === "object" && !Array.isArray(cand.form_data)
+      ? cand.form_data as Record<string, unknown> : {};
+    const savedForm: Partial<FormState> = {};
+    for (const key of Object.keys(emptyForm()) as Array<keyof FormState>) {
+      if (typeof saved[key] === "string") savedForm[key] = saved[key];
+    }
+    if (saved.documentos_revisados && typeof saved.documentos_revisados === "object") {
+      setReviewedDocs((current) => ({ ...saved.documentos_revisados as Record<string, Record<string, string>>, ...current }));
+    }
     setForm((f) => f.full_name ? f : {
       ...f,
       full_name: cand.full_name ?? "",
@@ -200,6 +223,7 @@ function CandidatePage() {
       sexo: cand.sexo ?? "",
       cor_raca: cand.cor_raca ?? "",
       estado_civil: cand.estado_civil ?? "",
+      ...savedForm,
     });
   }, [cand]);
   // Ao reabrir o portal, recupera os dados já lidos dos documentos enviados
@@ -211,12 +235,14 @@ function CandidatePage() {
     for (const d of docsForOcr) {
       if (d.dependent_id) continue;
       const raw = (d as { ocr_data?: { values?: Record<string, string> } }).ocr_data;
-      const vals = raw?.values;
+      const saved = cand?.form_data as Record<string, unknown> | null;
+      const reviewed = saved?.documentos_revisados as Record<string, Record<string, string>> | undefined;
+      const vals = reviewedOcrData(raw, reviewed?.[d.id]).values;
       if (!vals) continue;
       const map = OCR_TO_FORM[d.type as DocType];
-      if (map) for (const [ok, fk] of Object.entries(map)) if (fk && vals[ok]) writes.push([fk, vals[ok]]);
+      if (map) for (const [ok, fk] of Object.entries(map)) if (fk && typeof vals[ok] === "string") writes.push([fk, vals[ok] as string]);
       if (d.type === "comprovante_residencia") {
-        const e = buildEndereco(vals);
+        const e = buildEndereco(vals as Record<string, string>);
         if (e) writes.push(["endereco", e]);
       }
     }
@@ -234,8 +260,8 @@ function CandidatePage() {
   if (q.isLoading) return <Center><Loader2 className="h-5 w-5 animate-spin" /></Center>;
   if (q.isError) return <Center><p className="text-sm text-rose-600">{(q.error as Error).message}</p></Center>;
 
-  const { candidate, documents } = q.data!;
-  const correction = q.data!.correction;
+  if (!q.data) return null;
+  const { candidate, documents, correction } = q.data;
 
   if (candidate.deletion_requested_at) {
     return <Done title="Solicitacao registrada" desc="Recebemos sua solicitacao de exclusao. O RH entrara em contato." />;
@@ -262,6 +288,7 @@ function CandidatePage() {
   const dynamicRequired = new Set(dynamicRules.map((r) => r.document_type as DocType));
   const hasDynamic = dynamicRequired.size > 0;
   const isRequired = (t: DocType) => {
+    if (t === "ctps") return true;
     if (t === "rg" && uploadedTypes.has("cnh")) return false;
     if (hasDynamic) return dynamicRequired.has(t);
     const def = DOCS.find((d) => d.type === t);
@@ -270,7 +297,7 @@ function CandidatePage() {
     return true;
   };
   const requiredTypes: DocType[] = hasDynamic
-    ? [...dynamicRequired].filter((t) => isRequired(t))
+    ? [...new Set<DocType>([...dynamicRequired, "ctps"])].filter((t) => isRequired(t))
     : DOCS.filter((d) => isRequired(d.type)).map((d) => d.type);
   const pendingRequired = requiredTypes.filter((t) => !uploadedTypes.has(t));
   const allUploaded = hasIdentidade && requiredTypes.every((t) => uploadedTypes.has(t));
@@ -283,10 +310,10 @@ function CandidatePage() {
   });
   const crossCheck = crossCheckCandidate({
     declared: declaredData,
-    documents: documents.map((d) => ({ type: d.type, dependent_id: d.dependent_id, ocr_data: (d as { ocr_data?: unknown }).ocr_data })),
+    documents: documents.map((d) => ({ type: d.type, dependent_id: d.dependent_id, ocr_data: reviewedOcrData(d.ocr_data, reviewedDocs[d.id]) })),
   });
   const hasDivergence = crossCheck.summary.divergente > 0;
-  const issues = blockingIssues(crossCheck, declaredData);
+  const issues = { ...blockingIssues(crossCheck, declaredData), ...candidateContactIssues(form) };
   const issueCount = Object.keys(issues).length;
 
   function setField<K extends keyof FormState>(k: K, v: string) {
@@ -355,6 +382,7 @@ function CandidatePage() {
         sexo: candidate.sexo ?? "",
         cor_raca: candidate.cor_raca ?? "",
         estado_civil: candidate.estado_civil ?? "",
+        ctps_emissao: form.ctps_emissao,
       };
       setForm(mapped);
       setAutoFilled(new Set(Object.entries(mapped).filter(([, v]) => v && String(v).trim()).map(([k]) => k as keyof FormState)));
@@ -389,6 +417,7 @@ function CandidatePage() {
       const up = await fetch(sig.signedUrl, { method: "PUT", body: file, headers: { "content-type": file.type } });
       if (!up.ok) throw new Error("Upload falhou");
       const result = await finalize({ data: { token, type, storage_path: sig.path, dependent_id: opts?.dependent_id, label: opts?.label } });
+      if (Object.keys(result.ocr_fields).length) setEditingDoc(result.id);
       // Pré-preenchimento do formulário com os campos extraídos por OCR do documento.
       // Só para documentos do titular (não dependente).
       if (!opts?.dependent_id) {
@@ -458,7 +487,7 @@ function CandidatePage() {
     try {
       await submit({ data: {
         token,
-        form_data: form as unknown as Record<string, unknown>,
+        form_data: { ...form, documentos_revisados: reviewedDocs } as unknown as Record<string, unknown>,
         sexo: form.sexo || undefined,
         cor_raca: form.cor_raca || undefined,
         estado_civil: form.estado_civil || undefined,
@@ -628,7 +657,7 @@ function CandidatePage() {
               </Section>
 
               <Section title="Contato">
-                <SmartField label="Email" k="email" form={form} setField={setField} autoFilled={autoFilled} type="email" />
+                <SmartField label="E-mail (obrigatório)" k="email" form={form} setField={setField} autoFilled={autoFilled} type="email" error={issues.email} />
                 <SmartField label="Telefone" k="telefone" form={form} setField={setField} autoFilled={autoFilled} />
                 <SmartField label="Endereco" k="endereco" form={form} setField={setField} autoFilled={autoFilled} />
                 <SmartField label="LinkedIn" k="linkedin" form={form} setField={setField} autoFilled={autoFilled} placeholder="linkedin.com/in/seu-perfil" />
@@ -664,15 +693,7 @@ function CandidatePage() {
                   </div>
                 </Grid2>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Cor/Raça (autodeclaração — IBGE)</Label>
-                  <select className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={form.cor_raca} onChange={(e) => setField("cor_raca", e.target.value)}>
-                    <option value="">Selecione</option>
-                    <option value="branca">Branca</option>
-                    <option value="parda">Parda</option>
-                    <option value="amarela">Amarela</option>
-                    <option value="preta">Preta</option>
-                    <option value="indigena">Indígena</option>
-                  </select>
+                  <RaceField value={form.cor_raca} onChange={(value) => setField("cor_raca", value)} error={issues.cor_raca} />
                 </div>
               </Section>
 
@@ -721,8 +742,8 @@ function CandidatePage() {
                 const uploadKey = `${d.type}:`;
                 return (
                   <Card key={d.type}>
-                    <CardContent className="flex items-center justify-between gap-3 p-4">
-                      <div className="flex items-center gap-3">
+                    <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
                         {done && uploaded?.signed_url && !isPdf ? (
                           <a href={uploaded.signed_url} target="_blank" rel="noreferrer" className="block">
                             <img
@@ -770,6 +791,16 @@ function CandidatePage() {
                           {done ? "Trocar" : "Enviar"}
                         </span>
                       </label>
+                      {uploaded && <DocumentExtraction
+                        documentId={uploaded.id} type={d.type} raw={uploaded.ocr_data}
+                        reviewed={reviewedDocs[uploaded.id]} editing={editingDoc === uploaded.id}
+                        onToggle={() => setEditingDoc(editingDoc === uploaded.id ? null : uploaded.id)}
+                        onChange={(key, value) => {
+                          setReviewedDocs((current) => ({ ...current, [uploaded.id]: { ...current[uploaded.id], [key]: value } }));
+                          const formKey = OCR_TO_FORM[d.type]?.[key];
+                          if (formKey) setField(formKey, value);
+                        }}
+                      />}
                     </CardContent>
                   </Card>
                 );
@@ -778,7 +809,7 @@ function CandidatePage() {
 
             <DependentsBlock
               token={token}
-              dependents={q.data!.dependents}
+              dependents={q.data.dependents}
               documents={documents}
               uploadDoc={uploadDoc}
               uploading={uploading}
@@ -808,12 +839,12 @@ function CandidatePage() {
                     const err = issues[k as string];
                     return (
                       <div key={k} className="space-y-0.5">
-                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                          {label}
+                        <Label htmlFor={`review-${k}`} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          {k === "email" ? "E-mail (obrigatório)" : label}
                           {fromOcr && <span className="rounded bg-primary/10 px-1 text-[10px] text-primary">lido do documento</span>}
-                        </div>
+                        </Label>
                         {reviewing ? (
-                          <Input value={form[k]} onChange={(e) => setField(k, e.target.value)} aria-invalid={!!err} className={err ? "h-9 border-destructive bg-destructive/5" : "h-9"} />
+                          <Input id={`review-${k}`} type={k === "email" ? "email" : "text"} required={k === "email"} maxLength={k === "email" ? 255 : 500} value={form[k]} onChange={(e) => setField(k, e.target.value)} aria-invalid={!!err} className={err ? "h-9 border-destructive bg-destructive/5" : "h-9"} />
                         ) : (
                           <div className={err ? "rounded border border-destructive bg-destructive/5 px-2 py-1 text-sm" : "text-sm"}>{form[k] || <span className="text-muted-foreground">—</span>}</div>
                         )}
@@ -822,6 +853,7 @@ function CandidatePage() {
                     );
                   })}
                 </div>
+                <RaceField value={form.cor_raca} onChange={(value) => setField("cor_raca", value)} error={issues.cor_raca} />
               </CardContent>
             </Card>
 
@@ -834,7 +866,7 @@ function CandidatePage() {
                 </div>
               </div>
             )}
-            <Button className="w-full" disabled={!allUploaded || issueCount > 0} onClick={handleSubmit}>
+            <Button className="w-full" disabled={!allUploaded || issueCount > 0 || uploading !== null} onClick={handleSubmit}>
               Enviar documentos
             </Button>
           </>
@@ -931,6 +963,45 @@ function SmartArea<K extends keyof FormState>(props: {
       />
     </div>
   );
+}
+
+function RaceField({ value, onChange, error }: { value: string; onChange: (value: string) => void; error?: string }) {
+  return <fieldset className="space-y-2">
+    <legend className="text-xs font-medium">Raça/cor (autodeclaração)</legend>
+    <RadioGroup aria-label="Raça/cor (autodeclaração)" value={value} onValueChange={onChange} aria-invalid={!!error} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {RACE_OPTIONS.map((option) => <div key={option.value} className="flex items-center gap-2">
+        <RadioGroupItem id={`race-${option.value}`} value={option.value} />
+        <Label htmlFor={`race-${option.value}`} className="text-xs">{option.label}</Label>
+      </div>)}
+    </RadioGroup>
+    {error && <p className="text-xs text-destructive">{error}</p>}
+  </fieldset>;
+}
+
+function DocumentExtraction({ documentId, type, raw, reviewed, editing, onToggle, onChange }: {
+  documentId: string; type: string; raw: unknown; reviewed?: Record<string, string>; editing: boolean;
+  onToggle: () => void; onChange: (key: string, value: string) => void;
+}) {
+  const values = reviewedOcrData(raw, reviewed).values;
+  const entries = Object.entries(values).filter((entry): entry is [string, string] => typeof entry[1] === "string");
+  if (!entries.length) return null;
+  const labels: Record<string, string> = {
+    nome: "Nome", cpf: "CPF", data_emissao: "Data de emissão", data_nascimento: "Data de nascimento",
+    nome_mae: "Nome da mãe", nome_pai: "Nome do pai", sexo: "Sexo", nacionalidade: "Nacionalidade",
+  };
+  return <section aria-label={`Dados extraídos de ${type}`} className="w-full space-y-3 border-t pt-3">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h3 className="flex items-center gap-1 text-xs font-medium"><Sparkles className="h-3 w-3 text-primary" /> Dados extraídos</h3>
+      <Button size="sm" variant="outline" onClick={onToggle}>{editing ? "Concluir revisão" : "Revisar e corrigir"}</Button>
+    </div>
+    <dl className="grid gap-3 sm:grid-cols-2">
+      {entries.map(([key, value]) => <div key={key} className="min-w-0 space-y-1">
+        <dt><Label htmlFor={`ocr-${documentId}-${key}`} className="text-xs text-muted-foreground">{labels[key] ?? key.replace(/_/g, " ")}</Label></dt>
+        <dd>{editing ? <Input id={`ocr-${documentId}-${key}`} maxLength={1000} value={value} onChange={(event) => onChange(key, event.target.value)} />
+          : <span className="break-words text-sm">{value || "—"}</span>}</dd>
+      </div>)}
+    </dl>
+  </section>;
 }
 
 function Center({ children }: { children: React.ReactNode }) {

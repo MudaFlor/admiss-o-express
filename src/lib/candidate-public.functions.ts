@@ -15,6 +15,8 @@ import { requiredDocumentsFor, missingDocs } from "@/lib/requirements/requiremen
 import { lookupCep, checkDuplicateCpf } from "@/lib/validation/field-checks";
 import { signedDocumentUrl, assertUploadedFileIsSafe } from "@/lib/security/storage.server";
 import { isAllowedExtension } from "@/lib/upload-rules";
+import { candidateContactSchema, reviewedDocumentsSchema, reviewedOcrData, requiresCtps } from "@/lib/validation/candidate-submission";
+import { crossCheckCandidate, extractDeclaredFromFormData, blockingIssues } from "@/lib/validation/cross-check";
 
 function clientIp(): string {
   return getRequestIP({ xForwardedFor: true }) ?? "unknown";
@@ -137,7 +139,7 @@ export const updateCandidateBasics = createServerFn({ method: "POST" })
         token: z.string().uuid(),
         full_name: z.string().trim().min(2).max(120),
         cpf: z.string().trim().min(11).max(20),
-        email: z.string().trim().email().max(255).optional().or(z.literal("")),
+        email: candidateContactSchema.shape.email,
         phone: z.string().trim().max(20).optional().or(z.literal("")),
       })
       .parse(input),
@@ -287,11 +289,24 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
 
+    const contact = candidateContactSchema.parse({ email: data.form_data.email, cor_raca: data.cor_raca ?? data.form_data.cor_raca });
+    const reviewed = reviewedDocumentsSchema.parse(data.form_data.documentos_revisados ?? {});
+
     // Validação de documentos obrigatórios
     const { data: docs } = await supabaseAdmin
       .from("documents")
-      .select("type, dependent_id")
-      .eq("candidate_id", candidate.id);
+      .select("id, type, dependent_id, ocr_data")
+      .eq("candidate_id", candidate.id)
+      .is("deleted_at", null);
+    const safeReviewed: Record<string, Record<string, string>> = {};
+    const effectiveDocs = (docs ?? []).map((doc) => {
+      const effective = reviewedOcrData(doc.ocr_data, reviewed[doc.id]);
+      if (reviewed[doc.id]) safeReviewed[doc.id] = Object.fromEntries(Object.entries(effective.values).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+      return { ...doc, ocr_data: effective };
+    });
+    const declared = extractDeclaredFromFormData(data.form_data);
+    const issues = blockingIssues(crossCheckCandidate({ declared, documents: effectiveDocs }), declared);
+    if (Object.keys(issues).length) throw new Error("Dados incorretos. Corrija os campos vazios ou divergentes antes de enviar.");
     const holderDocs = new Set((docs ?? []).filter((d) => !d.dependent_id).map((d) => d.type));
     // RG ou CNH: pelo menos um
     const hasIdentidade = holderDocs.has("rg") || holderDocs.has("cnh");
@@ -318,15 +333,20 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
       if (sexo === "masculino" && !holderDocs.has("reservista")) missing.push("reservista");
     }
     if (!hasIdentidade && !missing.includes("rg_ou_cnh")) missing.push("RG ou CNH");
+    if (requiresCtps(holderDocs) && !missing.includes("ctps")) missing.push("ctps");
     if (missing.length) throw new Error(`Faltam documentos: ${missing.join(", ")}`);
 
     const { error } = await supabaseAdmin
       .from("candidates")
       .update({
-        form_data: data.form_data as never,
+        form_data: { ...data.form_data, email: contact.email, cor_raca: contact.cor_raca, documentos_revisados: safeReviewed } as never,
+        full_name: typeof data.form_data.full_name === "string" ? data.form_data.full_name.trim() : candidate.full_name,
+        cpf: typeof data.form_data.cpf === "string" ? normalizeCpf(data.form_data.cpf) : candidate.cpf,
+        email: contact.email,
+        phone: typeof data.form_data.telefone === "string" ? data.form_data.telefone.trim().slice(0, 40) || null : candidate.phone,
         status: "em_analise",
         sexo: data.sexo ?? candidate.sexo ?? null,
-        cor_raca: data.cor_raca ?? candidate.cor_raca ?? null,
+        cor_raca: contact.cor_raca,
         estado_civil: data.estado_civil ?? candidate.estado_civil ?? null,
       })
       .eq("id", candidate.id);
