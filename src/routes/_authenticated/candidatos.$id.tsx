@@ -489,7 +489,7 @@ function CandidatoDetailPage() {
             )}
           </div>
 
-          {candidate.status !== "aprovado" && candidate.status !== "rejeitado" && (
+          {candidate.status !== "aprovado" && candidate.status !== "rejeitado" && candidate.status !== "admitido" && (
             <Card>
               <CardContent className="flex flex-wrap items-end gap-3 p-4">
                 <div className="flex-1 min-w-[260px] space-y-1.5">

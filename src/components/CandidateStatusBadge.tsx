@@ -5,6 +5,7 @@ const MAP = {
   pendente: { label: "Pendente", cls: "bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200" },
   em_analise: { label: "Em análise", cls: "bg-sky-100 text-sky-800 hover:bg-sky-100 border-sky-200" },
   aprovado: { label: "Aprovado", cls: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-200" },
+  admitido: { label: "Admitido", cls: "bg-violet-100 text-violet-800 hover:bg-violet-100 border-violet-200" },
   rejeitado: { label: "Rejeitado", cls: "bg-rose-100 text-rose-800 hover:bg-rose-100 border-rose-200" },
 } as const;
 

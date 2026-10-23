@@ -266,7 +266,7 @@ function CandidatePage() {
   if (candidate.deletion_requested_at) {
     return <Done title="Solicitacao registrada" desc="Recebemos sua solicitacao de exclusao. O RH entrara em contato." />;
   }
-  if (candidate.status === "aprovado") return <Done title="Admissao aprovada!" desc="Voce recebera os proximos passos por email." />;
+  if ((candidate.status === "aprovado" || candidate.status === "admitido")) return <Done title="Admissao aprovada!" desc="Voce recebera os proximos passos por email." />;
   if (candidate.status === "rejeitado") return <Done title="Cadastro encerrado" desc="Entre em contato com o RH para mais informacoes." />;
 
   const sexo = candidate.sexo ?? "";
