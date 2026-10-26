@@ -1113,7 +1113,7 @@ function CandidatePage() {
                             </span>
                           )}
                         </Label>
-                        {reviewing ? (
+                        {reviewing || k === "email" ? (
                           <Input
                             id={`review-${k}`}
                             type={k === "email" ? "email" : "text"}
@@ -1156,6 +1156,29 @@ function CandidatePage() {
                   <div className="font-semibold">Dados incorretos</div>
                   Há {issueCount} campo(s) em vermelho não preenchido(s) ou divergente(s) dos documentos. Corrija antes
                   de enviar.
+                </div>
+              </div>
+            )}
+            {!allUploaded && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-md border border-destructive bg-destructive/10 p-3 text-xs text-destructive"
+              >
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div>
+                  <div className="font-semibold">Faltam documentos obrigatórios</div>
+                  Anexe todos antes de enviar:{" "}
+                  {[
+                    ...(hasIdentidade ? [] : ["RG ou CNH"]),
+                    ...pendingRequired
+                      .filter((t) => !(t === "rg" && !hasIdentidade))
+                      .map(
+                        (t) =>
+                          dynamicRules.find((r) => r.document_type === t)?.label ??
+                          DOCS.find((d) => d.type === t)?.label ??
+                          t,
+                      ),
+                  ].join(", ")}
                 </div>
               </div>
             )}
