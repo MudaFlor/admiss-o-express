@@ -5,7 +5,7 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import { runOcr } from "@/lib/ocr/provider.server";
-import { isIllegible, ILLEGIBLE_MESSAGE } from "@/lib/ocr/legibility";
+import { isIllegible, ILLEGIBLE_MESSAGE, isCtpsDigital, CTPS_DIGITAL_MESSAGE } from "@/lib/ocr/legibility";
 import { parseResumeFromStorage } from "@/lib/ai/resume-parser.server";
 import { LGPD_TERMS_TEXT, LGPD_TERMS_VERSION, hashTerms } from "@/lib/lgpd/terms";
 import { assertRateLimitPersisted } from "@/lib/rate-limit.server";
