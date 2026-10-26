@@ -22,6 +22,11 @@ export const changeCandidateStage = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    const { data: isHr } = await context.supabase.rpc("is_hr", { _user_id: context.userId });
+    if (!isHr) throw new Error("Apenas RH pode alterar a etapa do candidato.");
+    const { data: visible } = await context.supabase
+      .from("candidates").select("id").eq("id", data.candidate_id).maybeSingle();
+    if (!visible) throw new Error("Candidato não encontrado ou sem permissão.");
     const { setStage } = await import("@/lib/workflow/stage.server");
     await setStage(data.candidate_id, data.stage, {
       actor_user_id: context.userId,
