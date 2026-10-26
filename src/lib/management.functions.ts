@@ -308,6 +308,7 @@ export const getEmployee = createServerFn({ method: "POST" })
 const EDITABLE = [
   "matricula_esocial", "full_name", "position", "department", "admission_date", "cpf", "rg", "birth_date", "email", "phone",
   "sexo", "estado_civil", "address", "pis", "ctps", "salary", "contract_type", "work_schedule", "bank_info", "notes",
+  "termination_date", "termination_reason",
 ] as const;
 const FIELD_LABELS: Record<string, string> = {
   matricula_esocial: "ID / Matrícula eSocial",
@@ -315,6 +316,7 @@ const FIELD_LABELS: Record<string, string> = {
   birth_date: "Nascimento", email: "E-mail", phone: "Telefone", sexo: "Sexo", estado_civil: "Estado civil",
   address: "Endereço", pis: "PIS", ctps: "CTPS", salary: "Salário", contract_type: "Contrato",
   work_schedule: "Jornada", bank_info: "Dados bancários", notes: "Observações",
+  termination_date: "Data de desligamento", termination_reason: "Motivo do desligamento",
 };
 
 export const updateEmployeeProfile = createServerFn({ method: "POST" })
