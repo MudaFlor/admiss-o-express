@@ -218,6 +218,10 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
       await supabaseAdmin.storage.from("candidate-documents").remove([data.storage_path]);
       throw new Error(ILLEGIBLE_MESSAGE);
     }
+    if (data.type === "ctps" && !isCtpsDigital(ocr.fields)) {
+      await supabaseAdmin.storage.from("candidate-documents").remove([data.storage_path]);
+      throw new Error(CTPS_DIGITAL_MESSAGE);
+    }
 
     // Tipos single-file: substitui o anterior. Multi-file: mantém histórico.
     if (!MULTI_FILE_TYPES.has(data.type)) {
