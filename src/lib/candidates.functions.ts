@@ -323,7 +323,9 @@ export const rejectCandidate = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { error } = await supabase
+    const { data: isHr } = await supabase.rpc("is_hr", { _user_id: userId });
+    if (!isHr) throw new Error("Apenas RH pode realizar esta ação.");
+    const { data: updated, error } = await supabase
       .from("candidates")
       .update({
         status: "rejeitado",
@@ -331,8 +333,10 @@ export const rejectCandidate = createServerFn({ method: "POST" })
         reviewed_at: new Date().toISOString(),
         rejection_reason: data.reason,
       })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .select("id");
     if (error) fail(error);
+    if (!updated?.length) throw new Error("Candidato não encontrado ou sem permissão.");
     await supabaseAdmin.from("notifications").insert({
       candidate_id: data.id,
       event: "candidate.rejected",
@@ -347,7 +351,9 @@ export const reopenCandidate = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { error } = await supabase
+    const { data: isHr } = await supabase.rpc("is_hr", { _user_id: userId });
+    if (!isHr) throw new Error("Apenas RH pode realizar esta ação.");
+    const { data: updated, error } = await supabase
       .from("candidates")
       .update({
         status: "em_analise",
@@ -355,8 +361,10 @@ export const reopenCandidate = createServerFn({ method: "POST" })
         reviewed_by: null,
         reviewed_at: null,
       })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .select("id");
     if (error) fail(error);
+    if (!updated?.length) throw new Error("Candidato não encontrado ou sem permissão.");
     await supabaseAdmin.from("notifications").insert({
       candidate_id: data.id,
       event: "candidate.reopened",
