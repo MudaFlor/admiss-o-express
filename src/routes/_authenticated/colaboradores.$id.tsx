@@ -40,6 +40,8 @@ const FUNCTIONAL: FieldDef[] = [
   { key: "position", label: "Cargo" },
   { key: "department", label: "Departamento" },
   { key: "admission_date", label: "Data de admissão", type: "date" },
+  { key: "termination_date", label: "Data de desligamento", type: "date" },
+  { key: "termination_reason", label: "Motivo do desligamento" },
   { key: "contract_type", label: "Tipo de contrato (CLT, estágio…)" },
   { key: "work_schedule", label: "Jornada" },
   { key: "salary", label: "Salário (R$)" },
