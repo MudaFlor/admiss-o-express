@@ -40,8 +40,6 @@ const FUNCTIONAL: FieldDef[] = [
   { key: "position", label: "Cargo" },
   { key: "department", label: "Departamento" },
   { key: "admission_date", label: "Data de admissão", type: "date" },
-  { key: "termination_date", label: "Data de desligamento", type: "date" },
-  { key: "termination_reason", label: "Motivo do desligamento" },
   { key: "contract_type", label: "Tipo de contrato (CLT, estágio…)" },
   { key: "work_schedule", label: "Jornada" },
   { key: "salary", label: "Salário (R$)" },
@@ -49,10 +47,18 @@ const FUNCTIONAL: FieldDef[] = [
   { key: "ctps", label: "CTPS" },
   { key: "bank_info", label: "Dados bancários", wide: true },
   { key: "notes", label: "Observações do DP", wide: true, area: true },
+  { key: "termination_date", label: "Data de desligamento", type: "date" },
+  { key: "termination_reason", label: "Motivo do desligamento" },
 ];
 const KIND_LABEL: Record<string, string> = {
-  admissao: "Admissão", atualizacao: "Atualização cadastral", anotacao: "Anotação", promocao: "Promoção",
-  alteracao_salarial: "Alteração salarial", ferias: "Férias", advertencia: "Advertência", outro: "Outro",
+  admissao: "Admissão",
+  atualizacao: "Atualização cadastral",
+  anotacao: "Anotação",
+  promocao: "Promoção",
+  alteracao_salarial: "Alteração salarial",
+  ferias: "Férias",
+  advertencia: "Advertência",
+  outro: "Outro",
 };
 
 function EmployeePage() {
@@ -135,9 +141,18 @@ function EmployeePage() {
               <option value="Feminino">Feminino</option>
             </select>
           ) : d.area ? (
-            <Textarea id={d.key} value={form[d.key] ?? ""} onChange={(e) => setForm({ ...form, [d.key]: e.target.value })} />
+            <Textarea
+              id={d.key}
+              value={form[d.key] ?? ""}
+              onChange={(e) => setForm({ ...form, [d.key]: e.target.value })}
+            />
           ) : (
-            <Input id={d.key} type={d.type ?? "text"} value={form[d.key] ?? ""} onChange={(e) => setForm({ ...form, [d.key]: e.target.value })} />
+            <Input
+              id={d.key}
+              type={d.type ?? "text"}
+              value={form[d.key] ?? ""}
+              onChange={(e) => setForm({ ...form, [d.key]: e.target.value })}
+            />
           )}
         </div>
       ))}
@@ -149,16 +164,21 @@ function EmployeePage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild>
-            <Link to="/colaboradores"><ArrowLeft className="h-4 w-4" /></Link>
+            <Link to="/colaboradores">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
           </Button>
           <div>
             <h1 className="text-2xl font-semibold">{employee.full_name}</h1>
             <p className="text-sm text-muted-foreground">
-              {employee.position ?? "Sem cargo"} · {employee.termination_date ? "Desligado" : "Ativo"} · Cadastro independente do recrutamento
+              {employee.position ?? "Sem cargo"} · {employee.termination_date ? "Desligado" : "Ativo"} · Cadastro
+              independente do recrutamento
             </p>
           </div>
         </div>
-        <Button onClick={onSave} disabled={saving}><Save className="h-4 w-4" /> Salvar ficha</Button>
+        <Button onClick={onSave} disabled={saving}>
+          <Save className="h-4 w-4" /> Salvar ficha
+        </Button>
       </div>
 
       <Tabs defaultValue="dados">
@@ -171,62 +191,90 @@ function EmployeePage() {
         </TabsList>
 
         <TabsContent value="dados">
-          <Card><CardContent className="space-y-4 p-4">
-            {renderFields(PERSONAL)}
-            {Object.entries(extra).some(([k, v]) => v && k !== "importado_de_candidato_em") && (
-              <div className="rounded-md border p-3 text-sm">
-                <p className="mb-1 font-medium">Informações trazidas da admissão</p>
-                {extra.nome_mae ? <p>Mãe: {String(extra.nome_mae)}</p> : null}
-                {extra.nome_pai ? <p>Pai: {String(extra.nome_pai)}</p> : null}
-                {extra.local_nascimento ? <p>Naturalidade: {String(extra.local_nascimento)}</p> : null}
-                {extra.rg_emissao ? <p>Emissão do RG: {String(extra.rg_emissao)}</p> : null}
-              </div>
-            )}
-          </CardContent></Card>
+          <Card>
+            <CardContent className="space-y-4 p-4">
+              {renderFields(PERSONAL)}
+              {Object.entries(extra).some(([k, v]) => v && k !== "importado_de_candidato_em") && (
+                <div className="rounded-md border p-3 text-sm">
+                  <p className="mb-1 font-medium">Informações trazidas da admissão</p>
+                  {extra.nome_mae ? <p>Mãe: {String(extra.nome_mae)}</p> : null}
+                  {extra.nome_pai ? <p>Pai: {String(extra.nome_pai)}</p> : null}
+                  {extra.local_nascimento ? <p>Naturalidade: {String(extra.local_nascimento)}</p> : null}
+                  {extra.rg_emissao ? <p>Emissão do RG: {String(extra.rg_emissao)}</p> : null}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="funcionais">
-          <Card><CardContent className="p-4">{renderFields(FUNCTIONAL)}</CardContent></Card>
+          <Card>
+            <CardContent className="p-4">{renderFields(FUNCTIONAL)}</CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="documentos">
-          <Card><CardContent className="p-4">
-            {documents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum documento no prontuário.</p>
-            ) : (
-              <ul className="divide-y">
-                {documents.map((d) => (
-                  <li key={d.id} className="flex items-center justify-between gap-2 py-2">
-                    <span className="flex items-center gap-2 text-sm">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      {d.label || d.type}
-                      <span className="text-xs text-muted-foreground">
-                        · {d.source === "admissao" ? "Admissão" : d.source} · {new Date(d.created_at).toLocaleDateString("pt-BR")}
+          <Card>
+            <CardContent className="p-4">
+              {documents.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum documento no prontuário.</p>
+              ) : (
+                <ul className="divide-y">
+                  {documents.map((d) => (
+                    <li key={d.id} className="flex items-center justify-between gap-2 py-2">
+                      <span className="flex items-center gap-2 text-sm">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        {d.label || d.type}
+                        <span className="text-xs text-muted-foreground">
+                          · {d.source === "admissao" ? "Admissão" : d.source} ·{" "}
+                          {new Date(d.created_at).toLocaleDateString("pt-BR")}
+                        </span>
                       </span>
-                    </span>
-                    <span className="space-x-1">
-                      <Button size="sm" variant="outline" onClick={() => openDoc(d.id, false)}><ExternalLink className="h-3 w-3" /> Abrir</Button>
-                      <Button size="sm" variant="outline" onClick={() => openDoc(d.id, true)}><Download className="h-3 w-3" /> Baixar</Button>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent></Card>
+                      <span className="space-x-1">
+                        <Button size="sm" variant="outline" onClick={() => openDoc(d.id, false)}>
+                          <ExternalLink className="h-3 w-3" /> Abrir
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => openDoc(d.id, true)}>
+                          <Download className="h-3 w-3" /> Baixar
+                        </Button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="historico">
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-base"><History className="h-4 w-4" /> Novo registro</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <History className="h-4 w-4" /> Novo registro
+              </CardTitle>
+            </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex flex-wrap gap-2">
-                <select className="h-9 rounded-md border bg-background px-2 text-sm" value={noteKind} onChange={(e) => setNoteKind(e.target.value)}>
+                <select
+                  className="h-9 rounded-md border bg-background px-2 text-sm"
+                  value={noteKind}
+                  onChange={(e) => setNoteKind(e.target.value)}
+                >
                   {["anotacao", "promocao", "alteracao_salarial", "ferias", "advertencia", "outro"].map((k) => (
-                    <option key={k} value={k}>{KIND_LABEL[k]}</option>
+                    <option key={k} value={k}>
+                      {KIND_LABEL[k]}
+                    </option>
                   ))}
                 </select>
-                <Input className="flex-1" placeholder="Descreva o registro…" value={noteText} onChange={(e) => setNoteText(e.target.value)} />
-                <Button onClick={onNote} disabled={noteText.trim().length < 2}>Registrar</Button>
+                <Input
+                  className="flex-1"
+                  placeholder="Descreva o registro…"
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                />
+                <Button onClick={onNote} disabled={noteText.trim().length < 2}>
+                  Registrar
+                </Button>
               </div>
               <ul className="space-y-2">
                 {history.map((h) => {
@@ -235,11 +283,15 @@ function EmployeePage() {
                     <li key={h.id} className="rounded-md border p-3 text-sm">
                       <div className="flex justify-between gap-2">
                         <span className="font-medium">{KIND_LABEL[h.kind] ?? h.kind}</span>
-                        <span className="text-xs text-muted-foreground">{new Date(h.created_at).toLocaleString("pt-BR")}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(h.created_at).toLocaleString("pt-BR")}
+                        </span>
                       </div>
                       <p className="text-muted-foreground">{h.description}</p>
                       {Object.entries(ch).map(([k, v]) => (
-                        <p key={k} className="text-xs">{k}: <s>{String(v.de ?? "—")}</s> → {String(v.para ?? "—")}</p>
+                        <p key={k} className="text-xs">
+                          {k}: <s>{String(v.de ?? "—")}</s> → {String(v.para ?? "—")}
+                        </p>
                       ))}
                     </li>
                   );
@@ -250,7 +302,11 @@ function EmployeePage() {
         </TabsContent>
 
         <TabsContent value="disc">
-          <Card><CardContent className="p-4"><DiscCard employeeId={employee.id} name={employee.full_name} /></CardContent></Card>
+          <Card>
+            <CardContent className="p-4">
+              <DiscCard employeeId={employee.id} name={employee.full_name} />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
