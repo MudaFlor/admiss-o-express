@@ -25,6 +25,7 @@ import { CandidateStatusBadge } from "@/components/CandidateStatusBadge";
 import { listCandidates } from "@/lib/candidates.functions";
 import { parseCandidateFile, createCandidateFromProfile } from "@/lib/recruitment.functions";
 import { buildCandidateInviteMessage, buildWhatsAppLink } from "@/lib/integrations/whatsapp";
+import { HR_LABELS, HR_SELECT_OPTIONS } from "@/lib/hr-indicators";
 
 export const Route = createFileRoute("/_authenticated/recrutamento")({
   head: () => ({
@@ -90,9 +91,14 @@ function RecrutamentoPage() {
   const [created, setCreated] = useState<{ link: string; name: string; phone: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const setF = (k: string, v: string) => setFilters((p) => ({ ...p, [k]: v }));
+  const activeFilters = Object.fromEntries(Object.entries(filters).filter(([, v]) => v.trim()));
+  const activeCount = Object.keys(activeFilters).length;
+
   const q = useQuery({
-    queryKey: ["candidates", "recrutamento", search],
-    queryFn: () => list({ data: { search } }),
+    queryKey: ["candidates", "recrutamento", search, activeFilters],
+    queryFn: () => list({ data: { search, ...activeFilters } as never }),
   });
 
   function reset() {
@@ -373,7 +379,7 @@ function RecrutamentoPage() {
 
       <Card>
         <CardContent className="p-4">
-          <div className="mb-3 flex items-center gap-2">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por nome…"
@@ -381,6 +387,53 @@ function RecrutamentoPage() {
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-sm"
             />
+            {activeCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={() => setFilters({})}>Limpar filtros ({activeCount})</Button>
+            )}
+          </div>
+          <div className="mb-4 grid gap-3 rounded-md border p-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-1">
+              <Label className="text-xs">Status</Label>
+              <select
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={filters.status ?? ""}
+                onChange={(e) => setF("status", e.target.value)}
+              >
+                <option value="">Todos</option>
+                <option value="pendente">Pendente</option>
+                <option value="em_analise">Em análise</option>
+                <option value="aprovado">Aprovado</option>
+                <option value="rejeitado">Rejeitado</option>
+                <option value="admitido">Admitido</option>
+              </select>
+            </div>
+            {(["cidade", "position", "departamento", "recrutador"] as const).map((k) => (
+              <div key={k} className="space-y-1">
+                <Label className="text-xs">{k === "position" ? "Cargo" : HR_LABELS[k]}</Label>
+                <Input value={filters[k] ?? ""} onChange={(e) => setF(k, e.target.value)} />
+              </div>
+            ))}
+            <div className="space-y-1">
+              <Label className="text-xs">Entrevista de</Label>
+              <Input type="date" value={filters.entrevista_de ?? ""} onChange={(e) => setF("entrevista_de", e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Entrevista até</Label>
+              <Input type="date" value={filters.entrevista_ate ?? ""} onChange={(e) => setF("entrevista_ate", e.target.value)} />
+            </div>
+            {(Object.keys(HR_SELECT_OPTIONS) as Array<keyof typeof HR_SELECT_OPTIONS>).map((k) => (
+              <div key={k} className="space-y-1">
+                <Label className="text-xs">{k === "meio_recebimento" ? "Meio de recebimento" : HR_LABELS[k]}</Label>
+                <select
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  value={filters[k] ?? ""}
+                  onChange={(e) => setF(k, e.target.value)}
+                >
+                  <option value="">Todos</option>
+                  {HR_SELECT_OPTIONS[k].map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+            ))}
           </div>
           <Table>
             <TableHeader>
