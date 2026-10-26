@@ -1,19 +1,12 @@
 // Solicitação de correção ao candidato (RH) + geração da mensagem de aviso via WhatsApp.
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { logAudit } from "@/lib/audit.server";
 import { fail } from "@/lib/errors";
+import { candidatePortalUrl } from "@/lib/public-url";
 
 const ItemSchema = z.object({ type: z.string().min(1).max(60), label: z.string().min(1).max(120) });
-
-function originFromRequest(): string {
-  const origin = getRequestHeader("origin");
-  if (origin) return origin;
-  const host = getRequestHeader("host");
-  return host ? `https://${host}` : "";
-}
 
 export const requestCandidateCorrection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -62,7 +55,7 @@ export const requestCandidateCorrection = createServerFn({ method: "POST" })
       ...data.documents.map((d) => `• ${d.label} (reenviar arquivo)`),
     ].join("\n");
 
-    const link = `${originFromRequest()}/c/${cand.access_token}`;
+    const link = candidatePortalUrl(cand.access_token);
     const { renderMessage, logMessage } = await import("@/lib/messaging/messaging.server");
     const rendered = await renderMessage("correcao", "whatsapp", {
       vars: {
