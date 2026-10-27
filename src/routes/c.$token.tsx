@@ -1382,6 +1382,9 @@ function DocumentExtraction({
     nome_pai: "Nome do pai",
     sexo: "Sexo",
     nacionalidade: "Nacionalidade",
+    cidade_emissao: "Cidade de emissão",
+    conjuge: "Cônjuge",
+    estado_civil: "Estado civil",
   };
   return (
     <section aria-label={`Dados extraídos de ${type}`} className="w-full space-y-3 border-t pt-3">
