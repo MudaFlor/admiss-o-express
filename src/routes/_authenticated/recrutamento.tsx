@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search, Copy, MessageCircle, Upload, Sparkles, Loader2, X } from "lucide-react";
+import { Plus, Search, Copy, MessageCircle, Upload, Sparkles, Loader2, X, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,6 +81,7 @@ function RecrutamentoPage() {
   const qc = useQueryClient();
 
   const [search, setSearch] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const [open, setOpen] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -387,10 +388,15 @@ function RecrutamentoPage() {
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-sm"
             />
+            <Button variant={showFilters ? "secondary" : "outline"} size="sm" onClick={() => setShowFilters((v) => !v)}>
+              <Filter className="mr-1 h-4 w-4" />
+              Filtros{activeCount > 0 ? ` (${activeCount})` : ""}
+            </Button>
             {activeCount > 0 && (
-              <Button variant="ghost" size="sm" onClick={() => setFilters({})}>Limpar filtros ({activeCount})</Button>
+              <Button variant="ghost" size="sm" onClick={() => setFilters({})}>Limpar filtros</Button>
             )}
           </div>
+          {showFilters && (
           <div className="mb-4 grid gap-3 rounded-md border p-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1">
               <Label className="text-xs">Status</Label>
@@ -435,6 +441,7 @@ function RecrutamentoPage() {
               </div>
             ))}
           </div>
+          )}
           <Table>
             <TableHeader>
               <TableRow>
