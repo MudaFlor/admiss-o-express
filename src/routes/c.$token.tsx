@@ -274,6 +274,27 @@ function CandidatePage() {
 
   const lgpdAt = q.data?.candidate.lgpd_accepted_at;
   const cand = q.data?.candidate;
+  // O portal do candidato sempre abre em tema claro (fundo branco),
+  // independente do tema configurado pelo RH no sistema.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    root.classList.remove("dark");
+    root.style.colorScheme = "light";
+    return () => {
+      const raw = localStorage.getItem("mudaflor-theme");
+      const resolved =
+        raw === "system"
+          ? window.matchMedia("(prefers-color-scheme: light)").matches
+            ? "light"
+            : "dark"
+          : raw === "light"
+            ? "light"
+            : "dark";
+      root.classList.toggle("dark", resolved === "dark");
+      root.style.colorScheme = resolved;
+    };
+  }, []);
   useEffect(() => {
     if (lgpdAt && step === 0) setStep(3);
   }, [lgpdAt, step]);
@@ -632,7 +653,7 @@ function CandidatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-secondary pb-20">
+    <div className="min-h-screen bg-white pb-20">
       <header className="border-b bg-background">
         <div className="mx-auto flex max-w-md items-center gap-2 px-4 py-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -1684,7 +1705,7 @@ function DependentsBlock(props: {
 
 function Done({ title, desc }: { title: string; desc: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary px-4">
+    <div className="flex min-h-screen items-center justify-center bg-white px-4">
       <Card className="w-full max-w-sm">
         <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
