@@ -192,6 +192,9 @@ const createEmployeeSchema = z.object({
   department: z.string().trim().max(120).optional().or(z.literal("")),
   admission_date: z.string().min(8).max(20),
   candidate_id: z.string().uuid().optional(),
+  matricula: z.string().trim().min(1, "Nº de matrícula é obrigatório").max(40),
+  cpf: z.string().trim().max(20).optional(),
+  confirmDuplicateCpf: z.boolean().optional(),
 });
 
 function str(v: unknown): string | null {
