@@ -71,6 +71,13 @@
       "when": 1793012667752,
       "tag": "0009_allow_multiple_candidate_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793183029806,
+      "tag": "0010_employee_matricula_unique",
+      "breakpoints": true
     }
   ]
 }
