@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS employees_matricula_unique ON public.employees (matricula_esocial) WHERE matricula_esocial IS NOT NULL AND matricula_esocial <> '';
