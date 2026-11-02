@@ -19,7 +19,13 @@ import {
 } from "@/lib/management.functions";
 
 export const Route = createFileRoute("/_authenticated/colaboradores/$id")({
-  head: () => ({ meta: [{ title: "Ficha do colaborador — Mudaflor People OS" }] }),
+  head: () => ({ meta: [
+    { title: "Ficha do colaborador — Mudaflor People OS" },
+    { name: "description", content: "Ficha pessoal e funcional, matrícula, documentos e histórico do colaborador." },
+    { property: "og:title", content: "Ficha do colaborador — Mudaflor People OS" },
+    { property: "og:description", content: "Dados e histórico independente do colaborador." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
+  ] }),
   component: EmployeePage,
 });
 
@@ -71,6 +77,7 @@ function EmployeePage() {
   const q = useQuery({ queryKey: ["employee", id], queryFn: () => get({ data: { id } }) });
   const [form, setForm] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [registrationError, setRegistrationError] = useState("");
   const [noteKind, setNoteKind] = useState("anotacao");
   const [noteText, setNoteText] = useState("");
 
@@ -91,6 +98,11 @@ function EmployeePage() {
   const extra = (employee.profile_data ?? {}) as Record<string, unknown>;
 
   async function onSave() {
+    setRegistrationError("");
+    if (!form.matricula_esocial?.trim()) {
+      setRegistrationError("Nº de matrícula é obrigatório");
+      return;
+    }
     setSaving(true);
     try {
       const r = await save({ data: { id, fields: form } });
@@ -98,7 +110,9 @@ function EmployeePage() {
       qc.invalidateQueries({ queryKey: ["employee", id] });
       qc.invalidateQueries({ queryKey: ["employees"] });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao salvar");
+      const message = err instanceof Error ? err.message : "Erro ao salvar";
+      setRegistrationError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -150,6 +164,9 @@ function EmployeePage() {
             <Input
               id={d.key}
               type={d.type ?? "text"}
+              required={d.key === "matricula_esocial"}
+              maxLength={d.key === "matricula_esocial" ? 40 : undefined}
+              aria-invalid={d.key === "matricula_esocial" && !!registrationError}
               value={form[d.key] ?? ""}
               onChange={(e) => setForm({ ...form, [d.key]: e.target.value })}
             />
@@ -181,6 +198,7 @@ function EmployeePage() {
         </Button>
       </div>
 
+      {registrationError && <p role="alert" className="text-sm font-semibold text-destructive">{registrationError}</p>}
       <Tabs defaultValue="dados">
         <TabsList>
           <TabsTrigger value="dados">Dados pessoais</TabsTrigger>

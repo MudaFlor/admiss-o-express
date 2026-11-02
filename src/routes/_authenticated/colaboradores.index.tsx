@@ -21,9 +21,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DiscCard } from "@/components/DiscCard";
 import { createEmployee, listEmployees, updateEmployeeAdmission } from "@/lib/management.functions";
 import { listCandidates } from "@/lib/candidates.functions";
+import { checkNewEmployee, CPF_EXISTS_CODE } from "@/lib/validation/employee-id";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+
+type EmployeeDraft = {
+  full_name: string; position?: string; department?: string; admission_date: string;
+  candidate_id?: string; matricula: string; cpf?: string;
+};
 
 export const Route = createFileRoute("/_authenticated/colaboradores/")({
-  head: () => ({ meta: [{ title: "Colaboradores — FlowRH" }] }),
+  head: () => ({ meta: [
+    { title: "Colaboradores — Mudaflor People OS" },
+    { name: "description", content: "Cadastros e admissões de colaboradores com matrícula única." },
+    { property: "og:title", content: "Colaboradores — Mudaflor People OS" },
+    { property: "og:description", content: "Consulte fichas, documentos e matrículas dos colaboradores." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
+  ] }),
   component: ColaboradoresPage,
 });
 
@@ -40,6 +53,10 @@ function ColaboradoresPage() {
   const [manualOpen, setManualOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importSearch, setImportSearch] = useState("");
+  const [importMatricula, setImportMatricula] = useState("");
+  const [registrationError, setRegistrationError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [pendingCpf, setPendingCpf] = useState<EmployeeDraft | null>(null);
 
   const q = useQuery({ queryKey: ["employees"], queryFn: () => list() });
   const approvedQ = useQuery({
@@ -58,39 +75,53 @@ function ColaboradoresPage() {
   async function onManualCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    try {
-      await create({
-        data: {
+    await registerEmployee({
           full_name: String(fd.get("full_name")),
           position: String(fd.get("position") ?? ""),
           department: String(fd.get("department") ?? ""),
           admission_date: String(fd.get("admission_date")),
-        },
-      });
-      toast.success("Colaborador cadastrado.");
+          matricula: String(fd.get("matricula") ?? ""),
+          cpf: String(fd.get("cpf") ?? ""),
+    });
+  }
+
+  async function registerEmployee(draft: EmployeeDraft, confirmed = false) {
+    setRegistrationError("");
+    const check = checkNewEmployee({
+      matricula: draft.matricula, cpf: draft.cpf,
+      existing: (q.data ?? []).map((e) => ({ matricula: e.matricula_esocial, cpf: e.cpf })),
+      confirmDuplicateCpf: confirmed,
+    });
+    if (!check.ok) {
+      if (check.code === "CPF_EXISTS") setPendingCpf(draft);
+      else setRegistrationError(check.message);
+      return;
+    }
+    setSaving(true);
+    try {
+      await create({ data: { ...draft, confirmDuplicateCpf: confirmed } });
+      toast.success(draft.candidate_id ? `${draft.full_name} admitido. Dados e documentos copiados para a ficha do colaborador.` : "Colaborador cadastrado.");
       setManualOpen(false);
+      setImportOpen(false);
+      setPendingCpf(null);
+      setImportMatricula("");
       qc.invalidateQueries({ queryKey: ["employees"] });
+      qc.invalidateQueries({ queryKey: ["candidates"] });
+      qc.invalidateQueries({ queryKey: ["dash-stats"] });
+      qc.invalidateQueries({ queryKey: ["dash-overview"] });
+      qc.invalidateQueries({ queryKey: ["gestao"] });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao cadastrar");
+      const message = err instanceof Error ? err.message : "Erro ao cadastrar";
+      if (message.includes(CPF_EXISTS_CODE)) setPendingCpf(draft);
+      else setRegistrationError(message);
+    } finally {
+      setSaving(false);
     }
   }
 
-  async function importCandidate(c: { id: string; full_name: string; position: string | null }) {
-    try {
-      await create({
-        data: {
-          full_name: c.full_name,
-          position: c.position ?? "",
-          admission_date: importDate,
-          candidate_id: c.id,
-        },
-      });
-      toast.success(`${c.full_name} admitido. Dados e documentos copiados para a ficha do colaborador.`);
-      qc.invalidateQueries({ queryKey: ["employees"] });
-      qc.invalidateQueries({ queryKey: ["candidates"] });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao importar");
-    }
+  async function importCandidate(c: { id: string; full_name: string; position: string | null; cpf: string | null }) {
+    await registerEmployee({ full_name: c.full_name, position: c.position ?? "", admission_date: importDate,
+      candidate_id: c.id, matricula: importMatricula, cpf: c.cpf ?? "" });
   }
 
   const approvedFiltered = (approvedQ.data ?? []).filter((c) =>
@@ -107,7 +138,7 @@ function ColaboradoresPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Dialog open={importOpen} onOpenChange={setImportOpen}>
+          <Dialog open={importOpen} onOpenChange={(open) => { setImportOpen(open); setRegistrationError(""); }}>
             <DialogTrigger asChild>
               <Button variant="outline">
                 <UserPlus className="h-4 w-4" /> Importar de Candidatos
@@ -120,6 +151,11 @@ function ColaboradoresPage() {
                   Defina a data de admissão e importe. Documentos, termo LGPD, DISC e histórico seguem para a pasta do colaborador.
                 </DialogDescription>
               </DialogHeader>
+              <div className="space-y-1.5">
+                <Label htmlFor="import_matricula">ID / Matrícula eSocial *</Label>
+                <Input id="import_matricula" required maxLength={40} value={importMatricula} onChange={(e) => { setImportMatricula(e.target.value); setRegistrationError(""); }} aria-invalid={!!registrationError} />
+              </div>
+              {registrationError && <p role="alert" className="text-sm font-semibold text-destructive">{registrationError}</p>}
               <div className="space-y-1.5">
                 <Label htmlFor="import_date">Data de admissão</Label>
                 <Input id="import_date" type="date" value={importDate} onChange={(e) => setImportDate(e.target.value)} className="max-w-xs" />
@@ -158,7 +194,7 @@ function ColaboradoresPage() {
                           <TableCell className="font-medium">{c.full_name}</TableCell>
                           <TableCell>{c.position ?? "—"}</TableCell>
                           <TableCell className="text-right">
-                            <Button size="sm" onClick={() => importCandidate(c)}>
+                            <Button size="sm" disabled={saving} onClick={() => importCandidate(c)}>
                               Importar
                             </Button>
                           </TableCell>
@@ -171,7 +207,7 @@ function ColaboradoresPage() {
             </DialogContent>
           </Dialog>
 
-          <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+          <Dialog open={manualOpen} onOpenChange={(open) => { setManualOpen(open); setRegistrationError(""); }}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4" /> Novo colaborador
@@ -184,8 +220,17 @@ function ColaboradoresPage() {
               </DialogHeader>
               <form onSubmit={onManualCreate} className="space-y-3">
                 <div className="space-y-1.5">
+                  <Label htmlFor="manual_matricula">ID / Matrícula eSocial *</Label>
+                  <Input id="manual_matricula" name="matricula" required maxLength={40} aria-invalid={!!registrationError} onChange={() => setRegistrationError("")} />
+                </div>
+                {registrationError && <p role="alert" className="text-sm font-semibold text-destructive">{registrationError}</p>}
+                <div className="space-y-1.5">
                   <Label htmlFor="full_name">Nome completo</Label>
                   <Input id="full_name" name="full_name" required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="manual_cpf">CPF</Label>
+                  <Input id="manual_cpf" name="cpf" maxLength={20} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
@@ -202,13 +247,26 @@ function ColaboradoresPage() {
                   <Input id="admission_date" name="admission_date" type="date" required />
                 </div>
                 <DialogFooter>
-                  <Button type="submit">Cadastrar</Button>
+                  <Button type="submit" disabled={saving}>Cadastrar</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
         </div>
       </div>
+
+      <AlertDialog open={!!pendingCpf} onOpenChange={(open) => { if (!open) setPendingCpf(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>CPF já está cadastrado, deseja cadastrá-lo novamente?</AlertDialogTitle>
+            <AlertDialogDescription>O novo cadastro deve ter uma matrícula diferente.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setPendingCpf(null); setManualOpen(false); setImportOpen(false); }}>Não</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { const draft = pendingCpf; setPendingCpf(null); if (draft) void registerEmployee(draft, true); }}>Sim</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Card>
         <CardContent className="p-4">
