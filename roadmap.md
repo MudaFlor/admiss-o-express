@@ -1,4 +1,5 @@
 # Ajustes do portal do candidato
+- [ ] Separar cards Aprovados e Admitidos, corrigir contagens e verificar filtros com dados reais.
 - [x] Corrigir múltiplos anexos de cursos, vacinação e dependentes; 12 inserções verificadas e desfeitas sem alterar documentos existentes.
 - [x] Corrigir endereço público dos links de correção; testes de URL e WhatsApp passaram. Envio completo pela tela não exercitado; publicação pendente.
 - [x] Solicitar raça/cor por escolha e exigir e-mail no envio.
