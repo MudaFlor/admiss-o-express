@@ -2,7 +2,7 @@ import { candidatePortalUrl } from "@/lib/public-url";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Search, Copy, MessageCircle, Upload, Sparkles, Loader2, X, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,12 @@ import { listCandidates } from "@/lib/candidates.functions";
 import { parseCandidateFile, createCandidateFromProfile } from "@/lib/recruitment.functions";
 import { buildCandidateInviteMessage, buildWhatsAppLink } from "@/lib/integrations/whatsapp";
 import { HR_LABELS, HR_SELECT_OPTIONS } from "@/lib/hr-indicators";
+import { isCandidateStatus } from "@/lib/candidate-status-counts";
 
 export const Route = createFileRoute("/_authenticated/recrutamento")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    status: isCandidateStatus(search.status) ? search.status : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Recrutamento — Mudaflor People OS" },
@@ -75,6 +79,7 @@ function readAsBase64(file: File): Promise<string> {
 }
 
 function RecrutamentoPage() {
+  const { status: initialStatus } = Route.useSearch();
   const list = useServerFn(listCandidates);
   const parseFile = useServerFn(parseCandidateFile);
   const createFromProfile = useServerFn(createCandidateFromProfile);
@@ -92,7 +97,10 @@ function RecrutamentoPage() {
   const [created, setCreated] = useState<{ link: string; name: string; phone: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [filters, setFilters] = useState<Record<string, string>>(() => initialStatus ? { status: initialStatus } : {});
+  useEffect(() => {
+    setFilters((previous) => ({ ...previous, status: initialStatus ?? "" }));
+  }, [initialStatus]);
   const setF = (k: string, v: string) => setFilters((p) => ({ ...p, [k]: v }));
   const activeFilters = Object.fromEntries(Object.entries(filters).filter(([, v]) => v.trim()));
   const activeCount = Object.keys(activeFilters).length;

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { fail } from "@/lib/errors";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { countCandidateStatuses } from "@/lib/candidate-status-counts";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import { logAudit } from "@/lib/audit.server";
@@ -163,9 +164,7 @@ export const getDashboardStats = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data, error } = await supabase.from("candidates").select("status");
     if (error) fail(error);
-    const counts = { pendente: 0, em_analise: 0, aprovado: 0, rejeitado: 0 };
-    for (const r of data ?? []) counts[r.status as keyof typeof counts]++;
-    return { counts, total: data?.length ?? 0 };
+    return countCandidateStatuses(data ?? []);
   });
 
 export const getCandidateById = createServerFn({ method: "POST" })

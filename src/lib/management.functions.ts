@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { fail } from "@/lib/errors";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { countCandidateStatuses } from "@/lib/candidate-status-counts";
 
 const periodSchema = z
   .object({
@@ -148,12 +149,14 @@ export const getManagementOverview = createServerFn({ method: "POST" })
       }));
 
     // Pipeline
+    const { counts, total } = countCandidateStatuses(candidates);
     const pipeline = {
-      curriculos: candidates.length,
-      em_analise: candidates.filter((c) => c.status === "em_analise").length,
-      aprovados_aguardando: candidates.filter((c) => c.status === "aprovado").length,
-      pendentes: candidates.filter((c) => c.status === "pendente").length,
-      rejeitados: candidates.filter((c) => c.status === "rejeitado").length,
+      curriculos: total,
+      em_analise: counts.em_analise,
+      aprovados_aguardando: counts.aprovado,
+      admitidos: counts.admitido,
+      pendentes: counts.pendente,
+      rejeitados: counts.rejeitado,
     };
 
     const pendingOnboarding = candidates

@@ -27,9 +27,17 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getDashboardStats, listCandidates } from "@/lib/candidates.functions";
 import { getManagementOverview } from "@/lib/management.functions";
+import type { CandidateStatus } from "@/lib/candidate-status-counts";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — Mudaflor People OS" }] }),
+  head: () => ({ meta: [
+    { title: "Dashboard — Mudaflor People OS" },
+    { name: "description", content: "Indicadores de pessoas e pipeline com aprovados e admitidos separados." },
+    { property: "og:title", content: "Dashboard — Mudaflor People OS" },
+    { property: "og:description", content: "Acompanhe candidatos, aprovações, admissões e movimentações de pessoas." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: DashboardPage,
 });
 
@@ -55,11 +63,7 @@ function DashboardPage() {
   }));
   const hasMovement = chartData.some((d) => d.admissoes > 0 || d.desligamentos > 0);
 
-  const candCount =
-    (statsQ.data?.counts.pendente ?? 0) +
-    (statsQ.data?.counts.em_analise ?? 0) +
-    (statsQ.data?.counts.aprovado ?? 0) +
-    (statsQ.data?.counts.rejeitado ?? 0);
+  const candCount = statsQ.data?.total ?? 0;
 
   const kpis = [
     { label: "Colaboradores ativos", value: k?.active_employees ?? 0, icon: Users, to: "/colaboradores" as const },
@@ -74,11 +78,12 @@ function DashboardPage() {
     },
   ];
 
-  const stages = [
-    { name: "Pendentes", count: pipeline?.pendentes ?? 0, color: "bg-muted-foreground/50" },
-    { name: "Em análise", count: pipeline?.em_analise ?? 0, color: "bg-primary/70" },
-    { name: "Aprovados", count: pipeline?.aprovados_aguardando ?? 0, color: "bg-primary" },
-    { name: "Rejeitados", count: pipeline?.rejeitados ?? 0, color: "bg-accent" },
+  const stages: { name: string; count: number; color: string; status?: CandidateStatus }[] = [
+    { name: "Pendentes", count: pipeline?.pendentes ?? 0, color: "bg-muted-foreground/50", status: "pendente" },
+    { name: "Em análise", count: pipeline?.em_analise ?? 0, color: "bg-primary/70", status: "em_analise" },
+    { name: "Aprovados", count: pipeline?.aprovados_aguardando ?? 0, color: "bg-primary", status: "aprovado" },
+    { name: "Admitidos", count: pipeline?.admitidos ?? 0, color: "bg-chart-3", status: "admitido" },
+    { name: "Rejeitados", count: pipeline?.rejeitados ?? 0, color: "bg-accent", status: "rejeitado" },
     { name: "Total currículos", count: pipeline?.curriculos ?? 0, color: "bg-accent/70" },
   ];
 
@@ -154,20 +159,20 @@ function DashboardPage() {
             <Link to="/recrutamento">Ver kanban <ArrowUpRight className="h-3 w-3" /></Link>
           </Button>
         </div>
-        <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-5">
+        <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           {stages.map((s) => (
-            <div key={s.name} className="rounded-lg border border-border bg-background/40 p-3">
+            <Link to="/recrutamento" search={{ status: s.status }} key={s.name} className="rounded-lg border border-border bg-background/40 p-3 transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">{s.name}</span>
                 <span className="text-base font-semibold text-foreground">{s.count}</span>
               </div>
-              <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/5">
+              <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
                 <div
                   className={`h-full ${s.color}`}
-                  style={{ width: `${Math.min(100, s.count * 4)}%` }}
+                  style={{ width: `${pipeline?.curriculos ? (s.count / pipeline.curriculos) * 100 : 0}%` }}
                 />
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </Card>
@@ -312,6 +317,7 @@ function StatusPill({ status }: { status: string }) {
     pendente: { label: "Pendente", cls: "border-gold/40 text-gold" },
     em_analise: { label: "Em análise", cls: "border-muted-foreground/40 text-muted-foreground" },
     aprovado: { label: "Aprovado", cls: "border-primary/50 text-primary" },
+    admitido: { label: "Admitido", cls: "border-chart-3/50 text-chart-3" },
     rejeitado: { label: "Rejeitado", cls: "border-accent/50 text-accent" },
   };
   const v = map[status] ?? { label: status, cls: "border-border text-muted-foreground" };
