@@ -78,6 +78,13 @@
       "when": 1793183029806,
       "tag": "0010_employee_matricula_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793615913975,
+      "tag": "0011_enforce_employee_registration",
+      "breakpoints": true
     }
   ]
 }
