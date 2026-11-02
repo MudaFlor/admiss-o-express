@@ -19,4 +19,10 @@ describe("checkNewEmployee", () => {
   it("CPF confirmado ainda exige matrícula nova", () => {
     expect(checkNewEmployee({ matricula: "123", cpf: "11122233344", existing, confirmDuplicateCpf: true })).toMatchObject({ code: "DUPLICATE_ID" });
   });
+  it("considera letras maiúsculas e espaços externos como a mesma matrícula", () => {
+    expect(checkNewEmployee({ matricula: " abc-1 ", existing: [{ matricula: "ABC-1", cpf: null }] })).toMatchObject({ code: "DUPLICATE_ID" });
+  });
+  it("confirmação de CPF não permite matrícula vazia", () => {
+    expect(checkNewEmployee({ matricula: " ", existing, confirmDuplicateCpf: true })).toMatchObject({ code: "MATRICULA_REQUIRED" });
+  });
 });

@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { fail } from "@/lib/errors";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { countCandidateStatuses } from "@/lib/candidate-status-counts";
+import { checkNewEmployee, DUPLICATE_ID_MESSAGE } from "@/lib/validation/employee-id";
 
 const periodSchema = z
   .object({
@@ -148,12 +150,14 @@ export const getManagementOverview = createServerFn({ method: "POST" })
       }));
 
     // Pipeline
+    const { counts, total } = countCandidateStatuses(candidates);
     const pipeline = {
-      curriculos: candidates.length,
-      em_analise: candidates.filter((c) => c.status === "em_analise").length,
-      aprovados_aguardando: candidates.filter((c) => c.status === "aprovado").length,
-      pendentes: candidates.filter((c) => c.status === "pendente").length,
-      rejeitados: candidates.filter((c) => c.status === "rejeitado").length,
+      curriculos: total,
+      em_analise: counts.em_analise,
+      aprovados_aguardando: counts.aprovado,
+      admitidos: counts.admitido,
+      pendentes: counts.pendente,
+      rejeitados: counts.rejeitado,
     };
 
     const pendingOnboarding = candidates
@@ -192,7 +196,7 @@ const createEmployeeSchema = z.object({
   department: z.string().trim().max(120).optional().or(z.literal("")),
   admission_date: z.string().min(8).max(20),
   candidate_id: z.string().uuid().optional(),
-  matricula: z.string().trim().min(1, "Nº de matrícula é obrigatório").max(40),
+  matricula: z.string().trim().max(40).default(""),
   cpf: z.string().trim().max(20).optional(),
   confirmDuplicateCpf: z.boolean().optional(),
 });
@@ -255,6 +259,15 @@ export const createEmployee = createServerFn({ method: "POST" })
         };
       }
     }
+    const cpf = str(data.cpf) ?? str(snap.cpf);
+    const { data: existing, error: existingError } = await supabase.from("employees").select("matricula_esocial, cpf");
+    if (existingError) fail(existingError);
+    const check = checkNewEmployee({
+      matricula: data.matricula, cpf,
+      existing: (existing ?? []).map((e) => ({ matricula: e.matricula_esocial, cpf: e.cpf })),
+      confirmDuplicateCpf: data.confirmDuplicateCpf,
+    });
+    if (!check.ok) throw new Error(check.message);
     const { error, data: row } = await supabase
       .from("employees")
       .insert({
@@ -265,9 +278,12 @@ export const createEmployee = createServerFn({ method: "POST" })
         admission_date: data.admission_date,
         candidate_id: data.candidate_id ?? null,
         ...snap,
+        matricula_esocial: data.matricula.trim(),
+        cpf,
       })
       .select("id")
       .single();
+    if (error?.code === "23505") throw new Error(DUPLICATE_ID_MESSAGE);
     if (error) fail(error);
     if (data.candidate_id) {
       await supabase.from("candidates").update({ stage: "admitido", status: "admitido", admitido: "Sim" }).eq("id", data.candidate_id);
@@ -346,6 +362,7 @@ export const updateEmployeeProfile = createServerFn({ method: "POST" })
         v = Number.isFinite(n) ? n : null;
       }
       if (k === "full_name" && !v) throw new Error("Nome é obrigatório");
+      if (k === "matricula_esocial" && !v) throw new Error("Nº de matrícula é obrigatório");
       if (k === "admission_date" && !v) throw new Error("Data de admissão é obrigatória");
       const old = (cur as Record<string, unknown>)[k] ?? null;
       if (String(old ?? "") !== String(v ?? "")) {
@@ -354,7 +371,17 @@ export const updateEmployeeProfile = createServerFn({ method: "POST" })
       }
     }
     if (!Object.keys(patch).length) return { ok: true, changed: 0 };
+    if (typeof patch.matricula_esocial === "string") {
+      const { data: others, error: othersError } = await supabase.from("employees").select("matricula_esocial, cpf").neq("id", data.id);
+      if (othersError) fail(othersError);
+      const check = checkNewEmployee({
+        matricula: patch.matricula_esocial,
+        existing: (others ?? []).map((e) => ({ matricula: e.matricula_esocial, cpf: e.cpf })),
+      });
+      if (!check.ok) throw new Error(check.message);
+    }
     const { error } = await supabase.from("employees").update(patch as never).eq("id", data.id);
+    if (error?.code === "23505") throw new Error(DUPLICATE_ID_MESSAGE);
     if (error) fail(error);
     await supabase.from("employee_history").insert({
       employee_id: data.id,

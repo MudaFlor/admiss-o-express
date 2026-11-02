@@ -32,8 +32,9 @@ function PipelinePage() {
   const k = data.kpis;
   const funnel = [
     { label: "Currículos recebidos", value: data.pipeline.curriculos, color: "var(--primary)" },
-    { label: "Pendentes / Em análise", value: data.pipeline.pendentes + data.pipeline.em_analise, color: "#6366f1" },
-    { label: "Em integração", value: data.pipeline.aprovados_aguardando, color: "#C9A84C" },
+    { label: "Pendentes / Em análise", value: data.pipeline.pendentes + data.pipeline.em_analise, color: "var(--chart-4)" },
+    { label: "Aprovados", value: data.pipeline.aprovados_aguardando, color: "var(--primary)" },
+    { label: "Admitidos", value: data.pipeline.admitidos, color: "var(--chart-3)" },
     { label: "Admissões no período", value: k.period_admissions, color: "var(--primary)" },
     { label: "Rescisões em experiência", value: k.probation_terminations, color: "var(--accent)" },
   ];
