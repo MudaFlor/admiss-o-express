@@ -26,10 +26,10 @@ import { listCandidates } from "@/lib/candidates.functions";
 import { parseCandidateFile, createCandidateFromProfile } from "@/lib/recruitment.functions";
 import { buildCandidateInviteMessage, buildWhatsAppLink } from "@/lib/integrations/whatsapp";
 import { HR_LABELS, HR_SELECT_OPTIONS } from "@/lib/hr-indicators";
-import { isCandidateStatus } from "@/lib/candidate-status-counts";
+import { isCandidateStatus, type CandidateStatus } from "@/lib/candidate-status-counts";
 
 export const Route = createFileRoute("/_authenticated/recrutamento")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { status?: CandidateStatus } => ({
     status: isCandidateStatus(search.status) ? search.status : undefined,
   }),
   head: () => ({
@@ -97,7 +97,7 @@ function RecrutamentoPage() {
   const [created, setCreated] = useState<{ link: string; name: string; phone: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [filters, setFilters] = useState<Record<string, string>>(() => initialStatus ? { status: initialStatus } : {});
+  const [filters, setFilters] = useState<Record<string, string>>(() => ({ status: initialStatus ?? "" }));
   useEffect(() => {
     setFilters((previous) => ({ ...previous, status: initialStatus ?? "" }));
   }, [initialStatus]);
