@@ -324,6 +324,21 @@ export const getEmployee = createServerFn({ method: "POST" })
     return { employee: e.data, history: h.data ?? [], documents: d.data ?? [] };
   });
 
+export const deleteEmployee = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid(), confirmed: z.literal(true) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: isAdmin, error: roleError } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+    if (roleError || !isAdmin) throw new Error("Somente administradores podem excluir cadastros de colaboradores.");
+    const { data: removed, error } = await supabase.from("employees").delete().eq("id", data.id).select("id").maybeSingle();
+    if (error) fail(error);
+    if (!removed) throw new Error("Colaborador não encontrado ou exclusão não permitida.");
+    const { logAudit } = await import("@/lib/audit.server");
+    await logAudit({ actor_user_id: userId, action: "delete_employee", entity: "employees", entity_id: removed.id });
+    return { ok: true };
+  });
+
 const EDITABLE = [
   "matricula_esocial", "full_name", "position", "department", "admission_date", "cpf", "rg", "birth_date", "email", "phone",
   "sexo", "estado_civil", "address", "pis", "ctps", "salary", "contract_type", "work_schedule", "bank_info", "notes",
@@ -496,7 +511,7 @@ export const listEmployees = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data, error } = await supabase
       .from("employees")
-      .select("id, matricula_esocial, full_name, position, department, admission_date, candidate_id, termination_date, termination_reason")
+      .select("id, matricula_esocial, cpf, full_name, position, department, admission_date, candidate_id, termination_date, termination_reason")
       .order("admission_date", { ascending: false })
       .limit(500);
     if (error) fail(error);

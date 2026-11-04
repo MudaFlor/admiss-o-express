@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiscCard } from "@/components/DiscCard";
+import { DeleteEmployeeButton } from "@/components/DeleteEmployeeButton";
 import {
   addEmployeeNote,
   getEmployee,
@@ -68,6 +69,7 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 function EmployeePage() {
+  const navigate = useNavigate();
   const { id } = Route.useParams();
   const get = useServerFn(getEmployee);
   const save = useServerFn(updateEmployeeProfile);
@@ -193,9 +195,12 @@ function EmployeePage() {
             </p>
           </div>
         </div>
-        <Button onClick={onSave} disabled={saving}>
-          <Save className="h-4 w-4" /> Salvar ficha
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <DeleteEmployeeButton id={id} name={employee.full_name} onDeleted={() => void navigate({ to: "/colaboradores" })} />
+          <Button onClick={onSave} disabled={saving}>
+            <Save className="h-4 w-4" /> Salvar ficha
+          </Button>
+        </div>
       </div>
 
       {registrationError && <p role="alert" className="text-sm font-semibold text-destructive">{registrationError}</p>}

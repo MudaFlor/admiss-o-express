@@ -1,4 +1,5 @@
 # Architecture rules
+- Employee deletion uses one shared confirmation control and an authenticated admin-only server action; preserve source candidate files and record the deletion in audit.
 - Candidate submission validation lives in a shared pure module used by the portal and server, so required contact data and CTPS cannot diverge between them.
 - Preserve document OCR and evidence unchanged; store candidate-reviewed document values separately in form_data.documentos_revisados to distinguish extraction from declarations.
 - All candidate-facing correction and invitation links use the shared public-url helper so editor origins never reach candidates.

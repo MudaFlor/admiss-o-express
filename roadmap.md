@@ -1,4 +1,5 @@
 # Ajustes do portal do candidato
+- [x] Adicionar exclusão de colaborador com confirmação Sim/Não; cancelamento e exclusão testados pela lista e ficha com cadastro temporário removido, sem alterar colaboradores reais.
 - [ ] Separar cards Aprovados e Admitidos, corrigir contagens e verificar filtros com dados reais.
 - [ ] Corrigir matrícula obrigatória e única em novos cadastros, importações e alterações de colaboradores; testar bloqueios.
 - [x] Corrigir múltiplos anexos de cursos, vacinação e dependentes; 12 inserções verificadas e desfeitas sem alterar documentos existentes.
