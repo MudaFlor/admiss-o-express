@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Upload, CheckCircle2, ShieldCheck, FileText, Loader2, Sparkles, Trash2, Lock } from "lucide-react";
+import { Upload, CheckCircle2, ShieldCheck, FileText, Loader2, Sparkles, Trash2, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -271,6 +271,7 @@ function CandidatePage() {
   const [step, setStep] = useState(0);
   const [reviewedDocs, setReviewedDocs] = useState<Record<string, Record<string, string>>>({});
   const [editingDoc, setEditingDoc] = useState<string | null>(null);
+  const [docStep, setDocStep] = useState(0);
 
   const lgpdAt = q.data?.candidate.lgpd_accepted_at;
   const cand = q.data?.candidate;
@@ -427,6 +428,14 @@ function CandidatePage() {
   const pendingRequired = requiredTypes.filter((t) => !uploadedTypes.has(t));
   const allUploaded = hasIdentidade && requiredTypes.every((t) => uploadedTypes.has(t));
   const totalSteps = 2;
+  // Páginas liberadas: avança até o primeiro documento obrigatório ainda não enviado.
+  let maxUnlocked = DOCS.length - 1;
+  for (let i = 0; i < DOCS.length; i++) {
+    const t = DOCS[i].type;
+    const sent = uploadedTypes.has(t);
+    const skippable = !isRequired(t) || (t === "rg" && uploadedTypes.has("cnh")) || (t === "cnh" && uploadedTypes.has("rg"));
+    if (!sent && !skippable) { maxUnlocked = i; break; }
+  }
 
   // ---- Validação cruzada (UI) ----
   const declaredData = extractDeclaredFromFormData(form as unknown as Record<string, unknown>, {
@@ -993,14 +1002,64 @@ function CandidatePage() {
               </CardContent>
             </Card>
             <div className="space-y-2">
-              {DOCS.map((d) => {
+              {(() => {
+                const idx = Math.min(docStep, DOCS.length - 1);
+                const cur = DOCS[idx];
+                if (!cur) return null;
+                const curDone = documents.some((x) => x.type === cur.type && !x.dependent_id);
+                const curOptional = !isRequired(cur.type);
+                const curSkippable = curOptional || (cur.type === "rg" && uploadedTypes.has("cnh")) || (cur.type === "cnh" && uploadedTypes.has("rg"));
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Documento {idx + 1} de {DOCS.length}</span>
+                      <span>{documents.filter((x) => !x.dependent_id && DOCS.some((d) => d.type === x.type)).length} enviados</span>
+                    </div>
+                    <div className="flex gap-1">
+                      {DOCS.map((d, i) => {
+                        const ok = documents.some((x) => x.type === d.type && !x.dependent_id);
+                        return (
+                          <button
+                            key={d.type}
+                            type="button"
+                            aria-label={d.label}
+                            disabled={i > maxUnlocked}
+                            onClick={() => setDocStep(i)}
+                            className={`h-1.5 flex-1 rounded-full ${i === idx ? "bg-primary" : ok ? "bg-emerald-500" : i <= maxUnlocked ? "bg-muted-foreground/40" : "bg-muted"}`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <Button type="button" variant="outline" size="sm" disabled={idx === 0} onClick={() => setDocStep(idx - 1)}>
+                        <ChevronLeft className="h-4 w-4" /> Anterior
+                      </Button>
+                      {idx < DOCS.length - 1 ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={curDone ? "default" : "ghost"}
+                          disabled={!curDone && !curSkippable}
+                          onClick={() => setDocStep(idx + 1)}
+                        >
+                          {curDone ? "Próximo" : curSkippable ? "Pular" : "Envie para continuar"} <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Último documento</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+              {DOCS.map((d, i) => {
+                if (i !== Math.min(docStep, DOCS.length - 1)) return null;
                 const isOptional = !isRequired(d.type);
                 const uploaded = documents.find((x) => x.type === d.type && !x.dependent_id);
                 const done = !!uploaded;
                 const isPdf = uploaded?.storage_path ? /\.pdf$/i.test(uploaded.storage_path) : false;
                 const uploadKey = `${d.type}:`;
                 return (
-                  <Card key={d.type}>
+                  <Card key={d.type} className="animate-in fade-in slide-in-from-right-4 duration-300">
                     <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
                       <div className="flex min-w-0 flex-1 items-center gap-3">
                         {done && uploaded?.signed_url && !isPdf ? (
