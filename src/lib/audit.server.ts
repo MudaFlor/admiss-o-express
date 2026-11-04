@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export type AuditAction =
   | "view_candidate"
+  | "delete_employee"
   | "edit_basics"
   | "edit_hr_indicators"
   | "edit_form"

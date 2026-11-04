@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DiscCard } from "@/components/DiscCard";
+import { DeleteEmployeeButton } from "@/components/DeleteEmployeeButton";
 import { createEmployee, listEmployees, updateEmployeeAdmission } from "@/lib/management.functions";
 import { listCandidates } from "@/lib/candidates.functions";
 import { checkNewEmployee, CPF_EXISTS_CODE } from "@/lib/validation/employee-id";
@@ -355,6 +356,7 @@ function ColaboradoresPage() {
                           <DiscCard employeeId={c.id} name={c.full_name} />
                         </DialogContent>
                       </Dialog>
+                      <DeleteEmployeeButton id={c.id} name={c.full_name} compact />
                     </TableCell>
                   </TableRow>
                 ))
