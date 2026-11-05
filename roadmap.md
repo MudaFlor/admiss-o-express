@@ -1,4 +1,5 @@
 # Ajustes do portal do candidato
+- [ ] Exibir alerta de possível candidato duplicado durante o cadastro, comparando nome, telefone, e-mail e endereço com data anterior; testar nas duas telas do RH.
 - [x] Adicionar exclusão de colaborador com confirmação Sim/Não; cancelamento e exclusão testados pela lista e ficha com cadastro temporário removido, sem alterar colaboradores reais.
 - [ ] Separar cards Aprovados e Admitidos, corrigir contagens e verificar filtros com dados reais.
 - [ ] Corrigir matrícula obrigatória e única em novos cadastros, importações e alterações de colaboradores; testar bloqueios.

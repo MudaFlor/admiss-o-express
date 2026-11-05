@@ -41,6 +41,7 @@ const createSchema = z.object({
   phone: z.string().trim().max(20).optional().or(z.literal("")),
   cpf: z.string().trim().max(20).optional().or(z.literal("")),
   position: z.string().trim().max(120).optional().or(z.literal("")),
+  endereco: z.string().trim().max(500).optional().or(z.literal("")),
 });
 
 export const createCandidate = createServerFn({ method: "POST" })
@@ -60,6 +61,7 @@ export const createCandidate = createServerFn({ method: "POST" })
         phone: data.phone || null,
         cpf,
         position: data.position || null,
+        ...(data.endereco ? { form_data: { perfil_recrutamento: { endereco: data.endereco } } } : {}),
       })
       .select("id, access_token")
       .single();

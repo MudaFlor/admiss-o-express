@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { fail } from "@/lib/errors";
 import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
 import { z } from "zod";
@@ -18,9 +18,9 @@ import { isAllowedExtension } from "@/lib/upload-rules";
 import { candidateContactSchema, reviewedDocumentsSchema, reviewedOcrData, requiresCtps } from "@/lib/validation/candidate-submission";
 import { crossCheckCandidate, extractDeclaredFromFormData, blockingIssues } from "@/lib/validation/cross-check";
 
-function clientIp(): string {
+const clientIp = createServerOnlyFn((): string => {
   return getRequestIP({ xForwardedFor: true }) ?? "unknown";
-}
+});
 // Limites por IP para bloquear brute-force de tokens no portal público.
 const LIMIT_READ = { limit: 60, windowMs: 60_000 };      // 60 leituras/min
 const LIMIT_WRITE = { limit: 30, windowMs: 60_000 };     // 30 gravações/min
