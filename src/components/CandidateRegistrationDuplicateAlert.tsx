@@ -23,7 +23,7 @@ export function CandidateRegistrationDuplicateAlert({ draft }: { draft: Registra
   const q = useQuery({
     queryKey: ["candidate-registration-duplicates", debounced],
     queryFn: () => check({ data: JSON.parse(debounced) }),
-    enabled: !!debounced && debounced === key && Object.values(draft).some((v) => v?.trim()),
+    enabled: !!debounced && debounced === key && Object.values(draft).some((v) => typeof v === "string" && v.trim()),
     staleTime: 0,
   });
   if (debounced !== key) return null;
