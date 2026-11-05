@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CandidateStatusBadge } from "@/components/CandidateStatusBadge";
+import { CandidateRegistrationDuplicateAlert } from "@/components/CandidateRegistrationDuplicateAlert";
 import { listCandidates } from "@/lib/candidates.functions";
 import { parseCandidateFile, createCandidateFromProfile } from "@/lib/recruitment.functions";
 import { buildCandidateInviteMessage, buildWhatsAppLink } from "@/lib/integrations/whatsapp";
@@ -323,6 +324,7 @@ function RecrutamentoPage() {
                     <Label htmlFor="r_cargo">Cargo pretendido {hint("position")}</Label>
                     <Input id="r_cargo" value={draft.position} onChange={(e) => set("position", e.target.value)} />
                   </div>
+                  <div className="sm:col-span-2"><CandidateRegistrationDuplicateAlert draft={draft} /></div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label htmlFor="r_resumo">Resumo das experiências {hint("resumo_experiencias")}</Label>
                     <Textarea

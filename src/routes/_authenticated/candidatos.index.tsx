@@ -21,12 +21,20 @@ import {
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CandidateStatusBadge } from "@/components/CandidateStatusBadge";
+import { CandidateRegistrationDuplicateAlert } from "@/components/CandidateRegistrationDuplicateAlert";
 import { createCandidate, listCandidates } from "@/lib/candidates.functions";
 import { buildCandidateInviteMessage, buildWhatsAppLink } from "@/lib/integrations/whatsapp";
 import { useIsAdmin } from "@/hooks/useRole";
 
 export const Route = createFileRoute("/_authenticated/candidatos/")({
-  head: () => ({ meta: [{ title: "Candidatos — Admissão Digital" }] }),
+  head: () => ({ meta: [
+    { title: "Candidatos — Mudaflor People OS" },
+    { name: "description", content: "Gerencie cadastros, convites e documentos dos candidatos da Mudaflor." },
+    { property: "og:title", content: "Candidatos — Mudaflor People OS" },
+    { property: "og:description", content: "Acompanhamento de candidatos e processos de admissão." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: CandidatosPage,
 });
 
@@ -41,6 +49,7 @@ function CandidatosPage() {
   const [open, setOpen] = useState(false);
   const [created, setCreated] = useState<{ link: string; name: string; phone: string } | null>(null);
   const [testing, setTesting] = useState(false);
+  const [draft, setDraft] = useState({ full_name: "", phone: "", email: "", endereco: "" });
   const setF = (k: string, v: string) => setFilters((p) => ({ ...p, [k]: v }));
   const activeFilters = Object.fromEntries(Object.entries(filters).filter(([, v]) => v.trim()));
   const activeCount = Object.keys(activeFilters).length;
@@ -60,6 +69,7 @@ function CandidatosPage() {
           email: String(fd.get("email") ?? ""),
           phone: String(fd.get("phone") ?? ""),
           position: String(fd.get("position") ?? ""),
+          endereco: String(fd.get("endereco") ?? ""),
           cpf: "",
         },
       });
@@ -114,7 +124,7 @@ function CandidatosPage() {
             <FlaskConical className="h-4 w-4" /> {testing ? "Criando…" : "Testar como candidato"}
           </Button>
         )}
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setCreated(null); }}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setCreated(null); setDraft({ full_name: "", phone: "", email: "", endereco: "" }); } }}>
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4" /> Novo candidato</Button>
           </DialogTrigger>
@@ -131,18 +141,23 @@ function CandidatosPage() {
               <form onSubmit={onCreate} className="space-y-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="full_name">Nome completo</Label>
-                  <Input id="full_name" name="full_name" required />
+                  <Input id="full_name" name="full_name" required value={draft.full_name} onChange={(e) => setDraft((d) => ({ ...d, full_name: e.target.value }))} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="phone">Telefone (com DDD)</Label>
-                    <Input id="phone" name="phone" placeholder="11999998888" />
+                    <Input id="phone" name="phone" placeholder="11999998888" value={draft.phone} onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))} />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" name="email" type="email" />
+                    <Input id="email" name="email" type="email" value={draft.email} onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))} />
                   </div>
                 </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="endereco">Endereço</Label>
+                  <Input id="endereco" name="endereco" value={draft.endereco} onChange={(e) => setDraft((d) => ({ ...d, endereco: e.target.value }))} />
+                </div>
+                <CandidateRegistrationDuplicateAlert draft={draft} />
                 <div className="space-y-1.5">
                   <Label htmlFor="position">Cargo</Label>
                   <Input id="position" name="position" />
