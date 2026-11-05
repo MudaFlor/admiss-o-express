@@ -429,7 +429,7 @@ function CandidatePage() {
   const allUploaded = hasIdentidade && requiredTypes.every((t) => uploadedTypes.has(t));
   const totalSteps = 2;
   // Páginas liberadas: avança até o primeiro documento obrigatório ainda não enviado.
-  let maxUnlocked = DOCS.length - 1;
+  let maxUnlocked = DOCS.length; // última página = dependentes e envio
   for (let i = 0; i < DOCS.length; i++) {
     const t = DOCS[i].type;
     const sent = uploadedTypes.has(t);
@@ -1003,16 +1003,16 @@ function CandidatePage() {
             </Card>
             <div className="space-y-2">
               {(() => {
-                const idx = Math.min(docStep, DOCS.length - 1);
+                const idx = Math.min(docStep, DOCS.length);
+                const isFinal = idx === DOCS.length;
                 const cur = DOCS[idx];
-                if (!cur) return null;
-                const curDone = documents.some((x) => x.type === cur.type && !x.dependent_id);
-                const curOptional = !isRequired(cur.type);
+                const curDone = isFinal || documents.some((x) => x.type === cur.type && !x.dependent_id);
+                const curOptional = isFinal || !isRequired(cur.type);
                 const curSkippable = curOptional || (cur.type === "rg" && uploadedTypes.has("cnh")) || (cur.type === "cnh" && uploadedTypes.has("rg"));
                 return (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Documento {idx + 1} de {DOCS.length}</span>
+                      <span>{isFinal ? `Página final de ${DOCS.length + 1}: dependentes e envio` : `Documento ${idx + 1} de ${DOCS.length + 1}`}</span>
                       <span>{documents.filter((x) => !x.dependent_id && DOCS.some((d) => d.type === x.type)).length} enviados</span>
                     </div>
                     <div className="flex gap-1">
@@ -1029,30 +1029,37 @@ function CandidatePage() {
                           />
                         );
                       })}
+                      <button
+                        type="button"
+                        aria-label="Dependentes e envio"
+                        disabled={DOCS.length > maxUnlocked}
+                        onClick={() => setDocStep(DOCS.length)}
+                        className={`h-1.5 flex-1 rounded-full ${isFinal ? "bg-primary" : DOCS.length <= maxUnlocked ? "bg-muted-foreground/40" : "bg-muted"}`}
+                      />
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <Button type="button" variant="outline" size="sm" disabled={idx === 0} onClick={() => setDocStep(idx - 1)}>
                         <ChevronLeft className="h-4 w-4" /> Anterior
                       </Button>
-                      {idx < DOCS.length - 1 ? (
+                      {!isFinal ? (
                         <Button
                           type="button"
                           size="sm"
                           variant={curDone ? "default" : "ghost"}
-                          disabled={!curDone && !curSkippable}
+                          disabled={(!curDone && !curSkippable) || idx + 1 > maxUnlocked}
                           onClick={() => setDocStep(idx + 1)}
                         >
                           {curDone ? "Próximo" : curSkippable ? "Pular" : "Envie para continuar"} <ChevronRight className="h-4 w-4" />
                         </Button>
                       ) : (
-                        <span className="text-xs text-muted-foreground">Último documento</span>
+                        <span className="text-xs text-muted-foreground">Última página</span>
                       )}
                     </div>
                   </div>
                 );
               })()}
               {DOCS.map((d, i) => {
-                if (i !== Math.min(docStep, DOCS.length - 1)) return null;
+                if (i !== Math.min(docStep, DOCS.length)) return null;
                 const isOptional = !isRequired(d.type);
                 const uploaded = documents.find((x) => x.type === d.type && !x.dependent_id);
                 const done = !!uploaded;
@@ -1149,6 +1156,8 @@ function CandidatePage() {
               })}
             </div>
 
+            {docStep >= DOCS.length && (
+            <>
             <DependentsBlock
               token={token}
               dependents={q.data.dependents}
@@ -1269,6 +1278,8 @@ function CandidatePage() {
             >
               Enviar documentos
             </Button>
+            </>
+            )}
           </>
         )}
 
