@@ -563,7 +563,7 @@ function CandidatoDetailPage() {
                   const prev = new Set(Array.isArray(fd._rh_overrides) ? (fd._rh_overrides as string[]) : []);
                   for (const k of Object.keys(editing)) if (editing[k] !== consolidated.data[k]) prev.add(k);
                   const { phone, ...rest } = data;
-                  await updateForm({ data: { id, form_data: { ...rest, telefone: phone, _rh_overrides: [...prev] } as never } });
+                  await updateForm({ data: { id, form_data: { ...fd, ...rest, telefone: phone, _rh_overrides: [...prev] } as never } });
                   toast.success("Ficha salva");
                   setEditing({});
                   setEditingFicha(false);
