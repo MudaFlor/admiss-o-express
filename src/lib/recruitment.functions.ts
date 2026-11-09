@@ -3,6 +3,7 @@ import { fail } from "@/lib/errors";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { logAudit } from "@/lib/audit.server";
+import { resumeDocumentValues, validateResumePdf } from "@/lib/validation/resume-file";
 
 export const parseCandidateFile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

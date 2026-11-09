@@ -3,7 +3,7 @@ import { resumeDocumentValues, validateResumePdf } from "./resume-file";
 
 const pdf = new TextEncoder().encode("%PDF-1.7\nconteúdo");
 
- describe("anexo do currículo em PDF", () => {
+describe("anexo do currículo em PDF", () => {
   it("aceita um PDF válido dentro do limite", () => {
     expect(validateResumePdf("curriculo.pdf", pdf)).toBeNull();
   });

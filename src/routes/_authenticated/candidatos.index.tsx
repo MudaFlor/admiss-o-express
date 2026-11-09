@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search, Copy, MessageCircle, FlaskConical, SlidersHorizontal } from "lucide-react";
+import { Search, Copy, FlaskConical, SlidersHorizontal } from "lucide-react";
 import { HR_LABELS, HR_SELECT_OPTIONS } from "@/lib/hr-indicators";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

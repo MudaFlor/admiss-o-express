@@ -207,7 +207,9 @@ function CandidatoDetailPage() {
 
   const formData = (candidate.form_data ?? {}) as Record<string, string>;
   const reviewedDocuments = (candidate.form_data as Record<string, unknown> | null)?.documentos_revisados as Record<string, Record<string, string>> | undefined;
-  const hasSubmitted = Object.keys(formData).length > 0;
+  const recruitmentProfile = ((candidate.form_data as Record<string, unknown> | null)?.perfil_recrutamento ?? {}) as Record<string, unknown>;
+  const resumeDocument = q.data?.documents.find((document) => document.type === "curriculo");
+  const hasSubmitted = Object.keys(formData).some((key) => key !== "perfil_recrutamento");
 
   return (
     <div className="mx-auto max-w-7xl space-y-4">
