@@ -21,7 +21,7 @@ import logo from "@/assets/logo-mudaflor.jpg";
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Colaboradores", url: "/colaboradores", icon: Users },
-  { title: "Recrutamento", url: "/recrutamento", icon: Briefcase },
+  { title: "Recrutamento", url: "/candidatos", icon: Briefcase },
   { title: "Gestão", url: "/gestao", icon: BarChart3 },
 ];
 
