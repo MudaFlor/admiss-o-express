@@ -527,10 +527,11 @@ function CandidatoDetailPage() {
           {(() => {
             const fichaDocs = q.data!.documents.map((d) => ({ type: d.type as string, dependent_id: d.dependent_id, ocr_data: d.ocr_data }));
             const consolidated = consolidateFicha(
-              { ...(candidate.form_data as Record<string, unknown> ?? {}), full_name: (formData.full_name || candidate.full_name), cpf: formData.cpf || candidate.cpf || "", email: formData.email || candidate.email || "", phone: formData.telefone || candidate.phone || "" },
+              { ...recruitmentProfile, ...(candidate.form_data as Record<string, unknown> ?? {}), full_name: (formData.full_name || candidate.full_name), cpf: formData.cpf || candidate.cpf || "", email: formData.email || candidate.email || "", phone: formData.telefone || candidate.phone || "" },
               fichaDocs,
             );
             return (
+          <div className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-sm">Ficha consolidada</CardTitle>

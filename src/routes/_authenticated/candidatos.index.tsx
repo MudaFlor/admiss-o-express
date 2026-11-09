@@ -10,20 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CandidateStatusBadge } from "@/components/CandidateStatusBadge";
-import { CandidateRegistrationDuplicateAlert } from "@/components/CandidateRegistrationDuplicateAlert";
+import { CandidateResumeDialog } from "@/components/CandidateResumeDialog";
 import { createCandidate, listCandidates } from "@/lib/candidates.functions";
-import { buildCandidateInviteMessage, buildWhatsAppLink } from "@/lib/integrations/whatsapp";
 import { useIsAdmin } from "@/hooks/useRole";
 
 export const Route = createFileRoute("/_authenticated/candidatos/")({
