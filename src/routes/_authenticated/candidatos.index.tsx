@@ -4,26 +4,16 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search, Copy, MessageCircle, FlaskConical, SlidersHorizontal } from "lucide-react";
+import { Search, Copy, FlaskConical, SlidersHorizontal } from "lucide-react";
 import { HR_LABELS, HR_SELECT_OPTIONS } from "@/lib/hr-indicators";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CandidateStatusBadge } from "@/components/CandidateStatusBadge";
-import { CandidateRegistrationDuplicateAlert } from "@/components/CandidateRegistrationDuplicateAlert";
+import { CandidateResumeDialog } from "@/components/CandidateResumeDialog";
 import { createCandidate, listCandidates } from "@/lib/candidates.functions";
-import { buildCandidateInviteMessage, buildWhatsAppLink } from "@/lib/integrations/whatsapp";
 import { useIsAdmin } from "@/hooks/useRole";
 
 export const Route = createFileRoute("/_authenticated/candidatos/")({
@@ -46,10 +36,7 @@ function CandidatosPage() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [created, setCreated] = useState<{ link: string; name: string; phone: string } | null>(null);
   const [testing, setTesting] = useState(false);
-  const [draft, setDraft] = useState({ full_name: "", phone: "", email: "", endereco: "" });
   const setF = (k: string, v: string) => setFilters((p) => ({ ...p, [k]: v }));
   const activeFilters = Object.fromEntries(Object.entries(filters).filter(([, v]) => v.trim()));
   const activeCount = Object.keys(activeFilters).length;
@@ -58,29 +45,6 @@ function CandidatosPage() {
     queryKey: ["candidates", search, activeFilters],
     queryFn: () => list({ data: { search, ...activeFilters } }),
   });
-
-  async function onCreate(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    try {
-      const res = await create({
-        data: {
-          full_name: String(fd.get("full_name")),
-          email: String(fd.get("email") ?? ""),
-          phone: String(fd.get("phone") ?? ""),
-          position: String(fd.get("position") ?? ""),
-          endereco: String(fd.get("endereco") ?? ""),
-          cpf: "",
-        },
-      });
-      const link = candidatePortalUrl(res.access_token);
-      setCreated({ link, name: String(fd.get("full_name")), phone: String(fd.get("phone") ?? "") });
-      qc.invalidateQueries({ queryKey: ["candidates"] });
-      toast.success("Candidato criado. Compartilhe o link.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao criar");
-    }
-  }
 
   function copyLink(link: string) {
     navigator.clipboard.writeText(link);
@@ -124,72 +88,7 @@ function CandidatosPage() {
             <FlaskConical className="h-4 w-4" /> {testing ? "Criando…" : "Testar como candidato"}
           </Button>
         )}
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setCreated(null); setDraft({ full_name: "", phone: "", email: "", endereco: "" }); } }}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4" /> Novo candidato</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{created ? "Link gerado" : "Novo candidato"}</DialogTitle>
-              <DialogDescription>
-                {created
-                  ? "Compartilhe o link abaixo com o candidato pelo WhatsApp."
-                  : "Informe os dados básicos. Um link único será gerado para o candidato enviar os documentos."}
-              </DialogDescription>
-            </DialogHeader>
-            {!created ? (
-              <form onSubmit={onCreate} className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="full_name">Nome completo</Label>
-                  <Input id="full_name" name="full_name" required value={draft.full_name} onChange={(e) => setDraft((d) => ({ ...d, full_name: e.target.value }))} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="phone">Telefone (com DDD)</Label>
-                    <Input id="phone" name="phone" placeholder="11999998888" value={draft.phone} onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" name="email" type="email" value={draft.email} onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))} />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="endereco">Endereço</Label>
-                  <Input id="endereco" name="endereco" value={draft.endereco} onChange={(e) => setDraft((d) => ({ ...d, endereco: e.target.value }))} />
-                </div>
-                <CandidateRegistrationDuplicateAlert draft={draft} />
-                <div className="space-y-1.5">
-                  <Label htmlFor="position">Cargo</Label>
-                  <Input id="position" name="position" />
-                </div>
-                <DialogFooter>
-                  <Button type="submit">Gerar link</Button>
-                </DialogFooter>
-              </form>
-            ) : (
-              <div className="space-y-3">
-                <div className="rounded-md border bg-muted/40 p-3 text-sm break-all">{created.link}</div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => copyLink(created.link)}>
-                    <Copy className="h-4 w-4" /> Copiar link
-                  </Button>
-                  <Button asChild>
-                    <a
-                      href={buildWhatsAppLink(
-                        created.phone,
-                        buildCandidateInviteMessage({ candidateName: created.name, link: created.link }),
-                      )}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <MessageCircle className="h-4 w-4" /> Enviar pelo WhatsApp
-                    </a>
-                  </Button>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+        <CandidateResumeDialog onCreated={() => qc.invalidateQueries({ queryKey: ["candidates"] })} />
         </div>
       </div>
 
