@@ -88,72 +88,7 @@ function CandidatosPage() {
             <FlaskConical className="h-4 w-4" /> {testing ? "Criando…" : "Testar como candidato"}
           </Button>
         )}
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setCreated(null); setDraft({ full_name: "", phone: "", email: "", endereco: "" }); } }}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4" /> Novo candidato</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{created ? "Link gerado" : "Novo candidato"}</DialogTitle>
-              <DialogDescription>
-                {created
-                  ? "Compartilhe o link abaixo com o candidato pelo WhatsApp."
-                  : "Informe os dados básicos. Um link único será gerado para o candidato enviar os documentos."}
-              </DialogDescription>
-            </DialogHeader>
-            {!created ? (
-              <form onSubmit={onCreate} className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="full_name">Nome completo</Label>
-                  <Input id="full_name" name="full_name" required value={draft.full_name} onChange={(e) => setDraft((d) => ({ ...d, full_name: e.target.value }))} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="phone">Telefone (com DDD)</Label>
-                    <Input id="phone" name="phone" placeholder="11999998888" value={draft.phone} onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" name="email" type="email" value={draft.email} onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))} />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="endereco">Endereço</Label>
-                  <Input id="endereco" name="endereco" value={draft.endereco} onChange={(e) => setDraft((d) => ({ ...d, endereco: e.target.value }))} />
-                </div>
-                <CandidateRegistrationDuplicateAlert draft={draft} />
-                <div className="space-y-1.5">
-                  <Label htmlFor="position">Cargo</Label>
-                  <Input id="position" name="position" />
-                </div>
-                <DialogFooter>
-                  <Button type="submit">Gerar link</Button>
-                </DialogFooter>
-              </form>
-            ) : (
-              <div className="space-y-3">
-                <div className="rounded-md border bg-muted/40 p-3 text-sm break-all">{created.link}</div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => copyLink(created.link)}>
-                    <Copy className="h-4 w-4" /> Copiar link
-                  </Button>
-                  <Button asChild>
-                    <a
-                      href={buildWhatsAppLink(
-                        created.phone,
-                        buildCandidateInviteMessage({ candidateName: created.name, link: created.link }),
-                      )}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <MessageCircle className="h-4 w-4" /> Enviar pelo WhatsApp
-                    </a>
-                  </Button>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+        <CandidateResumeDialog onCreated={() => qc.invalidateQueries({ queryKey: ["candidates"] })} />
         </div>
       </div>
 
