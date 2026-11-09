@@ -36,10 +36,7 @@ function CandidatosPage() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [created, setCreated] = useState<{ link: string; name: string; phone: string } | null>(null);
   const [testing, setTesting] = useState(false);
-  const [draft, setDraft] = useState({ full_name: "", phone: "", email: "", endereco: "" });
   const setF = (k: string, v: string) => setFilters((p) => ({ ...p, [k]: v }));
   const activeFilters = Object.fromEntries(Object.entries(filters).filter(([, v]) => v.trim()));
   const activeCount = Object.keys(activeFilters).length;
@@ -48,29 +45,6 @@ function CandidatosPage() {
     queryKey: ["candidates", search, activeFilters],
     queryFn: () => list({ data: { search, ...activeFilters } }),
   });
-
-  async function onCreate(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    try {
-      const res = await create({
-        data: {
-          full_name: String(fd.get("full_name")),
-          email: String(fd.get("email") ?? ""),
-          phone: String(fd.get("phone") ?? ""),
-          position: String(fd.get("position") ?? ""),
-          endereco: String(fd.get("endereco") ?? ""),
-          cpf: "",
-        },
-      });
-      const link = candidatePortalUrl(res.access_token);
-      setCreated({ link, name: String(fd.get("full_name")), phone: String(fd.get("phone") ?? "") });
-      qc.invalidateQueries({ queryKey: ["candidates"] });
-      toast.success("Candidato criado. Compartilhe o link.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao criar");
-    }
-  }
 
   function copyLink(link: string) {
     navigator.clipboard.writeText(link);

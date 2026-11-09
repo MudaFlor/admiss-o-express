@@ -584,6 +584,47 @@ function CandidatoDetailPage() {
               </section>}
             </CardContent>
           </Card>
+          {(resumeDocument || Object.keys(recruitmentProfile).length > 0) && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm">Currículo e perfil profissional</CardTitle>
+                {resumeDocument && (
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => openDoc(resumeDocument.id, false)}>
+                      <ExternalLink className="h-3.5 w-3.5" /> Abrir PDF
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => openDoc(resumeDocument.id, true)}>
+                      <Download className="h-3.5 w-3.5" /> Baixar
+                    </Button>
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {resumeDocument?.label && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <FileText className="h-4 w-4" /> {resumeDocument.label}
+                  </div>
+                )}
+                {typeof recruitmentProfile.resumo_experiencias === "string" && recruitmentProfile.resumo_experiencias && (
+                  <div>
+                    <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Resumo das experiências</div>
+                    <p className="whitespace-pre-wrap">{recruitmentProfile.resumo_experiencias}</p>
+                  </div>
+                )}
+                {Array.isArray(recruitmentProfile.palavras_chave) && recruitmentProfile.palavras_chave.length > 0 && (
+                  <div>
+                    <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Palavras-chave</div>
+                    <div className="flex flex-wrap gap-2">
+                      {(recruitmentProfile.palavras_chave as unknown[]).map((keyword, index) => (
+                        <span key={`${String(keyword)}-${index}`} className="rounded-md bg-muted px-2 py-1 text-xs">{String(keyword)}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+          </div>
             );
           })()}
         </TabsContent>
