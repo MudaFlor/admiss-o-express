@@ -22,8 +22,10 @@ import { createCandidateFromProfile, parseCandidateFile } from "@/lib/recruitmen
 import { candidatePortalUrl } from "@/lib/public-url";
 import { buildCandidateInviteMessage, buildWhatsAppLink } from "@/lib/integrations/whatsapp";
 import { MAX_FILE_BYTES } from "@/lib/upload-rules";
+import { candidateRegistrationDateSchema, currentRegistrationDate } from "@/lib/validation/candidate-registration-date";
 
 type Draft = {
+  data_cadastro: string;
   full_name: string;
   idade: string;
   data_nascimento: string;
@@ -36,6 +38,7 @@ type Draft = {
 };
 
 const EMPTY: Draft = {
+  data_cadastro: "",
   full_name: "",
   idade: "",
   data_nascimento: "",
@@ -99,6 +102,7 @@ export function CandidateResumeDialog({ onCreated }: { onCreated: () => void }) 
       setResume({ filename: file.name, base64 });
       const profile = await parseFile({ data: { filename: file.name, base64 } });
       const next: Draft = {
+        data_cadastro: draft.data_cadastro,
         full_name: profile.full_name ?? "",
         idade: profile.idade != null ? String(profile.idade) : "",
         data_nascimento: profile.data_nascimento ?? "",
@@ -114,7 +118,8 @@ export function CandidateResumeDialog({ onCreated }: { onCreated: () => void }) 
         const value = next[key];
         if (Array.isArray(value) ? value.length > 0 : value.trim() !== "") filled.add(key);
       }
-      setDraft(next);
+      filled.delete("data_cadastro");
+      setDraft((current) => ({ ...next, data_cadastro: current.data_cadastro }));
       setPrefilled(filled);
       toast.success("Dados extraídos do currículo. Revise antes de salvar.");
     } catch (error) {
@@ -145,6 +150,8 @@ export function CandidateResumeDialog({ onCreated }: { onCreated: () => void }) 
 
   async function onSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const dateValidation = candidateRegistrationDateSchema.safeParse(draft.data_cadastro);
+    if (!dateValidation.success) { toast.error(dateValidation.error.issues[0]?.message); return; }
     setSaving(true);
     try {
       const result = await createFromProfile({
@@ -181,7 +188,11 @@ export function CandidateResumeDialog({ onCreated }: { onCreated: () => void }) 
   ) : null;
 
   return (
-    <Dialog open={open} onOpenChange={(value) => { setOpen(value); if (!value) reset(); }}>
+    <Dialog open={open} onOpenChange={(value) => {
+      setOpen(value);
+      if (!value) reset();
+      else setDraft((current) => ({ ...current, data_cadastro: currentRegistrationDate() }));
+    }}>
       <DialogTrigger asChild>
         <Button><Plus className="h-4 w-4" /> Novo candidato</Button>
       </DialogTrigger>
@@ -223,6 +234,11 @@ export function CandidateResumeDialog({ onCreated }: { onCreated: () => void }) 
           </div>
         ) : (
           <form onSubmit={onSave} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="candidate_data_cadastro">Data de cadastro *</Label>
+              <Input id="candidate_data_cadastro" type="date" required value={draft.data_cadastro}
+                onChange={(event) => set("data_cadastro", event.target.value)} />
+            </div>
             <div className="rounded-lg border border-dashed p-4 text-center">
               <input
                 ref={fileRef}

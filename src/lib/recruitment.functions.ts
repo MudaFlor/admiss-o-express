@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { logAudit } from "@/lib/audit.server";
 import { resumeDocumentValues, validateResumePdf } from "@/lib/validation/resume-file";
+import { candidateRegistrationDateSchema } from "@/lib/validation/candidate-registration-date";
 
 export const parseCandidateFile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -26,6 +27,7 @@ export const createCandidateFromProfile = createServerFn({ method: "POST" })
     z
       .object({
         full_name: z.string().trim().min(2).max(160),
+        data_cadastro: candidateRegistrationDateSchema,
         email: z.string().trim().max(255).optional().or(z.literal("")),
         phone: z.string().trim().max(40).optional().or(z.literal("")),
         position: z.string().trim().max(160).optional().or(z.literal("")),
@@ -55,6 +57,7 @@ export const createCandidateFromProfile = createServerFn({ method: "POST" })
       .insert({
         created_by: userId,
         full_name: data.full_name,
+        data_cadastro: data.data_cadastro,
         email: data.email || null,
         phone: data.phone || null,
         position: data.position || null,

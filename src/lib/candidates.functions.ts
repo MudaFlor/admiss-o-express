@@ -8,6 +8,7 @@ import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import { logAudit } from "@/lib/audit.server";
 import { signedDocumentUrl } from "@/lib/security/storage.server";
 import { similarity, DUPLICATE_THRESHOLD, type DupProfile } from "@/lib/validation/duplicates";
+import { candidateRegistrationDateSchema, candidateRegistrationRangeSchema } from "@/lib/validation/candidate-registration-date";
 
 export const listLgpdConsentsForCandidate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -36,6 +37,7 @@ export const listLgpdConsentsForCandidate = createServerFn({ method: "POST" })
   });
 
 const createSchema = z.object({
+  data_cadastro: candidateRegistrationDateSchema,
   full_name: z.string().trim().min(2).max(120),
   email: z.string().trim().email().max(255).optional().or(z.literal("")),
   phone: z.string().trim().max(20).optional().or(z.literal("")),
@@ -57,6 +59,7 @@ export const createCandidate = createServerFn({ method: "POST" })
       .insert({
         created_by: userId,
         full_name: data.full_name,
+        data_cadastro: data.data_cadastro,
         email: data.email || null,
         phone: data.phone || null,
         cpf,
@@ -99,13 +102,14 @@ export const listCandidates = createServerFn({ method: "POST" })
         entrevista_de: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
         entrevista_ate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
       })
+      .and(candidateRegistrationRangeSchema)
       .parse(input ?? {}),
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     let q = supabase
       .from("candidates")
-      .select("id, codigo, full_name, email, phone, cpf, position, status, stage, created_at, updated_at, access_token, cidade, departamento, recrutador, data_entrevista, situacao_entrevista, teste, admitido, categoria, integracao, meio_recebimento, indicacao_colaborador, recontratar")
+      .select("id, codigo, full_name, email, phone, cpf, position, status, stage, created_at, data_cadastro, updated_at, access_token, cidade, departamento, recrutador, data_entrevista, situacao_entrevista, teste, admitido, categoria, integracao, meio_recebimento, indicacao_colaborador, recontratar")
       .order("created_at", { ascending: false });
     const esc = (s: string) => s.replace(/[%_,()]/g, " ");
     if (data.status) q = q.eq("status", data.status);
@@ -120,6 +124,8 @@ export const listCandidates = createServerFn({ method: "POST" })
     }
     if (data.entrevista_de) q = q.gte("data_entrevista", data.entrevista_de);
     if (data.entrevista_ate) q = q.lte("data_entrevista", data.entrevista_ate);
+    if (data.cadastro_de) q = q.gte("data_cadastro", data.cadastro_de);
+    if (data.cadastro_ate) q = q.lte("data_cadastro", data.cadastro_ate);
     const { data: rows, error } = await q;
     if (error) fail(error);
     return rows ?? [];
