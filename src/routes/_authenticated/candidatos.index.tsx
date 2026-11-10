@@ -13,6 +13,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CandidateStatusBadge } from "@/components/CandidateStatusBadge";
 import { CandidateResumeDialog } from "@/components/CandidateResumeDialog";
+import { CandidateRegistrationDateFilter } from "@/components/CandidateRegistrationDateFilter";
+import { currentRegistrationDate } from "@/lib/validation/candidate-registration-date";
 import { createCandidate, listCandidates } from "@/lib/candidates.functions";
 import { useIsAdmin } from "@/hooks/useRole";
 
@@ -58,6 +60,7 @@ function CandidatosPage() {
       const res = await create({
         data: {
           full_name: `Candidato Teste ${stamp}`,
+          data_cadastro: currentRegistrationDate(),
           email: "",
           phone: "",
           position: "Teste do portal",
@@ -145,6 +148,10 @@ function CandidatosPage() {
               <TableRow>
                 <TableHead className="w-14">ID</TableHead>
                 <TableHead>Nome</TableHead>
+                <TableHead>
+                  <CandidateRegistrationDateFilter from={filters.cadastro_de ?? ""} to={filters.cadastro_ate ?? ""}
+                    onChange={(from, to) => setFilters((previous) => ({ ...previous, cadastro_de: from, cadastro_ate: to }))} />
+                </TableHead>
                 <TableHead>Cargo / Depto.</TableHead>
                 <TableHead>Cidade</TableHead>
                 <TableHead>Recrutador</TableHead>
@@ -155,11 +162,11 @@ function CandidatosPage() {
             </TableHeader>
             <TableBody>
               {q.isLoading ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground">Carregando…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center text-sm text-muted-foreground">Carregando…</TableCell></TableRow>
               ) : (q.data?.length ?? 0) === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground">{activeCount || search ? "Nenhum candidato encontrado com esses filtros." : 'Nenhum candidato ainda. Clique em "Novo candidato".'}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center text-sm text-muted-foreground">{activeCount || search ? "Nenhum candidato encontrado com esses filtros." : 'Nenhum candidato ainda. Clique em "Novo candidato".'}</TableCell></TableRow>
               ) : (
-                q.data!.map((c) => (
+                (q.data ?? []).map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-mono text-sm text-muted-foreground">#{c.codigo ?? "—"}</TableCell>
                     <TableCell>
@@ -168,6 +175,7 @@ function CandidatosPage() {
                       </Link>
                       <div className="text-xs text-muted-foreground">{c.email ?? c.phone ?? "—"}</div>
                     </TableCell>
+                    <TableCell className="whitespace-nowrap">{c.data_cadastro ? c.data_cadastro.split("-").reverse().join("/") : "—"}</TableCell>
                     <TableCell>
                       {c.position ?? "—"}
                       {c.departamento && <div className="text-xs text-muted-foreground">{c.departamento}</div>}

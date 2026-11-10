@@ -28,6 +28,8 @@ import { parseCandidateFile, createCandidateFromProfile } from "@/lib/recruitmen
 import { buildCandidateInviteMessage, buildWhatsAppLink } from "@/lib/integrations/whatsapp";
 import { HR_LABELS, HR_SELECT_OPTIONS } from "@/lib/hr-indicators";
 import { isCandidateStatus, type CandidateStatus } from "@/lib/candidate-status-counts";
+import { candidateRegistrationDateSchema, currentRegistrationDate } from "@/lib/validation/candidate-registration-date";
+import { CandidateRegistrationDateFilter } from "@/components/CandidateRegistrationDateFilter";
 
 export const Route = createFileRoute("/_authenticated/recrutamento")({
   validateSearch: (search: Record<string, unknown>): { status?: CandidateStatus } => ({
@@ -47,6 +49,7 @@ export const Route = createFileRoute("/_authenticated/recrutamento")({
 });
 
 type Draft = {
+  data_cadastro: string;
   full_name: string;
   idade: string;
   data_nascimento: string;
@@ -59,6 +62,7 @@ type Draft = {
 };
 
 const EMPTY: Draft = {
+  data_cadastro: "",
   full_name: "",
   idade: "",
   data_nascimento: "",
@@ -133,6 +137,7 @@ function RecrutamentoPage() {
       const base64 = await readAsBase64(file);
       const p = await parseFile({ data: { filename: file.name, base64 } });
       const next: Draft = {
+        data_cadastro: draft.data_cadastro,
         full_name: p.full_name ?? "",
         idade: p.idade != null ? String(p.idade) : "",
         data_nascimento: p.data_nascimento ?? "",
@@ -148,7 +153,8 @@ function RecrutamentoPage() {
         const v = next[k];
         if (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "") filled.add(k);
       });
-      setDraft(next);
+      filled.delete("data_cadastro");
+      setDraft((current) => ({ ...next, data_cadastro: current.data_cadastro }));
       setPrefilled(filled);
       toast.success("Dados extraídos do arquivo. Revise antes de salvar.");
     } catch (err) {
@@ -178,11 +184,14 @@ function RecrutamentoPage() {
 
   async function onSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const dateValidation = candidateRegistrationDateSchema.safeParse(draft.data_cadastro);
+    if (!dateValidation.success) { toast.error(dateValidation.error.issues[0]?.message); return; }
     setSaving(true);
     try {
       const res = await createFromProfile({
         data: {
           full_name: draft.full_name,
+          data_cadastro: draft.data_cadastro,
           email: draft.email,
           phone: draft.phone,
           position: draft.position,
@@ -233,6 +242,7 @@ function RecrutamentoPage() {
           onOpenChange={(v) => {
             setOpen(v);
             if (!v) reset();
+            else setDraft((current) => ({ ...current, data_cadastro: currentRegistrationDate() }));
           }}
         >
           <DialogTrigger asChild>
@@ -273,6 +283,11 @@ function RecrutamentoPage() {
               </div>
             ) : (
               <form onSubmit={onSave} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="r_data_cadastro">Data de cadastro *</Label>
+                  <Input id="r_data_cadastro" type="date" required value={draft.data_cadastro}
+                    onChange={(event) => set("data_cadastro", event.target.value)} />
+                </div>
                 <div className="rounded-lg border border-dashed p-4 text-center">
                   <input
                     ref={fileRef}
@@ -456,6 +471,10 @@ function RecrutamentoPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Candidato</TableHead>
+                <TableHead>
+                  <CandidateRegistrationDateFilter from={filters.cadastro_de ?? ""} to={filters.cadastro_ate ?? ""}
+                    onChange={(from, to) => setFilters((previous) => ({ ...previous, cadastro_de: from, cadastro_ate: to }))} />
+                </TableHead>
                 <TableHead>Cargo</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -464,18 +483,18 @@ function RecrutamentoPage() {
             <TableBody>
               {q.isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
                     Carregando…
                   </TableCell>
                 </TableRow>
               ) : (q.data?.length ?? 0) === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
                     Nenhum candidato ainda. Clique em "Novo candidato".
                   </TableCell>
                 </TableRow>
               ) : (
-                q.data!.map((c) => {
+                (q.data ?? []).map((c) => {
                   const link = typeof window !== "undefined" ? candidatePortalUrl(c.access_token) : "";
                   return (
                     <TableRow key={c.id}>
@@ -486,6 +505,7 @@ function RecrutamentoPage() {
                         <div className="text-xs text-muted-foreground">{c.email ?? c.phone ?? "—"}</div>
                       </TableCell>
                       <TableCell>{c.position ?? "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{c.data_cadastro ? c.data_cadastro.split("-").reverse().join("/") : "—"}</TableCell>
                       <TableCell>
                         <CandidateStatusBadge status={c.status as never} />
                       </TableCell>

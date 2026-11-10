@@ -149,6 +149,7 @@ export type Database = {
           cpf: string | null
           created_at: string
           created_by: string
+          data_cadastro: string | null
           data_entrevista: string | null
           deletion_requested_at: string | null
           departamento: string | null
@@ -196,6 +197,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           created_by: string
+          data_cadastro?: string | null
           data_entrevista?: string | null
           deletion_requested_at?: string | null
           departamento?: string | null
@@ -243,6 +245,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           created_by?: string
+          data_cadastro?: string | null
           data_entrevista?: string | null
           deletion_requested_at?: string | null
           departamento?: string | null
