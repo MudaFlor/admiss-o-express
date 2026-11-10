@@ -1,4 +1,5 @@
 # Architecture rules
+- Candidate registration dates use a dedicated DATE column and shared calendar validation; default to the São Paulo day and filter inclusive date bounds without changing creation timestamps.
 - HR candidate registration warnings share an authenticated HR-only lookup and pure advisory matching; never use warning matches to merge or block records automatically.
 - Employee deletion uses one shared confirmation control and an authenticated admin-only server action; preserve source candidate files and record the deletion in audit.
 - Candidate submission validation lives in a shared pure module used by the portal and server, so required contact data and CTPS cannot diverge between them.
