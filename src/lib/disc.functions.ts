@@ -163,7 +163,7 @@ export const regenerateProfileAnalysis = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: isHr } = await context.supabase.rpc("is_hr");
+    const { data: isHr } = await context.supabase.rpc("is_hr", { _user_id: context.userId });
     if (!isHr) throw new Error("Acesso restrito ao RH");
     const db = await admin();
     const { data: row } = await db.from("disc_assessments").select("id, kind, status").eq("id", data.id).maybeSingle();
