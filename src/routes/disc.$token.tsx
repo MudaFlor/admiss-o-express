@@ -50,7 +50,7 @@ function DiscPage() {
   }
 
   const msg = (t: string) => (
-    <div className="mx-auto max-w-xl p-6"><Card><CardContent className="p-6 text-center">{t}</CardContent></Card></div>
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-slate-900"><div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm shadow-sm">{t}</div></div>
   );
   if (q.isLoading) return msg("Carregando…");
   if (!q.data || q.data.state === "invalid") return msg("Link inválido.");
