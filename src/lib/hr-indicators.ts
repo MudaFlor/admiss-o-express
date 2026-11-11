@@ -27,7 +27,7 @@ export const HR_SELECT_OPTIONS = {
   recontratar: ["Sim", "Não", "Avaliar"],
 } as const;
 
-export const HR_TEXT_FIELDS = ["cidade", "departamento", "recrutador"] as const;
+export const HR_TEXT_FIELDS = ["cidade", "departamento", "solicitante_vaga", "recrutador"] as const;
 export const HR_LONG_FIELDS = ["observacoes_entrevista", "observacoes_rh"] as const;
 
 export type HrField =
@@ -40,6 +40,7 @@ export type HrField =
 export const HR_FIELDS: HrField[] = [
   "cidade",
   "departamento",
+  "solicitante_vaga",
   "recrutador",
   "data_entrevista",
   "situacao_entrevista",
@@ -57,6 +58,7 @@ export const HR_FIELDS: HrField[] = [
 export const HR_LABELS: Record<HrField, string> = {
   cidade: "Cidade",
   departamento: "Departamento",
+  solicitante_vaga: "Solicitante da Vaga",
   recrutador: "Recrutador",
   data_entrevista: "Data da entrevista",
   situacao_entrevista: "Situação da entrevista",

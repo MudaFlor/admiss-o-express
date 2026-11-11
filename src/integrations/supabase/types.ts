@@ -175,6 +175,7 @@ export type Database = {
           reviewed_by: string | null
           sexo: string | null
           situacao_entrevista: string | null
+          solicitante_vaga: string | null
           stage: Database["public"]["Enums"]["candidate_stage"]
           stage_note: string | null
           stage_updated_at: string
@@ -223,6 +224,7 @@ export type Database = {
           reviewed_by?: string | null
           sexo?: string | null
           situacao_entrevista?: string | null
+          solicitante_vaga?: string | null
           stage?: Database["public"]["Enums"]["candidate_stage"]
           stage_note?: string | null
           stage_updated_at?: string
@@ -271,6 +273,7 @@ export type Database = {
           reviewed_by?: string | null
           sexo?: string | null
           situacao_entrevista?: string | null
+          solicitante_vaga?: string | null
           stage?: Database["public"]["Enums"]["candidate_stage"]
           stage_note?: string | null
           stage_updated_at?: string

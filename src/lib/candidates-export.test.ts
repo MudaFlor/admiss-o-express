@@ -10,9 +10,10 @@ describe("planilha de candidatos", () => {
     ]);
   });
   it("preenche cada coluna com o dado do candidato", () => {
-    const [r] = candidateExportRows([{ full_name: "Ana", position: "Auxiliar", data_entrevista: "2026-11-10", recontratar: "Sim" }]);
+    const [r] = candidateExportRows([{ full_name: "Ana", position: "Auxiliar", solicitante_vaga: "Carlos Souza", data_entrevista: "2026-11-10", recontratar: "Sim" }]);
     expect(r[0]).toBe("Ana");
     expect(r[2]).toBe("Auxiliar");
+    expect(r[4]).toBe("Carlos Souza");
     expect(r[6]).toBe("10/11/2026");
     expect(r[14]).toBe("Sim");
   });

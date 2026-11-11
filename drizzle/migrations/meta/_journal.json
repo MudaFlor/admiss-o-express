@@ -99,6 +99,13 @@
       "when": 1794403348429,
       "tag": "0013_perfil_aberto_assessments",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794424688626,
+      "tag": "0014_add_candidate_job_requester",
+      "breakpoints": true
     }
   ]
 }

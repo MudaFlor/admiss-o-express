@@ -109,7 +109,7 @@ export const listCandidates = createServerFn({ method: "POST" })
     const { supabase } = context;
     let q = supabase
       .from("candidates")
-      .select("id, codigo, full_name, email, phone, cpf, position, status, stage, created_at, data_cadastro, updated_at, access_token, cidade, departamento, recrutador, data_entrevista, situacao_entrevista, teste, admitido, categoria, integracao, meio_recebimento, indicacao_colaborador, recontratar, observacoes_entrevista")
+      .select("id, codigo, full_name, email, phone, cpf, position, status, stage, created_at, data_cadastro, updated_at, access_token, cidade, departamento, solicitante_vaga, recrutador, data_entrevista, situacao_entrevista, teste, admitido, categoria, integracao, meio_recebimento, indicacao_colaborador, recontratar, observacoes_entrevista")
       .order("created_at", { ascending: false });
     const esc = (s: string) => s.replace(/[%_,()]/g, " ");
     if (data.status) q = q.eq("status", data.status);
@@ -140,6 +140,7 @@ export const updateCandidateHrIndicators = createServerFn({ method: "POST" })
         id: z.string().uuid(),
         cidade: hrStr(120),
         departamento: hrStr(120),
+        solicitante_vaga: hrStr(120),
         recrutador: hrStr(120),
         data_entrevista: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable().or(z.literal("")),
         situacao_entrevista: hrStr(60),
