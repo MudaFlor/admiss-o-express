@@ -29,3 +29,11 @@
 - `src/routes/disc.$token.tsx`: fluxo em etapas (boas-vindas → P1 → P2 → concluído) com estado local.
 - Novo `ProfileResultDashboard.tsx` usado no `DiscCard.tsx`; renderização v1 mantida para registros antigos. PDF via impressão de área dedicada (padrão já usado na ficha) e cópia em texto via clipboard.
 - Sem mudança de banco (usa colunas JSON existentes). Atualizar memória `profile-analysis` e regra em `AGENTS.md`.
+
+## Nova aba no menu: Análise de Perfil
+- Item **Análise de Perfil** na barra lateral, com todos os perfis de candidatos e colaboradores numa só página.
+- Lista com nome, tipo (Candidato/Colaborador), cargo, data da resposta, situação (aguardando resposta / aguardando geração / gerado) e badges do resultado (Pontes/Muros, estilo de comunicação).
+- Busca por nome e filtros por tipo, situação e perfil.
+- Clicar abre o painel de resultado na própria página (Gerar, Exportar PDF, Copiar), sem entrar no cadastro; link opcional para a ficha.
+- Acesso: equipe de RH. O perfil Gestor foi removido do login antes; trazê-lo de volta seria um ajuste separado.
+- Técnico: rota `src/routes/_authenticated/analise-perfil.tsx`, item no `AppSidebar.tsx`, server function `listProfileAnalyses` (autenticada, só RH) juntando nomes de candidatos/colaboradores.
