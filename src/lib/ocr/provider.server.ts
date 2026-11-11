@@ -4,6 +4,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import type { Database } from "@/integrations/supabase/types";
+import { DEPENDENT_CERTIFICATE_FIELDS, DEPENDENT_CERTIFICATE_INSTRUCTION } from "@/lib/dependent-record";
 
 export type DocumentType = Database["public"]["Enums"]["document_type"];
 
@@ -33,7 +34,7 @@ const FIELDS_BY_TYPE: Record<DocumentType, string[]> = {
   escolaridade: [],
   certificado_curso: [],
   vacinacao_covid: [],
-  dependente_certidao: ["nome", "nome_pai", "nome_mae", "data_nascimento", "registro"],
+  dependente_certidao: DEPENDENT_CERTIFICATE_FIELDS,
   dependente_rg_cpf: ["nome", "rg", "cpf", "data_nascimento"],
   dependente_vacinacao: [],
   dependente_escolar: [],
@@ -126,7 +127,7 @@ function userInstruction(type: DocumentType): string {
     escolaridade: "Comprovante de Escolaridade",
     certificado_curso: "Certificado de Curso",
     vacinacao_covid: "Comprovante de Vacinação Covid",
-    dependente_certidao: "Certidão de Nascimento de dependente — 'nome_pai' e 'nome_mae' são os pais do registrado (a criança), nunca os avós.",
+    dependente_certidao: DEPENDENT_CERTIFICATE_INSTRUCTION,
     dependente_rg_cpf: "RG ou CPF de dependente",
     dependente_vacinacao: "Carteira de Vacinação de dependente",
     dependente_escolar: "Comprovante Escolar de dependente",
