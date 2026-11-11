@@ -148,7 +148,9 @@ function CandidatoDetailPage() {
   const [editingFicha, setEditingFicha] = useState(false);
   const [editingOcr, setEditingOcr] = useState(false);
   const [ocrDraft, setOcrDraft] = useState<Record<string, string>>({});
-  const [basics, setBasics] = useState({ full_name: "", cpf: "", email: "", phone: "", position: "" });
+  const [basics, setBasics] = useState({ full_name: "", cpf: "", email: "", phone: "", position: "", data_cadastro: "" });
+  const [confirmDateChange, setConfirmDateChange] = useState(false);
+  const [savingBasics, setSavingBasics] = useState(false);
 
   useEffect(() => {
     if (q.data?.documents && !activeDoc) setActiveDoc(q.data.documents[0]?.id ?? null);
@@ -162,6 +164,7 @@ function CandidatoDetailPage() {
         email: q.data.candidate.email ?? "",
         phone: q.data.candidate.phone ?? "",
         position: q.data.candidate.position ?? "",
+        data_cadastro: q.data.candidate.data_cadastro ?? "",
       });
     }
   }, [q.data?.candidate]);
