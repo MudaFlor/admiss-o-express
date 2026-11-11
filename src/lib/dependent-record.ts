@@ -30,7 +30,7 @@ function record(value: unknown): Record<string, unknown> {
 
 export function formatDependentCpf(value: string | null): string {
   const digits = (value ?? "").replace(/\D/g, "");
-  return digits.length === 11 ? digits.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3.$4") : value || "—";
+  return digits.length === 11 ? digits.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4") : value || "—";
 }
 
 export function formatDependentBirthDate(value: string | null): string {

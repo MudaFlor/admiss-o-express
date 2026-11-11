@@ -6,7 +6,7 @@ const certificate = { id: "doc-1", type: "dependente_certidao", dependent_id: de
 
 describe("ficha de dependentes", () => {
   it("exibe CPF com os pontos solicitados", () => {
-    expect(formatDependentCpf("12345678901")).toBe("123.456.789.01");
+    expect(formatDependentCpf("12345678901")).toBe("123.456.789-01");
   });
   it("mantém nascimento como data de calendário", () => {
     expect(buildDependentRecord(dep, []).birthDate).toBe("20/03/2019");
@@ -29,7 +29,7 @@ describe("ficha de dependentes", () => {
   });
   it("usa CPF extraído do documento de identidade quando não foi digitado", () => {
     const ficha = buildDependentRecord({ ...dep, cpf: null }, [{ ...certificate, type: "dependente_rg_cpf", ocr_data: { values: { cpf: "12345678901" } } }]);
-    expect(ficha.cpf).toBe("123.456.789.01");
+    expect(ficha.cpf).toBe("123.456.789-01");
   });
   it("prioriza correções revisadas sem alterar a extração original", () => {
     const ficha = buildDependentRecord(dep, [certificate], { documentos_revisados: { "doc-1": { numero_nativivo: "0098765" } } });

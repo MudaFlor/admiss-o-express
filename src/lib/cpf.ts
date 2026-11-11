@@ -29,3 +29,16 @@ export function formatPhone(input: string): string {
   if (p.length === 10) return `(${p.slice(0, 2)}) ${p.slice(2, 6)}-${p.slice(6)}`;
   return input;
 }
+// Máscara progressiva para digitação: 000.000.000-00
+export function maskCpf(input: string): string {
+  const d = normalizeCpf(input ?? "").slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+/** Formata o valor quando o nome do campo indica CPF. */
+export function cpfAware(key: string, value: string): string {
+  return /(^|_)cpf$/i.test(key) && value ? formatCpf(value) : value;
+}

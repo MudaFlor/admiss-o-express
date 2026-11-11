@@ -1,3 +1,4 @@
+import { formatCpf } from "@/lib/cpf";
 // Gera o comprovante de aceite LGPD como arquivo PDF real, no navegador do RH.
 type Consent = {
   id: string;
@@ -43,9 +44,9 @@ export async function downloadConsentPdf(c: Consent, candidate: { full_name?: st
 
   section("Signatário");
   line("Nome cadastrado", candidate.full_name);
-  line("CPF cadastrado", candidate.cpf);
+  line("CPF cadastrado", candidate.cpf ? formatCpf(candidate.cpf) : candidate.cpf);
   line("Nome assinado", c.signature_name);
-  line("CPF confirmado", c.signature_cpf);
+  line("CPF confirmado", c.signature_cpf ? formatCpf(c.signature_cpf) : c.signature_cpf);
   line("E-mail", candidate.email);
 
   section("Momento do aceite");

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { maskCpf, cpfAware } from "@/lib/cpf";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -455,7 +456,7 @@ function CandidatePage() {
   const issueCount = Object.keys(issues).length;
 
   function setField<K extends keyof FormState>(k: K, v: string) {
-    setForm((f) => ({ ...f, [k]: v }));
+    setForm((f) => ({ ...f, [k]: k === "cpf" ? maskCpf(v) : v }));
     setAutoFilled((s) => {
       if (!s.has(k)) return s;
       const n = new Set(s);
@@ -739,7 +740,7 @@ function CandidatePage() {
                     id="sig-cpf"
                     inputMode="numeric"
                     value={sigCpf}
-                    onChange={(e) => setSigCpf(e.target.value)}
+                    onChange={(e) => setSigCpf(maskCpf(e.target.value))}
                     placeholder="000.000.000-00"
                     autoComplete="off"
                   />
@@ -1212,7 +1213,7 @@ function CandidatePage() {
                             type={k === "email" ? "email" : "text"}
                             required={k === "email"}
                             maxLength={k === "email" ? 255 : 500}
-                            value={form[k]}
+                            value={cpfAware(String(k), form[k])}
                             onChange={(e) => setField(k, e.target.value)}
                             aria-invalid={!!err}
                             className={err ? "h-9 border-destructive bg-destructive/5" : "h-9"}
@@ -1362,7 +1363,7 @@ function SmartField<K extends keyof FormState>(props: {
         name={k}
         type={type}
         placeholder={placeholder}
-        value={form[k]}
+        value={cpfAware(String(k), form[k])}
         onChange={(e) => setField(k, e.target.value)}
         aria-invalid={!!error}
         className={error ? "border-destructive bg-destructive/5" : filled ? "border-primary/40 bg-primary/5" : ""}
@@ -1394,7 +1395,7 @@ function SmartArea<K extends keyof FormState>(props: {
         name={k}
         rows={rows}
         placeholder={placeholder}
-        value={form[k]}
+        value={cpfAware(String(k), form[k])}
         onChange={(e) => setField(k, e.target.value)}
         className={filled ? "border-primary/40 bg-primary/5" : ""}
       />
@@ -1483,11 +1484,11 @@ function DocumentExtraction({
                 <Input
                   id={`ocr-${documentId}-${key}`}
                   maxLength={1000}
-                  value={value}
+                  value={cpfAware(key, value)}
                   onChange={(event) => onChange(key, event.target.value)}
                 />
               ) : (
-                <span className="break-words text-sm">{value || "—"}</span>
+                <span className="break-words text-sm">{cpfAware(key, value) || "—"}</span>
               )}
             </dd>
           </div>
@@ -1751,7 +1752,7 @@ function DependentsBlock(props: {
                   <Input
                     placeholder="CPF (opcional)"
                     value={draft.cpf}
-                    onChange={(e) => setDraft({ ...draft, cpf: e.target.value })}
+                    onChange={(e) => setDraft({ ...draft, cpf: maskCpf(e.target.value) })}
                   />
                   <Input
                     placeholder="RG (opcional)"

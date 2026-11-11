@@ -1,3 +1,4 @@
+import { cpfAware } from "@/lib/cpf";
 import { FICHA_FIELDS, ORIGEM_LABEL } from "./ficha-consolidation";
 
 export async function downloadFichaPdf(
@@ -17,7 +18,7 @@ export async function downloadFichaPdf(
   y += 3;
   doc.line(15, y, 195, y);
   y += 7;
-  const rows: Array<[string, string, string]> = FICHA_FIELDS.map(([k, l]) => [l, data[k] || "—", ORIGEM_LABEL[origem[k]] ?? ""]);
+  const rows: Array<[string, string, string]> = FICHA_FIELDS.map(([k, l]) => [l, cpfAware(k, data[k] ?? "") || "—", ORIGEM_LABEL[origem[k]] ?? ""]);
   rows.push(["Raça/cor", raceLabel || "—", "Autodeclaração"]);
   rows.push(["Estado civil", data.estado_civil || "—", ""]);
   for (const [label, value, src] of rows) {

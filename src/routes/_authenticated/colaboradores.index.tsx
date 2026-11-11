@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { maskCpf } from "@/lib/cpf";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -231,7 +232,7 @@ function ColaboradoresPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="manual_cpf">CPF</Label>
-                  <Input id="manual_cpf" name="cpf" maxLength={20} />
+                  <Input id="manual_cpf" name="cpf" maxLength={14} inputMode="numeric" placeholder="000.000.000-00" onChange={(e) => { e.currentTarget.value = maskCpf(e.currentTarget.value); }} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">

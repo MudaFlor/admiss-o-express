@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { maskCpf, cpfAware } from "@/lib/cpf";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -169,8 +170,8 @@ function EmployeePage() {
               required={d.key === "matricula_esocial"}
               maxLength={d.key === "matricula_esocial" ? 40 : undefined}
               aria-invalid={d.key === "matricula_esocial" && !!registrationError}
-              value={form[d.key] ?? ""}
-              onChange={(e) => setForm({ ...form, [d.key]: e.target.value })}
+              value={cpfAware(d.key, form[d.key] ?? "")}
+              onChange={(e) => setForm({ ...form, [d.key]: d.key === "cpf" ? maskCpf(e.target.value) : e.target.value })}
             />
           )}
         </div>

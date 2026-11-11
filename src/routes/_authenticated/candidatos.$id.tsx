@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { maskCpf, cpfAware, formatCpf } from "@/lib/cpf";
 import { useServerFn } from "@tanstack/react-start";
 import { getConsentReceiptUrl } from "@/lib/lgpd.functions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -327,9 +328,9 @@ function CandidatoDetailPage() {
                 id={`basic-${k}`}
                 type={k === "data_cadastro" ? "date" : "text"}
                 required={k === "data_cadastro"}
-                value={basics[k]}
+                value={k === "cpf" ? maskCpf(basics[k]) : basics[k]}
                 disabled={!editingBasics}
-                onChange={(e) => setBasics({ ...basics, [k]: e.target.value })}
+                onChange={(e) => setBasics({ ...basics, [k]: k === "cpf" ? maskCpf(e.target.value) : e.target.value })}
               />
             </div>
           ))}
@@ -537,7 +538,7 @@ function CandidatoDetailPage() {
                             )}
                           </div>
                           <Input
-                            value={String(v ?? "")}
+                            value={cpfAware(k, String(v ?? ""))}
                             disabled={!editingOcr}
                             onChange={(e) => setOcrDraft({ ...ocrDraft, [k]: e.target.value })}
                             className={low ? "border-amber-400" : undefined}
@@ -638,7 +639,7 @@ function CandidatoDetailPage() {
                   <dl className="grid gap-2 sm:grid-cols-2">
                     {Object.entries(reviewedDocuments[document.id]).map(([key, value]) => <div key={key} className="min-w-0">
                       <dt className="text-xs text-muted-foreground">{key.replace(/_/g, " ")}</dt>
-                      <dd className="break-words text-sm">{value || "—"}</dd>
+                      <dd className="break-words text-sm">{cpfAware(key, String(value ?? "")) || "—"}</dd>
                     </div>)}
                   </dl>
                 </div>)}
@@ -841,7 +842,7 @@ function CandidatoDetailPage() {
                       </div>
                       <div className="grid gap-2 md:grid-cols-2">
                         <Field label="Nome assinado" value={c.signature_name ?? "—"} />
-                        <Field label="CPF confirmado" value={c.signature_cpf ?? "—"} />
+                        <Field label="CPF confirmado" value={c.signature_cpf ? formatCpf(c.signature_cpf) : "—"} />
                         <Field label="IP" value={c.ip_address ?? "—"} />
                         <Field label="Dispositivo" value={String(dev.device_type ?? "—")} />
                         <Field label="Plataforma" value={String(dev.platform ?? "—")} />
@@ -933,9 +934,9 @@ function FichaForm({
         <div key={k} className="space-y-1.5">
           <Label>{label}</Label>
           <Input
-            value={merged[k] ?? ""}
+            value={cpfAware(k, merged[k] ?? "")}
             disabled={disabled}
-            onChange={(e) => setEditing({ ...editing, [k]: e.target.value })}
+            onChange={(e) => setEditing({ ...editing, [k]: k === "cpf" ? maskCpf(e.target.value) : e.target.value })}
           />
           {origem[k] && <p className="text-[10px] text-muted-foreground">Fonte: {ORIGEM_LABEL[origem[k]] ?? origem[k]}</p>}
         </div>
