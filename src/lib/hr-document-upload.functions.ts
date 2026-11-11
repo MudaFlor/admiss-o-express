@@ -90,3 +90,52 @@ export const finalizeHrDocumentUpload = createServerFn({ method: "POST" })
     await logAudit({ actor_user_id: context.userId, action: "hr_upload_doc", entity: "document", entity_id: doc!.id, metadata: { type: data.type } });
     return { id: doc!.id, fields: Object.keys(ocr.fields).length };
   });
+
+// RH assume a admissão: mantém documentos já enviados e encerra o link do candidato.
+export const takeOverAdmission = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ candidate_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertHr(context.supabase, context.userId, data.candidate_id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { advanceStage } = await import("@/lib/workflow/stage.server");
+    const { data: cand, error } = await supabaseAdmin
+      .from("candidates").select("form_data, token_revoked_at").eq("id", data.candidate_id).single();
+    if (error) fail(error);
+    const fd = (cand!.form_data ?? {}) as Record<string, unknown>;
+    if (fd.conduzido_por_rh && cand!.token_revoked_at) return { ok: true, already: true };
+    const { data: prof } = await supabaseAdmin.from("profiles").select("full_name").eq("id", context.userId).maybeSingle();
+    const now = new Date().toISOString();
+    const { error: upErr } = await supabaseAdmin.from("candidates").update({
+      token_revoked_at: now,
+      form_data: { ...fd, conduzido_por_rh: { user_id: context.userId, nome: (prof as { full_name?: string } | null)?.full_name ?? null, em: now } } as never,
+    }).eq("id", data.candidate_id);
+    if (upErr) fail(upErr);
+    await advanceStage(data.candidate_id, "documentos_enviados", { note: "Admissão assumida pelo RH; link do candidato encerrado" });
+    await logAudit({ actor_user_id: context.userId, action: "hr_takeover", entity: "candidate", entity_id: data.candidate_id });
+    return { ok: true, already: false };
+  });
+
+// RH conclui os dados com as mesmas regras do portal e segue a admissão.
+export const submitApplicationByHr = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ candidate_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertHr(context.supabase, context.userId, data.candidate_id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { finalizeApplication } = await import("@/lib/admission/finalize.server");
+    const { data: cand, error } = await supabaseAdmin.from("candidates").select("*").eq("id", data.candidate_id).single();
+    if (error) fail(error);
+    const fd = (cand!.form_data ?? {}) as Record<string, unknown>;
+    const rawSexo = String(cand!.sexo ?? fd.sexo ?? "").toLowerCase();
+    const sexo = rawSexo.startsWith("m") ? "masculino" : rawSexo.startsWith("f") ? "feminino" : null;
+    if (!sexo) throw new Error("Preencha o sexo (Feminino ou Masculino) na ficha.");
+    await finalizeApplication(cand!, {
+      form_data: { ...fd, email: fd.email ?? cand!.email ?? undefined },
+      sexo,
+      cor_raca: (fd.cor_raca as string | undefined) ?? cand!.cor_raca ?? undefined,
+      estado_civil: (fd.estado_civil as string | undefined) ?? cand!.estado_civil ?? undefined,
+    }, "Dados concluídos pelo RH");
+    await logAudit({ actor_user_id: context.userId, action: "hr_submit", entity: "candidate", entity_id: data.candidate_id });
+    return { ok: true };
+  });

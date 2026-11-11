@@ -17,7 +17,7 @@ import { DuplicateCandidatesCard } from "@/components/DuplicateCandidatesCard";
 import { DiscCard } from "@/components/DiscCard";
 import { HrIndicatorsCard } from "@/components/HrIndicatorsCard";
 import { CandidateDependents } from "@/components/CandidateDependents";
-import { HrDocumentUpload } from "@/components/HrDocumentUpload";
+import { HrDocumentUpload, HrAdmissionBar } from "@/components/HrDocumentUpload";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -254,6 +254,7 @@ function CandidatoDetailPage() {
   const recruitmentProfile = ((candidate.form_data as Record<string, unknown> | null)?.perfil_recrutamento ?? {}) as Record<string, unknown>;
   const resumeDocument = q.data?.documents.find((document) => document.type === "curriculo");
   const hasSubmitted = Object.keys(formData).some((key) => key !== "perfil_recrutamento");
+  const hrTakeover = (candidate.form_data as Record<string, unknown> | null)?.conduzido_por_rh as { nome?: string | null; em?: string } | undefined;
 
   return (
     <div className="mx-auto max-w-7xl space-y-4">
@@ -373,6 +374,7 @@ function CandidatoDetailPage() {
         )}
       />
 
+      {hrTakeover && <HrAdmissionBar candidateId={id} info={hrTakeover} />}
       <Tabs defaultValue="documentos">
         <TabsList>
           <TabsTrigger value="documentos">Documentos & OCR</TabsTrigger>
@@ -387,7 +389,7 @@ function CandidatoDetailPage() {
         </TabsList>
 
         <TabsContent value="documentos" className="space-y-3">
-          <div className="flex justify-end"><HrDocumentUpload candidateId={id} labels={DOC_LABELS} /></div>
+          <div className="flex justify-end"><HrDocumentUpload candidateId={id} labels={DOC_LABELS} takenOver={!!hrTakeover} /></div>
           <div className={`grid gap-4 ${hasSubmitted ? "lg:grid-cols-[280px_1fr_360px]" : "lg:grid-cols-[280px_1fr]"}`}>
             <Card>
               <CardHeader><CardTitle className="text-sm">Documentos enviados</CardTitle></CardHeader>
