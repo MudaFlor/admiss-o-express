@@ -271,19 +271,6 @@ function CandidatoDetailPage() {
         <CandidateStatusBadge status={candidate.status as never} />
       </div>
 
-      {!hasSubmitted && (
-        <Card className="border-amber-300 bg-amber-50">
-          <CardContent className="flex items-start gap-3 p-4 text-sm text-amber-900">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <div>
-              <div className="font-semibold">Aguardando o candidato revisar e enviar o cadastro.</div>
-              <div className="text-xs text-amber-900/80">
-                Os dados extraídos por IA são um rascunho editável pelo candidato — só ficam disponíveis para o RH após o envio final. Você pode conferir os arquivos enviados abaixo.
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <Tabs defaultValue="basicos" className="space-y-4">
         <TabsList className="h-auto w-full flex-wrap justify-start gap-1 p-1">
