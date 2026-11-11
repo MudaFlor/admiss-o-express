@@ -284,7 +284,7 @@ function RecrutamentoPage() {
             ) : (
               <form onSubmit={onSave} className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="r_data_cadastro">Data de cadastro *</Label>
+                  <Label htmlFor="r_data_cadastro">Data de inclusão *</Label>
                   <Input id="r_data_cadastro" type="date" required value={draft.data_cadastro}
                     onChange={(event) => set("data_cadastro", event.target.value)} />
                 </div>
@@ -504,8 +504,8 @@ function RecrutamentoPage() {
                         </Link>
                         <div className="text-xs text-muted-foreground">{c.email ?? c.phone ?? "—"}</div>
                       </TableCell>
-                      <TableCell>{c.position ?? "—"}</TableCell>
                       <TableCell className="whitespace-nowrap">{c.data_cadastro ? c.data_cadastro.split("-").reverse().join("/") : "—"}</TableCell>
+                      <TableCell>{c.position ?? "—"}</TableCell>
                       <TableCell>
                         <CandidateStatusBadge status={c.status as never} />
                       </TableCell>

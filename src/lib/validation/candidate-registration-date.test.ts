@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { candidateRegistrationDateSchema, candidateRegistrationRangeSchema, currentRegistrationDate } from "./candidate-registration-date";
+import { candidateRegistrationDateSchema, candidateRegistrationRangeSchema, currentRegistrationDate, hasCandidateRegistrationDateChanged } from "./candidate-registration-date";
 
 describe("data de cadastro do candidato", () => {
   it("exige a data para cadastrar", () => {
@@ -19,5 +19,10 @@ describe("data de cadastro do candidato", () => {
     expect(candidateRegistrationRangeSchema.parse({ cadastro_de: "2026-11-10", cadastro_ate: "2026-11-10" }))
       .toEqual({ cadastro_de: "2026-11-10", cadastro_ate: "2026-11-10" });
     expect(candidateRegistrationRangeSchema.safeParse({ cadastro_de: "2026-11-11", cadastro_ate: "2026-11-10" }).success).toBe(false);
+  });
+  it("só exige confirmação quando a data de inclusão realmente muda", () => {
+    expect(hasCandidateRegistrationDateChanged("2026-11-11", "2026-11-11")).toBe(false);
+    expect(hasCandidateRegistrationDateChanged(null, "")).toBe(false);
+    expect(hasCandidateRegistrationDateChanged("2026-11-11", "2026-11-12")).toBe(true);
   });
 });

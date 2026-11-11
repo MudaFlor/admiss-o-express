@@ -33,6 +33,7 @@ import {
 import { CandidateStatusBadge } from "@/components/CandidateStatusBadge";
 import { crossCheckCandidate, extractDeclaredFromFormData, type CrossCheckResult } from "@/lib/validation/cross-check";
 import { RACE_OPTIONS } from "@/lib/validation/candidate-submission";
+import { candidateRegistrationDateSchema, hasCandidateRegistrationDateChanged } from "@/lib/validation/candidate-registration-date";
 import {
   approveCandidate,
   getCandidateById,
@@ -147,7 +148,9 @@ function CandidatoDetailPage() {
   const [editingFicha, setEditingFicha] = useState(false);
   const [editingOcr, setEditingOcr] = useState(false);
   const [ocrDraft, setOcrDraft] = useState<Record<string, string>>({});
-  const [basics, setBasics] = useState({ full_name: "", cpf: "", email: "", phone: "", position: "" });
+  const [basics, setBasics] = useState({ full_name: "", cpf: "", email: "", phone: "", position: "", data_cadastro: "" });
+  const [confirmDateChange, setConfirmDateChange] = useState(false);
+  const [savingBasics, setSavingBasics] = useState(false);
 
   useEffect(() => {
     if (q.data?.documents && !activeDoc) setActiveDoc(q.data.documents[0]?.id ?? null);
@@ -161,6 +164,7 @@ function CandidatoDetailPage() {
         email: q.data.candidate.email ?? "",
         phone: q.data.candidate.phone ?? "",
         position: q.data.candidate.position ?? "",
+        data_cadastro: q.data.candidate.data_cadastro ?? "",
       });
     }
   }, [q.data?.candidate]);
@@ -201,6 +205,44 @@ function CandidatoDetailPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  async function saveBasics() {
+    const dateValidation = candidateRegistrationDateSchema.safeParse(basics.data_cadastro);
+    if (!dateValidation.success) {
+      toast.error(dateValidation.error.issues[0]?.message ?? "Informe a data de inclusão.");
+      return;
+    }
+    setSavingBasics(true);
+    try {
+      await updateBasics({ data: { id, ...basics } });
+      toast.success("Dados salvos");
+      setConfirmDateChange(false);
+      await qc.invalidateQueries({ queryKey: ["candidate", id] });
+      setEditingBasics(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar os dados.");
+    } finally {
+      setSavingBasics(false);
+    }
+  }
+
+  function requestSaveBasics() {
+    const dateValidation = candidateRegistrationDateSchema.safeParse(basics.data_cadastro);
+    if (!dateValidation.success) {
+      toast.error(dateValidation.error.issues[0]?.message ?? "Informe a data de inclusão.");
+      return;
+    }
+    if (hasCandidateRegistrationDateChanged(candidate?.data_cadastro, basics.data_cadastro)) {
+      setConfirmDateChange(true);
+      return;
+    }
+    void saveBasics();
+  }
+
+  function cancelDateChange() {
+    setBasics((current) => ({ ...current, data_cadastro: candidate?.data_cadastro ?? "" }));
+    setConfirmDateChange(false);
+  }
 
   if (q.isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
   if (q.isError || !candidate) return <p className="text-sm text-rose-600">Erro ao carregar candidato.</p>;
@@ -248,29 +290,21 @@ function CandidatoDetailPage() {
             </Button>
           ) : (
             <div className="flex gap-2">
-              <Button size="sm" variant="ghost" onClick={() => {
+              <Button size="sm" variant="ghost" disabled={savingBasics} onClick={() => {
                 setBasics({
                   full_name: candidate.full_name ?? "",
                   cpf: candidate.cpf ?? "",
                   email: candidate.email ?? "",
                   phone: candidate.phone ?? "",
                   position: candidate.position ?? "",
+                  data_cadastro: candidate.data_cadastro ?? "",
                 });
                 setEditingBasics(false);
               }}>
                 <X className="h-3.5 w-3.5" /> Cancelar
               </Button>
-              <Button size="sm" onClick={async () => {
-                try {
-                  await updateBasics({ data: { id, ...basics } });
-                  toast.success("Dados salvos");
-                  setEditingBasics(false);
-                  qc.invalidateQueries({ queryKey: ["candidate", id] });
-                } catch (e) {
-                  toast.error(e instanceof Error ? e.message : "Erro");
-                }
-              }}>
-                <Save className="h-3.5 w-3.5" /> Salvar
+              <Button size="sm" disabled={savingBasics} onClick={requestSaveBasics}>
+                <Save className="h-3.5 w-3.5" /> {savingBasics ? "Salvando…" : "Salvar"}
               </Button>
             </div>
           )}
@@ -282,10 +316,14 @@ function CandidatoDetailPage() {
             ["email", "Email"],
             ["phone", "Telefone"],
             ["position", "Cargo"],
+            ["data_cadastro", "Data de inclusão"],
           ] as const).map(([k, label]) => (
             <div key={k} className="space-y-1.5">
-              <Label className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
+              <Label htmlFor={`basic-${k}`} className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
               <Input
+                id={`basic-${k}`}
+                type={k === "data_cadastro" ? "date" : "text"}
+                required={k === "data_cadastro"}
                 value={basics[k]}
                 disabled={!editingBasics}
                 onChange={(e) => setBasics({ ...basics, [k]: e.target.value })}
@@ -294,6 +332,24 @@ function CandidatoDetailPage() {
           ))}
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmDateChange} onOpenChange={(open) => open ? setConfirmDateChange(true) : cancelDateChange()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>tem certeza de que deseja alterar data de cadastro?</AlertDialogTitle>
+            <AlertDialogDescription>A data de inclusão só será atualizada após a sua confirmação.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={savingBasics}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction disabled={savingBasics} onClick={(event) => {
+              event.preventDefault();
+              void saveBasics();
+            }}>
+              {savingBasics ? "Salvando…" : "OK"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <HrIndicatorsCard candidateId={id} candidate={candidate as unknown as Record<string, unknown>} />
       <DuplicateCandidatesCard candidateId={id} />

@@ -263,6 +263,7 @@ export const updateCandidateBasicsRH = createServerFn({ method: "POST" })
         phone: z.string().trim().max(20).optional().or(z.literal("")),
         cpf: z.string().trim().max(20).optional().or(z.literal("")),
         position: z.string().trim().max(120).optional().or(z.literal("")),
+        data_cadastro: candidateRegistrationDateSchema,
       })
       .parse(input),
   )
@@ -276,6 +277,7 @@ export const updateCandidateBasicsRH = createServerFn({ method: "POST" })
         phone: data.phone || null,
         cpf: data.cpf ? normalizeCpf(data.cpf) : null,
         position: data.position || null,
+        data_cadastro: data.data_cadastro,
       })
       .eq("id", data.id);
     if (error) fail(error);

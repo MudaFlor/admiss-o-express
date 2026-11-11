@@ -8,22 +8,22 @@ export function CandidateRegistrationDateFilter({ from, to, onChange }: {
   from: string; to: string; onChange: (from: string, to: string) => void;
 }) {
   return <div className="flex items-center gap-1 whitespace-nowrap">
-    Data de cadastro
+    Data de inclusão
     <Popover>
       <PopoverTrigger asChild>
         <Button size="icon" variant={from || to ? "secondary" : "ghost"} className="h-8 w-8"
-          aria-label="Filtrar por data de cadastro" title="Filtrar por data de cadastro">
+          aria-label="Filtrar por data de inclusão" title="Filtrar por data de inclusão">
           <Filter className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="space-y-3">
         <div className="space-y-1">
-          <Label htmlFor="cadastro_de">Cadastro de</Label>
+          <Label htmlFor="cadastro_de">Inclusão de</Label>
           <Input id="cadastro_de" type="date" value={from} max={to || undefined}
             onChange={(event) => onChange(event.target.value, to && event.target.value > to ? event.target.value : to)} />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="cadastro_ate">Cadastro até</Label>
+          <Label htmlFor="cadastro_ate">Inclusão até</Label>
           <Input id="cadastro_ate" type="date" value={to} min={from || undefined}
             onChange={(event) => onChange(from && event.target.value && event.target.value < from ? event.target.value : from, event.target.value)} />
         </div>
