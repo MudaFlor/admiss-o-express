@@ -20,4 +20,9 @@ describe("data de cadastro do candidato", () => {
       .toEqual({ cadastro_de: "2026-11-10", cadastro_ate: "2026-11-10" });
     expect(candidateRegistrationRangeSchema.safeParse({ cadastro_de: "2026-11-11", cadastro_ate: "2026-11-10" }).success).toBe(false);
   });
+  it("só exige confirmação quando a data de inclusão realmente muda", () => {
+    expect(hasCandidateRegistrationDateChanged("2026-11-11", "2026-11-11")).toBe(false);
+    expect(hasCandidateRegistrationDateChanged(null, "")).toBe(false);
+    expect(hasCandidateRegistrationDateChanged("2026-11-11", "2026-11-12")).toBe(true);
+  });
 });

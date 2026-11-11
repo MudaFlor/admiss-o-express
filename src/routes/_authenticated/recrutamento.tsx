@@ -284,7 +284,7 @@ function RecrutamentoPage() {
             ) : (
               <form onSubmit={onSave} className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="r_data_cadastro">Data de cadastro *</Label>
+                  <Label htmlFor="r_data_cadastro">Data de inclusão *</Label>
                   <Input id="r_data_cadastro" type="date" required value={draft.data_cadastro}
                     onChange={(event) => set("data_cadastro", event.target.value)} />
                 </div>

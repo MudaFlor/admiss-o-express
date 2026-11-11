@@ -33,6 +33,7 @@ import {
 import { CandidateStatusBadge } from "@/components/CandidateStatusBadge";
 import { crossCheckCandidate, extractDeclaredFromFormData, type CrossCheckResult } from "@/lib/validation/cross-check";
 import { RACE_OPTIONS } from "@/lib/validation/candidate-submission";
+import { candidateRegistrationDateSchema, hasCandidateRegistrationDateChanged } from "@/lib/validation/candidate-registration-date";
 import {
   approveCandidate,
   getCandidateById,
