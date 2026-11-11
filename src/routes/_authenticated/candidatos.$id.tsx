@@ -316,10 +316,13 @@ function CandidatoDetailPage() {
             ["email", "Email"],
             ["phone", "Telefone"],
             ["position", "Cargo"],
+            ["data_cadastro", "Data de inclusão"],
           ] as const).map(([k, label]) => (
             <div key={k} className="space-y-1.5">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
               <Input
+                type={k === "data_cadastro" ? "date" : "text"}
+                required={k === "data_cadastro"}
                 value={basics[k]}
                 disabled={!editingBasics}
                 onChange={(e) => setBasics({ ...basics, [k]: e.target.value })}
@@ -328,6 +331,24 @@ function CandidatoDetailPage() {
           ))}
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmDateChange} onOpenChange={(open) => open ? setConfirmDateChange(true) : cancelDateChange()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>tem certeza de que deseja alterar data de cadastro?</AlertDialogTitle>
+            <AlertDialogDescription>A data de inclusão só será atualizada após a sua confirmação.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={savingBasics}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction disabled={savingBasics} onClick={(event) => {
+              event.preventDefault();
+              void saveBasics();
+            }}>
+              {savingBasics ? "Salvando…" : "OK"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <HrIndicatorsCard candidateId={id} candidate={candidate as unknown as Record<string, unknown>} />
       <DuplicateCandidatesCard candidateId={id} />
