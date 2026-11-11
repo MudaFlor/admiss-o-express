@@ -3,7 +3,7 @@ import { fail } from "@/lib/errors";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { logAudit } from "@/lib/audit.server";
-import { resumeDocumentValues, validateResumePdf } from "@/lib/validation/resume-file";
+import { resumeDocumentValues, resumeFileType, validateResumeFile } from "@/lib/validation/resume-file";
 import { candidateRegistrationDateSchema } from "@/lib/validation/candidate-registration-date";
 
 export const parseCandidateFile = createServerFn({ method: "POST" })
@@ -48,7 +48,7 @@ export const createCandidateFromProfile = createServerFn({ method: "POST" })
     let resumeBytes: Uint8Array | null = null;
     if (data.resume) {
       resumeBytes = new Uint8Array(Buffer.from(data.resume.base64, "base64"));
-      const validationError = validateResumePdf(data.resume.filename, resumeBytes);
+      const validationError = validateResumeFile(data.resume.filename, resumeBytes);
       if (validationError) throw new Error(validationError);
     }
 
@@ -77,18 +77,20 @@ export const createCandidateFromProfile = createServerFn({ method: "POST" })
 
     let resumeDocumentId: string | null = null;
     if (data.resume && resumeBytes) {
-      const storagePath = `${created.id}/curriculo-${crypto.randomUUID()}.pdf`;
+      const fileType = resumeFileType(data.resume.filename);
+      if (!fileType) throw new Error("Formato de currículo não aceito.");
+      const storagePath = `${created.id}/curriculo-${crypto.randomUUID()}.${fileType.extension}`;
       try {
         // O middleware já validou o usuário; o acesso privilegiado é necessário
         // apenas para gravar no bucket privado, que não aceita upload direto do RH.
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { error: uploadError } = await supabaseAdmin.storage
           .from("candidate-documents")
-          .upload(storagePath, resumeBytes, { contentType: "application/pdf", upsert: false });
+          .upload(storagePath, resumeBytes, { contentType: fileType.mime, upsert: false });
         if (uploadError) fail(uploadError);
 
         const { assertUploadedFileIsSafe } = await import("@/lib/security/storage.server");
-        await assertUploadedFileIsSafe(storagePath);
+        await assertUploadedFileIsSafe(storagePath, { resume: true });
 
         const { data: document, error: documentError } = await supabase
           .from("documents")
@@ -122,7 +124,7 @@ export const createCandidateFromProfile = createServerFn({ method: "POST" })
         const { advanceStage } = await import("@/lib/workflow/stage.server");
         await advanceStage(created.id, "curriculo_enviado", {
           actor_user_id: userId,
-          note: "Currículo em PDF anexado pelo RH",
+          note: "Currículo anexado pelo RH",
         });
       } catch (attachmentError) {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

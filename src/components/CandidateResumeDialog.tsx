@@ -21,7 +21,7 @@ import { CandidateRegistrationDuplicateAlert } from "@/components/CandidateRegis
 import { createCandidateFromProfile, parseCandidateFile } from "@/lib/recruitment.functions";
 import { candidatePortalUrl } from "@/lib/public-url";
 import { buildCandidateInviteMessage, buildWhatsAppLink } from "@/lib/integrations/whatsapp";
-import { MAX_FILE_BYTES } from "@/lib/upload-rules";
+import { RESUME_ACCEPT, validateResumeFile } from "@/lib/validation/resume-file";
 import { candidateRegistrationDateSchema, currentRegistrationDate } from "@/lib/validation/candidate-registration-date";
 
 type Draft = {
@@ -87,12 +87,9 @@ export function CandidateResumeDialog({ onCreated }: { onCreated: () => void }) 
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    if (!/\.pdf$/i.test(file.name) || (file.type && file.type !== "application/pdf")) {
-      toast.error("Anexe o currículo em formato PDF.");
-      return;
-    }
-    if (file.size === 0 || file.size > MAX_FILE_BYTES) {
-      toast.error(file.size === 0 ? "O arquivo do currículo está vazio." : "O currículo deve ter no máximo 10 MB.");
+    const validationError = validateResumeFile(file.name, new Uint8Array(await file.arrayBuffer()));
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
 
@@ -202,7 +199,7 @@ export function CandidateResumeDialog({ onCreated }: { onCreated: () => void }) 
           <DialogDescription>
             {created
               ? "Compartilhe o link para o candidato revisar os dados e enviar os documentos de admissão."
-              : "Anexe um currículo em PDF para preencher os dados automaticamente. Todos os campos continuam editáveis."}
+              : "Currículo do candidato"}
           </DialogDescription>
         </DialogHeader>
 
@@ -210,7 +207,7 @@ export function CandidateResumeDialog({ onCreated }: { onCreated: () => void }) 
           <div className="space-y-3">
             {created.hasResume && (
               <div className="flex items-center gap-2 rounded-md border bg-muted/40 p-3 text-sm">
-                <FileText className="h-4 w-4 text-primary" /> Currículo em PDF salvo na ficha do candidato.
+                <FileText className="h-4 w-4 text-primary" /> Currículo salvo na ficha do candidato.
               </div>
             )}
             <div className="rounded-md border bg-muted/40 p-3 text-sm break-all">{created.link}</div>
@@ -244,15 +241,15 @@ export function CandidateResumeDialog({ onCreated }: { onCreated: () => void }) 
                 ref={fileRef}
                 type="file"
                 className="hidden"
-                accept=".pdf,application/pdf"
+                accept={RESUME_ACCEPT}
                 onChange={onFile}
               />
               <Button type="button" variant="outline" disabled={parsing} onClick={() => fileRef.current?.click()}>
                 {parsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                {parsing ? "Lendo currículo…" : resume ? "Substituir currículo em PDF" : "Anexar currículo em PDF"}
+                {parsing ? "Lendo currículo…" : resume ? "Substituir currículo" : "Anexar currículo"}
               </Button>
               <p className="mt-2 text-xs text-muted-foreground">
-                {resume ? `${resume.filename} — será salvo na ficha do candidato` : "PDF de até 10 MB; o arquivo original ficará anexado à ficha"}
+                {resume ? resume.filename : "PDF, Word (DOC/DOCX), JPG, PNG ou WEBP — até 10 MB"}
               </p>
             </div>
 

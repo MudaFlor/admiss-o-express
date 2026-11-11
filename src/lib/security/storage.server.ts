@@ -3,6 +3,7 @@
 // (tamanho e mimetype registrados pelo storage) e apagamos o que não passar.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { MAX_FILE_BYTES, isAllowedMime } from "@/lib/upload-rules";
+import { resumeFileType } from "@/lib/validation/resume-file";
 
 const BUCKET = "candidate-documents";
 
@@ -18,7 +19,7 @@ export async function signedDocumentUrl(path: string): Promise<string | null> {
  * Confere o objeto recém-enviado. Em caso de reprovação o arquivo é removido
  * e a função lança um erro com mensagem amigável.
  */
-export async function assertUploadedFileIsSafe(storagePath: string): Promise<void> {
+export async function assertUploadedFileIsSafe(storagePath: string, options?: { resume: boolean }): Promise<void> {
   const slash = storagePath.lastIndexOf("/");
   const folder = slash > 0 ? storagePath.slice(0, slash) : "";
   const name = slash > 0 ? storagePath.slice(slash + 1) : storagePath;
@@ -51,7 +52,8 @@ export async function assertUploadedFileIsSafe(storagePath: string): Promise<voi
     await remove();
     throw new Error("Arquivo maior que 10 MB. Reduza a qualidade da foto e tente novamente.");
   }
-  if (mime && !isAllowedMime(mime)) {
+  const resumeMime = options?.resume ? resumeFileType(storagePath)?.mime : undefined;
+  if (mime && !isAllowedMime(mime) && mime !== resumeMime) {
     await remove();
     throw new Error("Tipo de arquivo não aceito. Envie PDF, JPG ou PNG.");
   }

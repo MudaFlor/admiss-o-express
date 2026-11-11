@@ -1,4 +1,5 @@
 import mammoth from "mammoth";
+import { validateResumeFile } from "@/lib/validation/resume-file";
 
 export interface ParsedProfile {
   full_name: string | null;
@@ -59,11 +60,22 @@ export async function parseProfileFromFile(input: {
 
   const ext = input.filename.split(".").pop()?.toLowerCase() ?? "";
   const bytes = Buffer.from(input.base64, "base64");
+  if (["pdf", "doc", "docx", "jpg", "jpeg", "png", "webp"].includes(ext)) {
+    const error = validateResumeFile(input.filename, bytes);
+    if (error) throw new Error(error);
+  }
 
   let userContent: unknown;
   if (ext === "docx") {
     const { value } = await mammoth.extractRawText({ buffer: bytes });
+    if (!value.trim()) throw new Error("Não foi encontrado texto legível no currículo Word.");
     userContent = `Conteúdo do documento (DOCX):\n\n${String(value).slice(0, 30000)}`;
+  } else if (ext === "doc") {
+    const { default: WordExtractor } = await import("word-extractor");
+    const document = await new WordExtractor().extract(bytes);
+    const text = document.getBody();
+    if (!text.trim()) throw new Error("Não foi encontrado texto legível no currículo Word.");
+    userContent = `Conteúdo do documento (DOC):\n\n${text.slice(0, 30000)}`;
   } else if (["txt", "csv", "md", "rtf"].includes(ext)) {
     userContent = `Conteúdo do documento:\n\n${bytes.toString("utf8").slice(0, 30000)}`;
   } else if (ext === "pdf" || ["jpg", "jpeg", "png", "webp"].includes(ext)) {
@@ -74,10 +86,12 @@ export async function parseProfileFromFile(input: {
       : "image/jpeg";
     userContent = [
       { type: "text", text: "Extraia o perfil profissional deste documento." },
-      { type: "image_url", image_url: { url: `data:${mime};base64,${input.base64}` } },
+      ext === "pdf"
+        ? { type: "file", file: { filename: input.filename, file_data: `data:application/pdf;base64,${input.base64}` } }
+        : { type: "image_url", image_url: { url: `data:${mime};base64,${input.base64}` } },
     ];
   } else {
-    throw new Error("Formato não suportado. Envie PDF, DOCX, TXT, JPG ou PNG.");
+    throw new Error("Formato não suportado. Envie PDF, DOC, DOCX, TXT, JPG, PNG ou WEBP.");
   }
 
   const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
