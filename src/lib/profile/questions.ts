@@ -23,15 +23,24 @@ export const QUESTION_SETS: QuestionSet[] = [
 
 export const REVIEW_INTERVAL_MONTHS = 12;
 
-/** Escolhe o próximo par de perguntas, evitando repetir os já usados. */
-export function nextQuestionSet(usedIds: (string | null | undefined)[]): QuestionSet {
-  const used = usedIds.filter(Boolean);
-  return QUESTION_SETS[used.length % QUESTION_SETS.length];
+/** Modelo atual: Comunicação, Colaboração e Conflito. Perguntas fixas para comparar a evolução. */
+export const CCC_SET: QuestionSet = {
+  id: "ccc-1",
+  q1: "Imagine que você depende da entrega de um colega de outra área para concluir o seu trabalho no prazo. Ele atrasa a entrega e não responde às suas mensagens. O prazo final está correndo. Exatamente o que você faz e como aborda essa pessoa ou a situação?",
+  q2: "Pense em uma situação real de trabalho onde você e um colega (ou cliente interno) tinham opiniões completamente opostas sobre como resolver um problema. O clima ficou tenso. Como você conduziu essa divergência para que chegassem a um acordo sem prejudicar a relação de trabalho?",
+};
+
+/** Novas avaliações sempre usam o modelo atual (perguntas fixas). */
+export function nextQuestionSet(_usedIds?: (string | null | undefined)[]): QuestionSet {
+  return CCC_SET;
 }
 
 export function questionSetById(id: string | null | undefined): QuestionSet {
+  if (id === CCC_SET.id) return CCC_SET;
   return QUESTION_SETS.find((s) => s.id === id) ?? QUESTION_SETS[0];
 }
+
+export const isV2Set = (id: string | null | undefined) => id === CCC_SET.id;
 
 export const profileAnswersSchema = z.object({
   q1: z.string().trim().min(30, "Escreva pelo menos algumas frases na 1ª resposta (mínimo 30 caracteres).").max(5000),
@@ -65,3 +74,50 @@ export type ProfileEvolution = z.infer<typeof profileEvolutionSchema>;
 
 export const ETHICS_NOTICE =
   "Esta análise apoia o desenvolvimento da pessoa e não deve, sozinha, decidir contratação, promoção ou desligamento.";
+
+export const COMM_STYLES = ["Assertivo", "Passivo", "Agressivo", "Passivo-Agressivo"] as const;
+export const CONFLICT_STRATEGIES = ["Colaboração (Ganha-Ganha)", "Competição (Ganha-Perde)", "Evasão"] as const;
+export const VERDICTS = ["Pontes", "Muros"] as const;
+
+export const profileAnalysisV2Schema = z.object({
+  version: z.literal(2),
+  comunicacao: z.object({ estilo: z.enum(COMM_STYLES), explicacao: z.string().min(1) }),
+  colaboracao: z.object({ explicacao: z.string().min(1) }),
+  conflitos: z.object({ estrategia: z.enum(CONFLICT_STRATEGIES), separa_tecnico_pessoal: z.boolean(), explicacao: z.string().min(1) }),
+  inteligencia_emocional: z.object({ explicacao: z.string().min(1) }),
+  veredito: z.object({ perfil: z.enum(VERDICTS), justificativa: z.string().min(1), ponto_forte: z.string().min(1), ponto_desenvolvimento: z.string().min(1) }),
+});
+export type ProfileAnalysisV2 = z.infer<typeof profileAnalysisV2Schema>;
+
+export const profileIntroSchema = z.object({
+  nome: z.string().trim().min(2, "Informe seu nome").max(120),
+  cargo: z.string().trim().min(2, "Informe seu cargo ou área").max(120),
+});
+
+export function isV2Analysis(a: unknown): a is ProfileAnalysisV2 {
+  return profileAnalysisV2Schema.safeParse(a).success;
+}
+
+/** Texto simples do resultado, usado em Copiar e no PDF. */
+export function analysisV2ToText(name: string, a: ProfileAnalysisV2): string {
+  return [
+    `Perfil comportamental — ${name}`,
+    "",
+    `1. Estilo de Comunicação Corporativa: ${a.comunicacao.estilo}`,
+    a.comunicacao.explicacao,
+    "",
+    "2. Dinâmica de Colaboração e Interdependência",
+    a.colaboracao.explicacao,
+    "",
+    `3. Resolução de Conflitos: ${a.conflitos.estrategia} — ${a.conflitos.separa_tecnico_pessoal ? "separa o problema técnico das relações pessoais" : "não separa o problema técnico das relações pessoais"}`,
+    a.conflitos.explicacao,
+    "",
+    "4. Inteligência Emocional sob Pressão",
+    a.inteligencia_emocional.explicacao,
+    "",
+    `5. Veredito Final: Perfil ${a.veredito.perfil}`,
+    a.veredito.justificativa,
+    `Ponto forte: ${a.veredito.ponto_forte}`,
+    `Ponto de desenvolvimento: ${a.veredito.ponto_desenvolvimento}`,
+  ].join("\n");
+}

@@ -8,12 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createDiscAssessment, listDiscAssessments, regenerateProfileAnalysis } from "@/lib/disc.functions";
-import { AXES, ETHICS_NOTICE, REVIEW_INTERVAL_MONTHS, questionSetById, type ProfileAnalysis, type ProfileEvolution } from "@/lib/profile/questions";
+import { AXES, ETHICS_NOTICE, REVIEW_INTERVAL_MONTHS, isV2Analysis, questionSetById, type ProfileAnalysis, type ProfileEvolution } from "@/lib/profile/questions";
 import { DISC_DESCRIPTION, DISC_LABEL, type DiscFactor } from "@/lib/disc/questions";
 import { buildWhatsAppLink } from "@/lib/integrations/whatsapp";
 import { PUBLIC_APP_URL } from "@/lib/public-url";
+import { ProfileResultDashboard } from "@/components/ProfileResultDashboard";
 
-const discUrl = (token: string) => `${PUBLIC_APP_URL}/disc/${token}`;
+export const discUrl = (token: string) => `${PUBLIC_APP_URL}/disc/${token}`;
 
 export function DiscCard(props: { candidateId?: string; employeeId?: string; name: string; phone?: string | null }) {
   const list = useServerFn(listDiscAssessments);
@@ -66,7 +67,7 @@ export function DiscCard(props: { candidateId?: string; employeeId?: string; nam
           </Button>
         </div>
 
-        <p className="text-xs text-muted-foreground">Sugestão: reavaliar a cada {REVIEW_INTERVAL_MONTHS} meses ou em marcos como fim da experiência, promoção ou mudança de função. Cada reavaliação usa perguntas novas.</p>
+        <p className="text-xs text-muted-foreground">Sugestão: reavaliar a cada {REVIEW_INTERVAL_MONTHS} meses ou em marcos como fim da experiência, promoção ou mudança de função. As perguntas são as mesmas em cada reavaliação, para comparar a evolução.</p>
         <div className="space-y-3">
           <p className="text-sm font-medium">Linha do tempo</p>
           {q.isLoading ? (
@@ -75,7 +76,7 @@ export function DiscCard(props: { candidateId?: string; employeeId?: string; nam
             <p className="text-sm text-muted-foreground">Nenhum questionário enviado ainda.</p>
           ) : (
             q.data!.map((a) => {
-              if (a.kind === "perfil_aberto") return <OpenProfile key={a.id} a={a} busy={regenId === a.id} onRegen={async () => {
+              if (a.kind === "perfil_aberto") return <OpenProfile key={a.id} a={a} name={props.name} busy={regenId === a.id} onRegen={async () => {
                 setRegenId(a.id);
                 try { await regen({ data: { id: a.id } }); await qc.invalidateQueries({ queryKey: key }); } catch (e) { toast.error((e as Error).message); } finally { setRegenId(null); }
               }} onCopy={() => { navigator.clipboard.writeText(discUrl(a.token)); toast.success("Link copiado"); }} />;
@@ -123,12 +124,13 @@ export function DiscCard(props: { candidateId?: string; employeeId?: string; nam
   );
 }
 
-type Row = { id: string; token: string; created_at: string; completed_at: string | null; status: string; answers: unknown; question_set: string | null; cycle_reason: string | null; analysis: unknown; evolution: unknown; analysis_status: string | null; analysis_error: string | null };
+export type Row = { id: string; token: string; created_at: string; completed_at: string | null; status: string; answers: unknown; question_set: string | null; cycle_reason: string | null; analysis: unknown; evolution: unknown; analysis_status: string | null; analysis_error: string | null };
 
-function OpenProfile({ a, busy, onRegen, onCopy }: { a: Row; busy: boolean; onRegen: () => void; onCopy: () => void }) {
+export function OpenProfile({ a, name, busy, onRegen, onCopy }: { a: Row; name: string; busy: boolean; onRegen: () => void; onCopy: () => void }) {
   const set = questionSetById(a.question_set);
   const answers = a.answers as { q1?: string; q2?: string } | null;
-  const an = a.analysis as ProfileAnalysis | null;
+  const v2 = isV2Analysis(a.analysis) ? a.analysis : null;
+  const an = v2 ? null : (a.analysis as ProfileAnalysis | null);
   const ev = a.evolution as ProfileEvolution | null;
   return (
     <div className="space-y-3 rounded-md border p-3 text-sm">
@@ -145,13 +147,14 @@ function OpenProfile({ a, busy, onRegen, onCopy }: { a: Row; busy: boolean; onRe
           </div>
         ) : (
           <Button size="sm" variant="outline" onClick={onRegen} disabled={busy}>
-            <RefreshCw className={`mr-1 h-3 w-3 ${busy ? "animate-spin" : ""}`} /> {busy ? "Gerando…" : "Gerar análise novamente"}
+            <RefreshCw className={`mr-1 h-3 w-3 ${busy ? "animate-spin" : ""}`} /> {busy ? "Gerando…" : a.analysis ? "Gerar novamente" : "Gerar Perfil Comportamental"}
           </Button>
         )}
       </div>
       {a.status === "concluido" && (
         <>
-          {!an && <p className="text-xs text-muted-foreground">{a.analysis_error ?? "Análise em processamento…"}</p>}
+          {!an && !v2 && <p className="text-xs text-muted-foreground">{a.analysis_error ?? (a.analysis_status === "processando" ? "Análise em processamento…" : "Respostas recebidas. Clique em “Gerar Perfil Comportamental”.")}</p>}
+          {v2 && <ProfileResultDashboard name={name} a={v2} />}
           {an && (
             <div className="space-y-3">
               {AXES.map((ax, i) => (

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, Briefcase, Settings, LogOut, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Settings, LogOut, BarChart3, Brain } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   Sidebar,
@@ -22,6 +22,7 @@ const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Colaboradores", url: "/colaboradores", icon: Users },
   { title: "Recrutamento", url: "/candidatos", icon: Briefcase },
+  { title: "Análise de Perfil", url: "/analise-perfil", icon: Brain },
   { title: "Gestão", url: "/gestao", icon: BarChart3 },
 ];
 
