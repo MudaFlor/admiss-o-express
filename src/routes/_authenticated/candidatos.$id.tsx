@@ -285,6 +285,14 @@ function CandidatoDetailPage() {
         </Card>
       )}
 
+      <Tabs defaultValue="basicos" className="space-y-4">
+        <TabsList className="h-auto w-full flex-wrap justify-start gap-1 p-1">
+          <TabsTrigger value="basicos">Dados básicos</TabsTrigger>
+          <TabsTrigger value="indicadores">Indicadores de RH</TabsTrigger>
+          <TabsTrigger value="perfil">Análise de perfil</TabsTrigger>
+          <TabsTrigger value="workflow">Workflow do candidato</TabsTrigger>
+        </TabsList>
+        <TabsContent value="basicos" className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-sm">Dados básicos</CardTitle>
@@ -313,7 +321,7 @@ function CandidatoDetailPage() {
             </div>
           )}
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <CardContent className="divide-y divide-border">
           {([
             ["full_name", "Nome completo"],
             ["cpf", "CPF"],
@@ -322,8 +330,13 @@ function CandidatoDetailPage() {
             ["position", "Cargo"],
             ["data_cadastro", "Data de inclusão"],
           ] as const).map(([k, label]) => (
-            <div key={k} className="space-y-1.5">
-              <Label htmlFor={`basic-${k}`} className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
+            <div key={k} className="grid gap-1 py-2.5 sm:grid-cols-[220px_1fr] sm:items-center sm:gap-4">
+              <Label htmlFor={`basic-${k}`} className="text-sm font-medium text-muted-foreground">{label}:</Label>
+              {!editingBasics ? (
+                <div className="break-words text-sm font-medium text-foreground">
+                  {(k === "cpf" ? maskCpf(basics[k]) : k === "data_cadastro" && basics[k] ? basics[k].split("-").reverse().join("/") : basics[k]) || "—"}
+                </div>
+              ) : (
               <Input
                 id={`basic-${k}`}
                 type={k === "data_cadastro" ? "date" : "text"}
@@ -332,6 +345,7 @@ function CandidatoDetailPage() {
                 disabled={!editingBasics}
                 onChange={(e) => setBasics({ ...basics, [k]: k === "cpf" ? maskCpf(e.target.value) : e.target.value })}
               />
+              )}
             </div>
           ))}
         </CardContent>
@@ -355,10 +369,16 @@ function CandidatoDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <HrIndicatorsCard candidateId={id} candidate={candidate as unknown as Record<string, unknown>} />
       <DuplicateCandidatesCard candidateId={id} />
-      <CandidateLinkCard candidateId={id} />
+        </TabsContent>
+        <TabsContent value="indicadores">
+      <HrIndicatorsCard candidateId={id} candidate={candidate as unknown as Record<string, unknown>} />
+        </TabsContent>
+        <TabsContent value="perfil">
       <DiscCard candidateId={id} name={candidate.full_name} phone={candidate.phone} />
+        </TabsContent>
+        <TabsContent value="workflow" className="space-y-4">
+      <CandidateLinkCard candidateId={id} />
 
       <CandidateStageCard
         candidateId={id}
@@ -377,7 +397,7 @@ function CandidatoDetailPage() {
 
       {hrTakeover && <HrAdmissionBar candidateId={id} info={hrTakeover} />}
       <Tabs defaultValue="documentos">
-        <TabsList>
+        <TabsList className="h-auto flex-wrap justify-start gap-1">
           <TabsTrigger value="documentos">Documentos & OCR</TabsTrigger>
           <TabsTrigger value="ficha">Ficha cadastral</TabsTrigger>
           <TabsTrigger value="conferencia">Conferência cruzada</TabsTrigger>
@@ -891,6 +911,8 @@ function CandidatoDetailPage() {
               </ul>
             </CardContent>
           </Card>
+        </TabsContent>
+      </Tabs>
         </TabsContent>
       </Tabs>
     </div>

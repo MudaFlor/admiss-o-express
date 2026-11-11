@@ -75,11 +75,12 @@ export function HrIndicatorsCard({ candidateId, candidate }: { candidateId: stri
         />
       );
     }
-    const wide = k === "observacoes_entrevista" || k === "observacoes_rh";
     return (
-      <div key={k} className={`space-y-1.5 ${wide ? "md:col-span-2 lg:col-span-3" : ""}`}>
-        <Label className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
-        {control}
+      <div key={k} className="grid gap-1 py-2.5 sm:grid-cols-[220px_1fr] sm:items-center sm:gap-4">
+        <Label className="text-sm font-medium text-muted-foreground">{label}:</Label>
+        {editing ? control : (
+          <div className="whitespace-pre-wrap break-words text-sm font-medium text-foreground">{values[k] || "—"}</div>
+        )}
       </div>
     );
   };
@@ -99,7 +100,7 @@ export function HrIndicatorsCard({ candidateId, candidate }: { candidateId: stri
           </div>
         )}
       </CardHeader>
-      <CardContent className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">{HR_FIELDS.map(renderField)}</CardContent>
+      <CardContent className="divide-y divide-border">{HR_FIELDS.map(renderField)}</CardContent>
     </Card>
   );
 }
