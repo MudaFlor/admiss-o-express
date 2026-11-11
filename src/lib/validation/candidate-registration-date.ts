@@ -1,12 +1,16 @@
 import { z } from "zod";
 
-export const candidateRegistrationDateSchema = z.string({ required_error: "A data de cadastro é obrigatória." })
-  .trim().min(1, "A data de cadastro é obrigatória.")
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Informe uma data de cadastro válida.")
+export const candidateRegistrationDateSchema = z.string({ required_error: "A data de inclusão é obrigatória." })
+  .trim().min(1, "A data de inclusão é obrigatória.")
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Informe uma data de inclusão válida.")
   .refine((value) => {
     const date = new Date(`${value}T12:00:00Z`);
     return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
-  }, "Informe uma data de cadastro válida.");
+  }, "Informe uma data de inclusão válida.");
+
+export function hasCandidateRegistrationDateChanged(previous: string | null | undefined, next: string): boolean {
+  return (previous ?? "") !== next;
+}
 
 export function currentRegistrationDate(now = new Date()): string {
   const parts = new Intl.DateTimeFormat("en-US", {

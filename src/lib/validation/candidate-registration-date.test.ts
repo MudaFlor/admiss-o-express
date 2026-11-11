@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { candidateRegistrationDateSchema, candidateRegistrationRangeSchema, currentRegistrationDate } from "./candidate-registration-date";
+import { candidateRegistrationDateSchema, candidateRegistrationRangeSchema, currentRegistrationDate, hasCandidateRegistrationDateChanged } from "./candidate-registration-date";
 
 describe("data de cadastro do candidato", () => {
   it("exige a data para cadastrar", () => {
