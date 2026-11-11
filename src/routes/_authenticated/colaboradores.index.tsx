@@ -33,9 +33,9 @@ type EmployeeDraft = {
 
 export const Route = createFileRoute("/_authenticated/colaboradores/")({
   head: () => ({ meta: [
-    { title: "Colaboradores — Mudaflor People OS" },
+    { title: "Colaboradores — Mudaflor People" },
     { name: "description", content: "Cadastros e admissões de colaboradores com matrícula única." },
-    { property: "og:title", content: "Colaboradores — Mudaflor People OS" },
+    { property: "og:title", content: "Colaboradores — Mudaflor People" },
     { property: "og:description", content: "Consulte fichas, documentos e matrículas dos colaboradores." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
   ] }),

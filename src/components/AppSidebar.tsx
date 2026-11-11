@@ -48,7 +48,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="flex flex-col leading-tight">
               <span className="text-base font-semibold tracking-tight text-sidebar-foreground">Mudaflor</span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-sidebar-foreground/40">People OS</span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-sidebar-foreground/40">People</span>
             </div>
           )}
         </div>

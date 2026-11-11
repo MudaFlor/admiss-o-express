@@ -22,9 +22,9 @@ import {
 
 export const Route = createFileRoute("/_authenticated/colaboradores/$id")({
   head: () => ({ meta: [
-    { title: "Ficha do colaborador — Mudaflor People OS" },
+    { title: "Ficha do colaborador — Mudaflor People" },
     { name: "description", content: "Ficha pessoal e funcional, matrícula, documentos e histórico do colaborador." },
-    { property: "og:title", content: "Ficha do colaborador — Mudaflor People OS" },
+    { property: "og:title", content: "Ficha do colaborador — Mudaflor People" },
     { property: "og:description", content: "Dados e histórico independente do colaborador." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
   ] }),

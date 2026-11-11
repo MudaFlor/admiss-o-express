@@ -18,9 +18,9 @@ export const Route = createFileRoute("/portal")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Portal do Candidato — Mudaflor People OS" },
+      { title: "Portal do Candidato — Mudaflor People" },
       { name: "description", content: "Cadastre seu currículo e acompanhe seu processo seletivo na Mudaflor." },
-      { property: "og:title", content: "Portal do Candidato — Mudaflor People OS" },
+      { property: "og:title", content: "Portal do Candidato — Mudaflor People" },
       { property: "og:description", content: "Envie seu currículo e acompanhe o status da sua candidatura." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -20,9 +20,9 @@ import { useIsAdmin } from "@/hooks/useRole";
 
 export const Route = createFileRoute("/_authenticated/candidatos/")({
   head: () => ({ meta: [
-    { title: "Candidatos — Mudaflor People OS" },
+    { title: "Candidatos — Mudaflor People" },
     { name: "description", content: "Gerencie cadastros, convites e documentos dos candidatos da Mudaflor." },
-    { property: "og:title", content: "Candidatos — Mudaflor People OS" },
+    { property: "og:title", content: "Candidatos — Mudaflor People" },
     { property: "og:description", content: "Acompanhamento de candidatos e processos de admissão." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },

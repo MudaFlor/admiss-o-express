@@ -43,7 +43,7 @@ function Landing() {
       <section className="mx-auto max-w-6xl px-4 py-16 md:py-24">
         <div className="mx-auto max-w-3xl text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary" /> People OS · Mudaflor
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" /> People · Mudaflor
           </span>
           <h1 className="mt-5 text-4xl font-semibold tracking-tight md:text-5xl">
             Gestão de pessoas, com a precisão da Mudaflor.

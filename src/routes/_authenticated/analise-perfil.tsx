@@ -16,9 +16,9 @@ import { NewProfileLinkDialog } from "@/components/NewProfileLinkDialog";
 export const Route = createFileRoute("/_authenticated/analise-perfil")({
   head: () => ({
     meta: [
-      { title: "Análise de Perfil — Mudaflor People OS" },
+      { title: "Análise de Perfil — Mudaflor People" },
       { name: "description", content: "Todos os perfis comportamentais de candidatos e colaboradores em um só lugar." },
-      { property: "og:title", content: "Análise de Perfil — Mudaflor People OS" },
+      { property: "og:title", content: "Análise de Perfil — Mudaflor People" },
       { property: "og:description", content: "Perfis de Comunicação, Colaboração e Conflito." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

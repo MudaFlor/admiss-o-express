@@ -55,9 +55,9 @@ import {
 
 export const Route = createFileRoute("/_authenticated/candidatos/$id")({
   head: () => ({ meta: [
-    { title: "Ficha do candidato | Mudaflor People OS" },
+    { title: "Ficha do candidato | Mudaflor People" },
     { name: "description", content: "Ficha consolidada, documentos e histórico de admissão do candidato." },
-    { property: "og:title", content: "Ficha do candidato | Mudaflor People OS" },
+    { property: "og:title", content: "Ficha do candidato | Mudaflor People" },
     { property: "og:description", content: "Ficha consolidada, documentos e histórico de admissão do candidato." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },

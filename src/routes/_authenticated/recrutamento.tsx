@@ -37,9 +37,9 @@ export const Route = createFileRoute("/_authenticated/recrutamento")({
   }),
   head: () => ({
     meta: [
-      { title: "Recrutamento — Mudaflor People OS" },
+      { title: "Recrutamento — Mudaflor People" },
       { name: "description", content: "Cadastre candidatos a partir de currículos e acompanhe o status de cada processo." },
-      { property: "og:title", content: "Recrutamento — Mudaflor People OS" },
+      { property: "og:title", content: "Recrutamento — Mudaflor People" },
       { property: "og:description", content: "Extração automática de currículos e acompanhamento de candidatos." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

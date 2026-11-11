@@ -20,9 +20,9 @@ import { getManagementOverview } from "@/lib/management.functions";
 export const Route = createFileRoute("/_authenticated/gestao/absenteismo")({
   head: () => ({
     meta: [
-      { title: "Gestão · Absenteísmo · Mudaflor People OS" },
+      { title: "Gestão · Absenteísmo · Mudaflor People" },
       { name: "description", content: "Acompanhe faltas, atestados e horas perdidas por mês e por colaborador." },
-      { property: "og:title", content: "Gestão · Absenteísmo · Mudaflor People OS" },
+      { property: "og:title", content: "Gestão · Absenteísmo · Mudaflor People" },
       { property: "og:description", content: "Acompanhe faltas, atestados e horas perdidas por mês e por colaborador." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -27,9 +27,9 @@ import { getManagementOverview } from "@/lib/management.functions";
 export const Route = createFileRoute("/_authenticated/gestao/")({
   head: () => ({
     meta: [
-      { title: "Gestão · Visão geral · Mudaflor People OS" },
+      { title: "Gestão · Visão geral · Mudaflor People" },
       { name: "description", content: "Indicadores executivos de headcount, admissões, rescisões e absenteísmo da Mudaflor." },
-      { property: "og:title", content: "Gestão · Visão geral · Mudaflor People OS" },
+      { property: "og:title", content: "Gestão · Visão geral · Mudaflor People" },
       { property: "og:description", content: "Indicadores executivos de headcount, admissões, rescisões e absenteísmo da Mudaflor." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

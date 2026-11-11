@@ -74,13 +74,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Mudaflor — People OS" },
+      { title: "Mudaflor — People" },
       {
         name: "description",
         content:
-          "Mudaflor People OS: plataforma premium para gestão de colaboradores, documentos, férias e recrutamento.",
+          "Mudaflor People: plataforma premium para gestão de colaboradores, documentos, férias e recrutamento.",
       },
-      { property: "og:title", content: "Mudaflor — People OS" },
+      { property: "og:title", content: "Mudaflor — People" },
       {
         property: "og:description",
         content:

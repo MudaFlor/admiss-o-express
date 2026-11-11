@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-rout
 import { BarChart3, TrendingDown, Users2, LineChart } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/gestao")({
-  head: () => ({ meta: [{ title: "Gestão — Mudaflor People OS" }] }),
+  head: () => ({ meta: [{ title: "Gestão — Mudaflor People" }] }),
   component: GestaoLayout,
 });
 

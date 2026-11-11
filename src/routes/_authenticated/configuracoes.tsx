@@ -25,9 +25,9 @@ import { Badge } from "@/components/ui/badge";
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   head: () => ({
     meta: [
-      { title: "Configurações · Mudaflor People OS" },
+      { title: "Configurações · Mudaflor People" },
       { name: "description", content: "Configure documentos obrigatórios por perfil e modelos de mensagem para candidatos." },
-      { property: "og:title", content: "Configurações · Mudaflor People OS" },
+      { property: "og:title", content: "Configurações · Mudaflor People" },
       { property: "og:description", content: "Regras de documentos obrigatórios e modelos de comunicação com candidatos." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

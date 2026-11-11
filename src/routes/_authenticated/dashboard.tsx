@@ -31,9 +31,9 @@ import type { CandidateStatus } from "@/lib/candidate-status-counts";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [
-    { title: "Dashboard — Mudaflor People OS" },
+    { title: "Dashboard — Mudaflor People" },
     { name: "description", content: "Indicadores de pessoas e pipeline com aprovados e admitidos separados." },
-    { property: "og:title", content: "Dashboard — Mudaflor People OS" },
+    { property: "og:title", content: "Dashboard — Mudaflor People" },
     { property: "og:description", content: "Acompanhe candidatos, aprovações, admissões e movimentações de pessoas." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
@@ -93,7 +93,7 @@ function DashboardPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            People OS · Visão geral
+            People · Visão geral
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight text-foreground">
             Bem-vindo de volta.

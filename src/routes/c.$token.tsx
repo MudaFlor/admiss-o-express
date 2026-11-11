@@ -79,9 +79,9 @@ function requestGeolocation(): Promise<{ lat: number; lng: number; accuracy?: nu
 export const Route = createFileRoute("/c/$token")({
   head: () => ({
     meta: [
-      { title: "Documentos de admissão | Mudaflor People OS" },
+      { title: "Documentos de admissão | Mudaflor People" },
       { name: "description", content: "Envie seus documentos de admissão e revise seus dados com segurança." },
-      { property: "og:title", content: "Documentos de admissão | Mudaflor People OS" },
+      { property: "og:title", content: "Documentos de admissão | Mudaflor People" },
       { property: "og:description", content: "Envie seus documentos de admissão e revise seus dados com segurança." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

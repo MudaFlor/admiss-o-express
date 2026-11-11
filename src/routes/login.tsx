@@ -116,7 +116,7 @@ function LoginPage() {
             <div className="flex flex-col leading-tight">
               <span className="text-lg font-semibold tracking-tight">Mudaflor</span>
               <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-sidebar-foreground/50">
-                People OS
+                People
               </span>
             </div>
           </Link>
