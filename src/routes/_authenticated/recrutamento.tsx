@@ -504,8 +504,8 @@ function RecrutamentoPage() {
                         </Link>
                         <div className="text-xs text-muted-foreground">{c.email ?? c.phone ?? "—"}</div>
                       </TableCell>
-                      <TableCell>{c.position ?? "—"}</TableCell>
                       <TableCell className="whitespace-nowrap">{c.data_cadastro ? c.data_cadastro.split("-").reverse().join("/") : "—"}</TableCell>
+                      <TableCell>{c.position ?? "—"}</TableCell>
                       <TableCell>
                         <CandidateStatusBadge status={c.status as never} />
                       </TableCell>
