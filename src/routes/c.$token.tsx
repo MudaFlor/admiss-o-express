@@ -628,6 +628,10 @@ function CandidatePage() {
   }
 
   async function handleSubmit() {
+    if (form.sexo !== "feminino" && form.sexo !== "masculino") {
+      toast.error("Selecione o sexo (Feminino ou Masculino) antes de enviar.", { duration: 10000 });
+      return;
+    }
     if (Object.keys(issues).length > 0) {
       setReviewing(true);
       toast.error("Dados incorretos. Corrija os campos destacados em vermelho antes de enviar.", { duration: 10000 });
@@ -925,16 +929,16 @@ function CandidatePage() {
               <Section title="Informações complementares">
                 <Grid2>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Sexo</Label>
+                    <Label className="text-xs">Sexo *</Label>
                     <select
-                      className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                      required
+                      className={`h-9 w-full rounded-md border bg-background px-2 text-sm ${form.sexo ? "" : "border-destructive"}`}
                       value={form.sexo}
                       onChange={(e) => setField("sexo", e.target.value)}
                     >
                       <option value="">Selecione</option>
                       <option value="masculino">Masculino</option>
                       <option value="feminino">Feminino</option>
-                      <option value="outro">Outro</option>
                     </select>
                   </div>
                   <div className="space-y-1.5">

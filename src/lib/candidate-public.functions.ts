@@ -282,7 +282,7 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
       .object({
         token: z.string().uuid(),
         form_data: z.record(z.string(), z.unknown()),
-        sexo: z.string().optional(),
+        sexo: z.enum(["feminino", "masculino"], { errorMap: () => ({ message: "Selecione o sexo: Feminino ou Masculino." }) }),
         cor_raca: z.string().optional(),
         estado_civil: z.string().optional(),
       })
