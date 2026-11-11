@@ -319,8 +319,9 @@ function CandidatoDetailPage() {
             ["data_cadastro", "Data de inclusão"],
           ] as const).map(([k, label]) => (
             <div key={k} className="space-y-1.5">
-              <Label className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
+              <Label htmlFor={`basic-${k}`} className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
               <Input
+                id={`basic-${k}`}
                 type={k === "data_cadastro" ? "date" : "text"}
                 required={k === "data_cadastro"}
                 value={basics[k]}
