@@ -1,4 +1,5 @@
 # Ajustes do portal do candidato
+- [ ] Criar fichas expansíveis dos dependentes no recrutamento, com dados da certidão e documentos por dependente; testar.
 - [ ] Exigir data de cadastro no início do formulário, preencher com hoje e adicionar coluna e filtro no cabeçalho da tabela; validar o fluxo.
 - [x] Adicionar currículo em PDF ao botão Novo candidato, preencher os dados extraídos, salvar o arquivo na ficha e testar o fluxo.
 - [ ] Exibir alerta de possível candidato duplicado durante o cadastro, comparando nome, telefone, e-mail e endereço com data anterior; testar nas duas telas do RH.
