@@ -378,15 +378,22 @@ export type Database = {
       }
       disc_assessments: {
         Row: {
+          analysis: Json | null
+          analysis_error: string | null
+          analysis_status: string | null
           answers: Json
           candidate_id: string | null
           completed_at: string | null
           created_at: string
           created_by: string
+          cycle_reason: string | null
           employee_id: string | null
+          evolution: Json | null
           id: string
+          kind: string
           phone: string | null
           profile: string | null
+          question_set: string | null
           respondent_name: string
           scores: Json | null
           status: string
@@ -394,15 +401,22 @@ export type Database = {
           token_expires_at: string
         }
         Insert: {
+          analysis?: Json | null
+          analysis_error?: string | null
+          analysis_status?: string | null
           answers?: Json
           candidate_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by: string
+          cycle_reason?: string | null
           employee_id?: string | null
+          evolution?: Json | null
           id?: string
+          kind?: string
           phone?: string | null
           profile?: string | null
+          question_set?: string | null
           respondent_name: string
           scores?: Json | null
           status?: string
@@ -410,15 +424,22 @@ export type Database = {
           token_expires_at?: string
         }
         Update: {
+          analysis?: Json | null
+          analysis_error?: string | null
+          analysis_status?: string | null
           answers?: Json
           candidate_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string
+          cycle_reason?: string | null
           employee_id?: string | null
+          evolution?: Json | null
           id?: string
+          kind?: string
           phone?: string | null
           profile?: string | null
+          question_set?: string | null
           respondent_name?: string
           scores?: Json | null
           status?: string

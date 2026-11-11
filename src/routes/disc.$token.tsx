@@ -4,16 +4,17 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { getDiscByToken, submitDisc } from "@/lib/disc.functions";
+import { getDiscByToken, submitDisc, submitProfileAnswers } from "@/lib/disc.functions";
+import { Textarea } from "@/components/ui/textarea";
 import { DISC_GROUPS, type DiscFactor } from "@/lib/disc/questions";
 
 export const Route = createFileRoute("/disc/$token")({
   head: () => ({
     meta: [
-      { title: "Questionário de perfil DISC — Mudaflor" },
-      { name: "description", content: "Responda ao questionário de perfil comportamental DISC." },
-      { property: "og:title", content: "Questionário de perfil DISC — Mudaflor" },
-      { property: "og:description", content: "Responda ao questionário de perfil comportamental DISC." },
+      { title: "Análise de perfil — Mudaflor" },
+      { name: "description", content: "Responda às perguntas da análise de perfil comportamental." },
+      { property: "og:title", content: "Análise de perfil — Mudaflor" },
+      { property: "og:description", content: "Responda às perguntas da análise de perfil comportamental." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -26,6 +27,7 @@ function DiscPage() {
   const { token } = Route.useParams();
   const get = useServerFn(getDiscByToken);
   const submit = useServerFn(submitDisc);
+  const sendOpen = useServerFn(submitProfileAnswers);
   const q = useQuery({ queryKey: ["disc-public", token], queryFn: () => get({ data: { token } }) });
   const [answers, setAnswers] = useState<(DiscFactor | null)[]>(Array(DISC_GROUPS.length).fill(null));
   const [sent, setSent] = useState(false);
@@ -54,6 +56,10 @@ function DiscPage() {
   if (!q.data || q.data.state === "invalid") return msg("Link inválido.");
   if (q.data.state === "expired") return msg("Este link expirou. Peça um novo ao RH.");
   if (q.data.state === "done" || sent) return msg("Obrigado! Suas respostas foram enviadas ao RH.");
+  if (q.data.kind === "perfil_aberto") {
+    const d = q.data;
+    return <OpenQuestions name={d.name} q1={d.q1} q2={d.q2} onSend={async (a) => { await sendOpen({ data: { token, ...a } }); setSent(true); }} />;
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-4">
@@ -88,6 +94,38 @@ function DiscPage() {
       <Button className="w-full" disabled={done < DISC_GROUPS.length || busy} onClick={onSubmit}>
         {busy ? "Enviando…" : "Enviar respostas"}
       </Button>
+    </div>
+  );
+}
+
+function OpenQuestions(props: { name: string; q1: string; q2: string; onSend: (a: { q1: string; q2: string }) => Promise<void> }) {
+  const [a, setA] = useState({ q1: "", q2: "" });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const ok = a.q1.trim().length >= 30 && a.q2.trim().length >= 30;
+  async function send() {
+    setBusy(true);
+    setErr("");
+    try { await props.onSend(a); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
+  }
+  return (
+    <div className="mx-auto max-w-2xl space-y-4 p-4">
+      <div>
+        <h1 className="text-xl font-semibold">Olá, {props.name}!</h1>
+        <p className="text-sm text-muted-foreground">Responda às duas perguntas com suas próprias palavras. Não há respostas certas ou erradas.</p>
+      </div>
+      {(["q1", "q2"] as const).map((k, i) => (
+        <Card key={k}>
+          <CardContent className="space-y-2 p-4">
+            <p className="text-sm font-medium">{i + 1}ª pergunta *</p>
+            <p className="text-sm">{props[k]}</p>
+            <Textarea rows={7} maxLength={5000} value={a[k]} onChange={(e) => setA({ ...a, [k]: e.target.value })} placeholder="Escreva sua resposta" />
+            {a[k].trim().length < 30 && <p className="text-xs text-muted-foreground">Mínimo de 30 caracteres.</p>}
+          </CardContent>
+        </Card>
+      ))}
+      {err && <p className="text-sm text-destructive">{err}</p>}
+      <Button className="w-full" disabled={!ok || busy} onClick={send}>{busy ? "Enviando…" : "Enviar respostas"}</Button>
     </div>
   );
 }
