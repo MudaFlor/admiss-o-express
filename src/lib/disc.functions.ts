@@ -81,8 +81,8 @@ export const getDiscByToken = createServerFn({ method: "POST" })
       const { data: e } = await db.from("employees").select("position").eq("id", row.employee_id).maybeSingle();
       cargo = (e as { position?: string | null } | null)?.position ?? "";
     } else if (row.candidate_id) {
-      const { data: c } = await db.from("candidates").select("cargo").eq("id", row.candidate_id).maybeSingle();
-      cargo = (c as { cargo?: string | null } | null)?.cargo ?? "";
+      const { data: c } = await db.from("candidates").select("position").eq("id", row.candidate_id).maybeSingle();
+      cargo = (c as { position?: string | null } | null)?.position ?? "";
     }
     return { state: "open" as const, name: row.respondent_name, cargo, kind: row.kind, v2: isV2Set(row.question_set), q1: set.q1, q2: set.q2 };
   });
@@ -201,7 +201,7 @@ export const listProfileAnalyses = createServerFn({ method: "POST" })
     const cIds = [...new Set(list.map((r) => r.candidate_id).filter(Boolean))] as string[];
     const eIds = [...new Set(list.map((r) => r.employee_id).filter(Boolean))] as string[];
     const [cs, es] = await Promise.all([
-      cIds.length ? context.supabase.from("candidates").select("id, full_name, cargo").in("id", cIds) : Promise.resolve({ data: [] as { id: string; full_name: string | null; cargo: string | null }[] }),
+      cIds.length ? context.supabase.from("candidates").select("id, full_name, position").in("id", cIds) : Promise.resolve({ data: [] as { id: string; full_name: string | null; position: string | null }[] }),
       eIds.length ? context.supabase.from("employees").select("id, full_name, position").in("id", eIds) : Promise.resolve({ data: [] as { id: string; full_name: string | null; position: string | null }[] }),
     ]);
     const cMap = new Map((cs.data ?? []).map((c) => [c.id, c]));
@@ -214,7 +214,7 @@ export const listProfileAnalyses = createServerFn({ method: "POST" })
         ...r,
         tipo: (r.employee_id ? "colaborador" : "candidato") as "colaborador" | "candidato",
         nome: e?.full_name ?? c?.full_name ?? r.respondent_name,
-        cargo: ans.cargo || e?.position || c?.cargo || "",
+        cargo: ans.cargo || e?.position || c?.position || "",
       };
     });
   });
