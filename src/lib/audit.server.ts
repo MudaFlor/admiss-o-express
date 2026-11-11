@@ -20,7 +20,7 @@ export type AuditAction =
   | "rotate_token"
   | "revoke_token"
   | "send_reminder"
-  | "view_document" | "create_disc";
+  | "view_document" | "create_disc" | "regenerate_profile_analysis";
 
 export async function logAudit(params: {
   actor_user_id: string;
