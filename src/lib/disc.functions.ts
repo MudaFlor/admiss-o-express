@@ -218,3 +218,21 @@ export const listProfileAnalyses = createServerFn({ method: "POST" })
       };
     });
   });
+
+/** Busca candidatos e colaboradores pelo nome para enviar uma nova análise de perfil. */
+export const searchProfilePeople = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ q: z.string().trim().min(2).max(80) }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: isHr } = await context.supabase.rpc("is_hr", { _user_id: context.userId });
+    if (!isHr) throw new Error("Acesso restrito ao RH");
+    const like = `%${data.q.replace(/[%_]/g, "")}%`;
+    const [cs, es] = await Promise.all([
+      context.supabase.from("candidates").select("id, full_name, position, phone").ilike("full_name", like).limit(10),
+      context.supabase.from("employees").select("id, full_name, position, phone").ilike("full_name", like).limit(10),
+    ]);
+    return [
+      ...(es.data ?? []).map((e) => ({ ...e, tipo: "colaborador" as const })),
+      ...(cs.data ?? []).map((c) => ({ ...c, tipo: "candidato" as const })),
+    ];
+  });

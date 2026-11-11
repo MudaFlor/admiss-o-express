@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { listProfileAnalyses, regenerateProfileAnalysis } from "@/lib/disc.functions";
 import { isV2Analysis } from "@/lib/profile/questions";
 import { OpenProfile, discUrl } from "@/components/DiscCard";
+import { NewProfileLinkDialog } from "@/components/NewProfileLinkDialog";
 
 export const Route = createFileRoute("/_authenticated/analise-perfil")({
   head: () => ({
@@ -59,10 +60,13 @@ function ProfilesPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground"><Brain className="h-3.5 w-3.5" /> Pessoas</p>
         <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight">Análise de Perfil</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Comunicação, Colaboração e Conflito de candidatos e colaboradores. Para enviar um novo questionário, use a ficha da pessoa.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Comunicação, Colaboração e Conflito de candidatos e colaboradores. Busque uma pessoa para gerar um novo link de pesquisa.</p>
+      </div>
+      <NewProfileLinkDialog />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
