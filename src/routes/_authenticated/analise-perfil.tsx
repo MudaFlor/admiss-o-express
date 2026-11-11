@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { listProfileAnalyses, regenerateProfileAnalysis } from "@/lib/disc.functions";
-import { isV2Analysis } from "@/lib/profile/questions";
+import { isV2Analysis, STYLES } from "@/lib/profile/questions";
 import { OpenProfile, discUrl } from "@/components/DiscCard";
 import { NewProfileLinkDialog } from "@/components/NewProfileLinkDialog";
 
@@ -45,6 +45,7 @@ function ProfilesPage() {
   const [tipo, setTipo] = useState("todos");
   const [sit, setSit] = useState("todos");
   const [perfil, setPerfil] = useState("todos");
+  const [estilo, setEstilo] = useState("todos");
   const [openId, setOpenId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -55,8 +56,9 @@ function ProfilesPage() {
     if (perfil !== "todos") {
       if (!isV2Analysis(r.analysis) || r.analysis.veredito.perfil !== perfil) return false;
     }
+    if (estilo !== "todos" && !(isV2Analysis(r.analysis) && r.analysis.estilos?.principal === estilo)) return false;
     return true;
-  }), [q.data, search, tipo, sit, perfil]);
+  }), [q.data, search, tipo, sit, perfil, estilo]);
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-6">
@@ -86,8 +88,12 @@ function ProfilesPage() {
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="todos">Todos os perfis</SelectItem><SelectItem value="Pontes">Perfil Pontes</SelectItem><SelectItem value="Muros">Perfil Muros</SelectItem></SelectContent>
         </Select>
-        {(search || tipo !== "todos" || sit !== "todos" || perfil !== "todos") && (
-          <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setTipo("todos"); setSit("todos"); setPerfil("todos"); }}><X className="mr-1 h-3 w-3" /> Limpar</Button>
+        <Select value={estilo} onValueChange={setEstilo}>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="todos">Todos os estilos</SelectItem>{STYLES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+        {(search || tipo !== "todos" || sit !== "todos" || perfil !== "todos" || estilo !== "todos") && (
+          <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setTipo("todos"); setSit("todos"); setPerfil("todos"); setEstilo("todos"); }}><X className="mr-1 h-3 w-3" /> Limpar</Button>
         )}
       </div>
 

@@ -1,8 +1,8 @@
 import { toast } from "sonner";
-import { Copy, FileDown, MessageSquare, Users, Swords, HeartPulse, Flag } from "lucide-react";
+import { Copy, FileDown, MessageSquare, Users, Swords, HeartPulse, Flag, Compass, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ETHICS_NOTICE, analysisV2ToText, type ProfileAnalysisV2 } from "@/lib/profile/questions";
+import { ETHICS_NOTICE, TYPOLOGY_NOTICE, analysisV2ToText, type ProfileAnalysisV2 } from "@/lib/profile/questions";
 
 const good = "border-primary/40 bg-primary/10 text-primary";
 const neutral = "border-border bg-muted text-muted-foreground";
@@ -69,6 +69,31 @@ export function ProfileResultDashboard({ name, a }: { name: string; a: ProfileAn
           <div className="rounded-lg bg-muted/50 p-3"><p className="text-xs font-semibold text-foreground">Ponto de desenvolvimento</p><p>{a.veredito.ponto_desenvolvimento}</p></div>
         </div>
       </Block>
+      {(a.estilos || a.temperamento) && (
+        <div className="grid gap-3 md:grid-cols-2">
+          {a.estilos && (
+            <Block icon={Compass} title="Estilo Comportamental" badge={<div className="flex gap-1"><Badge variant="outline" className={good}>{a.estilos.principal}</Badge><Badge variant="outline" className={neutral}>{a.estilos.secundario}</Badge></div>}>
+              <div className="space-y-1.5">
+                {([["Dominante", a.estilos.dominante], ["Influente", a.estilos.influente], ["Analítico", a.estilos.analitico], ["Planejador", a.estilos.planejador]] as const).map(([label, v]) => (
+                  <div key={label} className="flex items-center gap-2 text-xs">
+                    <span className="w-20 text-foreground">{label}</span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${v}%` }} /></div>
+                    <span className="w-9 text-right tabular-nums">{v}%</span>
+                  </div>
+                ))}
+              </div>
+              <p className="whitespace-pre-line">{a.estilos.explicacao}</p>
+            </Block>
+          )}
+          {a.temperamento && (
+            <Block icon={Sparkles} title="Temperamento" badge={<div className="flex gap-1"><Badge variant="outline" className={good}>{a.temperamento.predominante}</Badge>{a.temperamento.secundario && <Badge variant="outline" className={neutral}>{a.temperamento.secundario}</Badge>}</div>}>
+              <Badge variant="outline" className={neutral}>Confiança {a.temperamento.confianca}</Badge>
+              <p className="whitespace-pre-line">{a.temperamento.justificativa}</p>
+            </Block>
+          )}
+        </div>
+      )}
+      {(a.estilos || a.temperamento) && <p className="text-xs text-muted-foreground">{TYPOLOGY_NOTICE}</p>}
       <p className="text-xs text-muted-foreground">{ETHICS_NOTICE}</p>
     </div>
   );

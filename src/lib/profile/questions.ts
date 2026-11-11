@@ -79,6 +79,13 @@ export const COMM_STYLES = ["Assertivo", "Passivo", "Agressivo", "Passivo-Agress
 export const CONFLICT_STRATEGIES = ["Colaboração (Ganha-Ganha)", "Competição (Ganha-Perde)", "Evasão"] as const;
 export const VERDICTS = ["Pontes", "Muros"] as const;
 
+export const STYLES = ["Dominante", "Influente", "Analítico", "Planejador"] as const;
+export const TEMPERAMENTS = ["Sanguíneo", "Colérico", "Fleumático", "Melancólico"] as const;
+export const CONFIDENCE = ["baixa", "média", "alta"] as const;
+export const TYPOLOGY_NOTICE =
+  "Estilo e temperamento são indicações a partir de duas respostas abertas, não um diagnóstico psicológico.";
+const pct = z.number().min(0).max(100);
+
 export const profileAnalysisV2Schema = z.object({
   version: z.literal(2),
   comunicacao: z.object({ estilo: z.enum(COMM_STYLES), explicacao: z.string().min(1) }),
@@ -86,7 +93,29 @@ export const profileAnalysisV2Schema = z.object({
   conflitos: z.object({ estrategia: z.enum(CONFLICT_STRATEGIES), separa_tecnico_pessoal: z.boolean(), explicacao: z.string().min(1) }),
   inteligencia_emocional: z.object({ explicacao: z.string().min(1) }),
   veredito: z.object({ perfil: z.enum(VERDICTS), justificativa: z.string().min(1), ponto_forte: z.string().min(1), ponto_desenvolvimento: z.string().min(1) }),
+  estilos: z.object({
+    dominante: pct, influente: pct, analitico: pct, planejador: pct,
+    principal: z.enum(STYLES), secundario: z.enum(STYLES), explicacao: z.string().min(1),
+  }).optional(),
+  temperamento: z.object({
+    predominante: z.enum(TEMPERAMENTS), secundario: z.enum(TEMPERAMENTS).nullable().optional(),
+    confianca: z.enum(CONFIDENCE), justificativa: z.string().min(1),
+  }).optional(),
 });
+
+/** Ajusta as porcentagens dos estilos para somarem 100. */
+export function normalizeStyles<T extends { dominante: number; influente: number; analitico: number; planejador: number }>(e: T): T {
+  const keys = ["dominante", "influente", "analitico", "planejador"] as const;
+  const total = keys.reduce((n, k) => n + Math.max(0, e[k]), 0);
+  if (total <= 0) return { ...e, dominante: 25, influente: 25, analitico: 25, planejador: 25 };
+  const out = { ...e };
+  const vals = keys.map((k) => Math.round((Math.max(0, e[k]) / total) * 100));
+  const diff = 100 - vals.reduce((a, b) => a + b, 0);
+  const iMax = vals.indexOf(Math.max(...vals));
+  vals[iMax] += diff;
+  keys.forEach((k, i) => { out[k] = vals[i]; });
+  return out;
+}
 export type ProfileAnalysisV2 = z.infer<typeof profileAnalysisV2Schema>;
 
 export const profileIntroSchema = z.object({
@@ -119,5 +148,11 @@ export function analysisV2ToText(name: string, a: ProfileAnalysisV2): string {
     a.veredito.justificativa,
     `Ponto forte: ${a.veredito.ponto_forte}`,
     `Ponto de desenvolvimento: ${a.veredito.ponto_desenvolvimento}`,
+    ...(a.estilos ? ["", `6. Estilo Comportamental: ${a.estilos.principal} (secundário: ${a.estilos.secundario})`,
+      `Dominante ${a.estilos.dominante}% · Influente ${a.estilos.influente}% · Analítico ${a.estilos.analitico}% · Planejador ${a.estilos.planejador}%`,
+      a.estilos.explicacao] : []),
+    ...(a.temperamento ? ["", `7. Temperamento: ${a.temperamento.predominante}${a.temperamento.secundario ? ` (secundário: ${a.temperamento.secundario})` : ""} — confiança ${a.temperamento.confianca}`,
+      a.temperamento.justificativa] : []),
+    ...(a.estilos || a.temperamento ? ["", TYPOLOGY_NOTICE] : []),
   ].join("\n");
 }

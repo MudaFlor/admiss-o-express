@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { jsonSchema, Output, streamText } from "ai";
 import {
-  profileAnalysisSchema, profileEvolutionSchema, profileAnalysisV2Schema, COMM_STYLES, CONFLICT_STRATEGIES, VERDICTS,
+  profileAnalysisSchema, profileEvolutionSchema, profileAnalysisV2Schema, COMM_STYLES, CONFLICT_STRATEGIES, VERDICTS, STYLES, TEMPERAMENTS, CONFIDENCE, normalizeStyles,
   type ProfileAnalysis, type ProfileAnalysisV2, type ProfileEvolution, type QuestionSet,
 } from "./questions";
 
@@ -82,6 +82,10 @@ const V2_SYSTEM = `Aja como um especialista em Psicologia Organizacional e anali
 3. Resolução e Abordagem de Conflitos: Identifique a estratégia dela (Colaboração/Ganha-Ganha, Competição/Ganha-Perde, ou Evasão) e se ela separa o problema técnico das relações pessoais. 
 4. Inteligência Emocional sob Pressão: Avalie como ela gerencia a frustração e a quebra de expectativas. 
 5. Veredito Final: Defina se o perfil é 'Pontes' (facilitador de ambientes colaborativos) ou 'Muros' (focado em entregas isoladas com fricção relacional), listando 1 Ponto Forte proeminente e 1 Ponto de Desenvolvimento crucial.
+6. Estilo Comportamental (como psicólogo especialista): estime em porcentagens que somem 100 a presença dos estilos Dominante (foco em resultado, decisão, controle), Influente (foco em pessoas, persuasão, entusiasmo), Analítico (foco em dados, precisão, critério) e Planejador (foco em estabilidade, método, cooperação e previsibilidade). Indique o principal e o secundário e explique citando comportamentos concretos das respostas.
+7. Temperamento: identifique o temperamento predominante entre Sanguíneo, Colérico, Fleumático e Melancólico, e um secundário se houver evidência (senão null). Referência: Dominante≈Colérico, Influente≈Sanguíneo, Planejador≈Fleumático, Analítico≈Melancólico, mas divirja se as respostas indicarem. Informe a confiança (baixa, média ou alta) e justifique com trechos observados.
+
+Regras: conclua apenas a partir do que a pessoa escreveu; nunca invente traços. Com pouca informação, use confiança "baixa". Não faça diagnóstico clínico.
 
 Escreva em português do Brasil.`;
 
@@ -94,6 +98,15 @@ const v2Json = jsonSchema<ProfileAnalysisV2>({
     conflitos: txt({ estrategia: { type: "string", enum: [...CONFLICT_STRATEGIES] }, separa_tecnico_pessoal: { type: "boolean" }, explicacao: str }),
     inteligencia_emocional: txt({ explicacao: str }),
     veredito: txt({ perfil: { type: "string", enum: [...VERDICTS] }, justificativa: str, ponto_forte: str, ponto_desenvolvimento: str }),
+    estilos: txt({
+      dominante: { type: "number" }, influente: { type: "number" }, analitico: { type: "number" }, planejador: { type: "number" },
+      principal: { type: "string", enum: [...STYLES] }, secundario: { type: "string", enum: [...STYLES] }, explicacao: str,
+    }),
+    temperamento: txt({
+      predominante: { type: "string", enum: [...TEMPERAMENTS] },
+      secundario: { type: ["string", "null"], enum: [...TEMPERAMENTS, null] },
+      confianca: { type: "string", enum: [...CONFIDENCE] }, justificativa: str,
+    }),
   }),
 } as never);
 
@@ -104,5 +117,6 @@ Resposta: """${input.q1}"""
 
 Pergunta 2 (Conflito e Colaboração): ${input.questions.q2}
 Resposta: """${input.q2}"""`;
-  return profileAnalysisV2Schema.parse(await run(V2_SYSTEM, prompt, v2Json));
+  const parsed = profileAnalysisV2Schema.parse(await run(V2_SYSTEM, prompt, v2Json));
+  return parsed.estilos ? { ...parsed, estilos: normalizeStyles(parsed.estilos) } : parsed;
 }

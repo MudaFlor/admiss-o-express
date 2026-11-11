@@ -35,3 +35,22 @@ describe("análise de perfil (Comunicação, Colaboração e Conflito)", () => {
     expect(profileAnalysisV2Schema.safeParse({ ...valid, comunicacao: { estilo: "Neutro", explicacao: "x" } }).success).toBe(false);
   });
 });
+
+import { normalizeStyles as ns, profileAnalysisV2Schema as sch } from "./questions";
+describe("estilos e temperamento", () => {
+  const base = { version: 2, comunicacao: { estilo: "Assertivo", explicacao: "x" }, colaboracao: { explicacao: "x" }, conflitos: { estrategia: "Evasão", separa_tecnico_pessoal: true, explicacao: "x" }, inteligencia_emocional: { explicacao: "x" }, veredito: { perfil: "Pontes", justificativa: "x", ponto_forte: "a", ponto_desenvolvimento: "b" } };
+  it("resultado antigo sem os blocos continua válido", () => { expect(sch.safeParse(base).success).toBe(true); });
+  it("aceita temperamento válido e rejeita inválido", () => {
+    const t = { predominante: "Colérico", secundario: null, confianca: "média", justificativa: "x" };
+    expect(sch.safeParse({ ...base, temperamento: t }).success).toBe(true);
+    expect(sch.safeParse({ ...base, temperamento: { ...t, predominante: "Nervoso" } }).success).toBe(false);
+  });
+  it("porcentagens fora de 0-100 são rejeitadas", () => {
+    const e = { dominante: 120, influente: 0, analitico: 0, planejador: 0, principal: "Dominante", secundario: "Influente", explicacao: "x" };
+    expect(sch.safeParse({ ...base, estilos: e }).success).toBe(false);
+  });
+  it("normaliza para somar 100", () => {
+    const r = ns({ dominante: 50, influente: 30, analitico: 30, planejador: 10 });
+    expect(r.dominante + r.influente + r.analitico + r.planejador).toBe(100);
+  });
+});
