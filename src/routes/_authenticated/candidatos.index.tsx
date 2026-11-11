@@ -4,7 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Search, Copy, FlaskConical, SlidersHorizontal } from "lucide-react";
+import { Search, Copy, FlaskConical, SlidersHorizontal, Download } from "lucide-react";
+import { downloadCandidatesXlsx } from "@/lib/candidates-export";
 import { HR_LABELS, HR_SELECT_OPTIONS } from "@/lib/hr-indicators";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,6 +92,13 @@ function CandidatosPage() {
             <FlaskConical className="h-4 w-4" /> {testing ? "Criando…" : "Testar como candidato"}
           </Button>
         )}
+        <Button
+          variant="outline"
+          disabled={!q.data?.length}
+          onClick={() => downloadCandidatesXlsx((q.data ?? []) as Record<string, unknown>[]).catch(() => toast.error("Não foi possível gerar a planilha"))}
+        >
+          <Download className="h-4 w-4" /> Baixar planilha
+        </Button>
         <CandidateResumeDialog onCreated={() => qc.invalidateQueries({ queryKey: ["candidates"] })} />
         </div>
       </div>
