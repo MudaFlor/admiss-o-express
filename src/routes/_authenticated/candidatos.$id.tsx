@@ -290,29 +290,21 @@ function CandidatoDetailPage() {
             </Button>
           ) : (
             <div className="flex gap-2">
-              <Button size="sm" variant="ghost" onClick={() => {
+              <Button size="sm" variant="ghost" disabled={savingBasics} onClick={() => {
                 setBasics({
                   full_name: candidate.full_name ?? "",
                   cpf: candidate.cpf ?? "",
                   email: candidate.email ?? "",
                   phone: candidate.phone ?? "",
                   position: candidate.position ?? "",
+                  data_cadastro: candidate.data_cadastro ?? "",
                 });
                 setEditingBasics(false);
               }}>
                 <X className="h-3.5 w-3.5" /> Cancelar
               </Button>
-              <Button size="sm" onClick={async () => {
-                try {
-                  await updateBasics({ data: { id, ...basics } });
-                  toast.success("Dados salvos");
-                  setEditingBasics(false);
-                  qc.invalidateQueries({ queryKey: ["candidate", id] });
-                } catch (e) {
-                  toast.error(e instanceof Error ? e.message : "Erro");
-                }
-              }}>
-                <Save className="h-3.5 w-3.5" /> Salvar
+              <Button size="sm" disabled={savingBasics} onClick={requestSaveBasics}>
+                <Save className="h-3.5 w-3.5" /> {savingBasics ? "Salvando…" : "Salvar"}
               </Button>
             </div>
           )}
