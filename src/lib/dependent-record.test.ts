@@ -27,6 +27,10 @@ describe("ficha de dependentes", () => {
   it("associa somente documentos do dependente correto", () => {
     expect(buildDependentRecord(dep, [certificate, { ...certificate, id: "other", dependent_id: "child-2" }]).documents.map(doc => doc.id)).toEqual(["doc-1"]);
   });
+  it("usa CPF extraído do documento de identidade quando não foi digitado", () => {
+    const ficha = buildDependentRecord({ ...dep, cpf: null }, [{ ...certificate, type: "dependente_rg_cpf", ocr_data: { values: { cpf: "12345678901" } } }]);
+    expect(ficha.cpf).toBe("123.456.789.01");
+  });
   it("prioriza correções revisadas sem alterar a extração original", () => {
     const ficha = buildDependentRecord(dep, [certificate], { documentos_revisados: { "doc-1": { numero_nativivo: "0098765" } } });
     expect(ficha.liveBirthNumber).toBe("0098765");

@@ -43,10 +43,9 @@ export function formatDependentBirthDate(value: string | null): string {
 export function buildDependentRecord(dep: DependentIdentity, documents: DependentDocument[], formData?: unknown) {
   const linked = documents.filter((doc) => doc.dependent_id === dep.id);
   const reviews = record(record(formData).documentos_revisados);
-  const certificates = linked.filter((doc) => doc.type === "dependente_certidao");
-  function certificateValue(...keys: string[]): string | null {
+  function documentValue(types: string[], ...keys: string[]): string | null {
     let best: { value: string; confidence: number } | undefined;
-    for (const doc of certificates) {
+    for (const doc of linked.filter((item) => types.includes(item.type))) {
       const review = record(reviews[doc.id]);
       const corrections = Object.fromEntries(Object.entries(review).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
       const raw = record(doc.ocr_data);
@@ -61,10 +60,11 @@ export function buildDependentRecord(dep: DependentIdentity, documents: Dependen
     }
     return best?.value ?? null;
   }
+  const certificateValue = (...keys: string[]) => documentValue(["dependente_certidao"], ...keys);
   return {
     fullName: dep.full_name || certificateValue("nome") || "—",
     birthDate: formatDependentBirthDate(dep.birth_date || certificateValue("data_nascimento")),
-    cpf: formatDependentCpf(dep.cpf || certificateValue("cpf")),
+    cpf: formatDependentCpf(dep.cpf || documentValue(["dependente_certidao", "dependente_rg_cpf"], "cpf")),
     liveBirthNumber: certificateValue("numero_nativivo", "numero_nascido_vivo", "dnv") || "—",
     registration: certificateValue("matricula", "registro") || "—",
     book: certificateValue("livro") || "—",
