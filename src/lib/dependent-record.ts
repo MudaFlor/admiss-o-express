@@ -5,7 +5,7 @@ export const DEPENDENT_CERTIFICATE_FIELDS = [
   "matricula", "registro", "livro", "pagina",
 ];
 
-export const DEPENDENT_CERTIFICATE_INSTRUCTION = "Certidão de Nascimento de dependente — 'nome_pai' e 'nome_mae' são os pais do registrado (a criança), nunca os avós. 'numero_nativivo' é o número da Declaração de Nascido Vivo (DNV), também chamado número do nascido vivo/nativivo: extraia somente quando explicitamente identificado na certidão; nunca use matrícula, termo, registro ou CPF nesse campo. 'matricula' é a matrícula do registro civil, preserve todos os dígitos e zeros iniciais; 'registro' é o número de registro/termo quando explicitamente presente. 'livro' e 'pagina' (folha) são opcionais e só devem ser extraídos quando escritos; não derive esses valores da matrícula. Extraia CPF e nascimento somente do registrado. Retorne null para qualquer dado ausente ou ilegível.";
+export const DEPENDENT_CERTIFICATE_INSTRUCTION = "Certidão de Nascimento de dependente — 'nome_pai' e 'nome_mae' são os pais do registrado (a criança), nunca os avós. 'numero_nativivo' é o número da Declaração de Nascido Vivo (DNV), também chamado número do nascido vivo/nativivo, geralmente rotulado 'NÚMERO DA DNV', 'DNV' ou 'Declaração de Nascido Vivo' (ex.: 30-87855708-5, preserve hífens): extraia somente quando explicitamente identificado na certidão; nunca use matrícula, termo, registro ou CPF nesse campo. 'matricula' é a matrícula do registro civil, preserve todos os dígitos e zeros iniciais; 'registro' é o número de registro/termo quando explicitamente presente. 'livro' e 'pagina' (folha) são opcionais e só devem ser extraídos quando escritos; não derive esses valores da matrícula. Extraia CPF e nascimento somente do registrado. Retorne null para qualquer dado ausente ou ilegível.";
 
 export type DependentIdentity = {
   id: string;
@@ -61,14 +61,15 @@ export function buildDependentRecord(dep: DependentIdentity, documents: Dependen
     return best?.value ?? null;
   }
   const certificateValue = (...keys: string[]) => documentValue(["dependente_certidao"], ...keys);
+  const anyDocValue = (...keys: string[]) => documentValue([...new Set(linked.map((d) => d.type))], ...keys);
   return {
     fullName: dep.full_name || certificateValue("nome") || "—",
-    birthDate: formatDependentBirthDate(dep.birth_date || certificateValue("data_nascimento")),
+    birthDate: formatDependentBirthDate(dep.birth_date || anyDocValue("data_nascimento", "nascimento")),
     cpf: formatDependentCpf(dep.cpf || documentValue(["dependente_certidao", "dependente_rg_cpf"], "cpf")),
-    liveBirthNumber: certificateValue("numero_nativivo", "numero_nascido_vivo", "dnv") || "—",
-    registration: certificateValue("matricula", "registro") || "—",
-    book: certificateValue("livro") || "—",
-    page: certificateValue("pagina", "folha") || "—",
+    liveBirthNumber: anyDocValue("numero_nativivo", "numero_nascido_vivo", "dnv") || "—",
+    registration: anyDocValue("matricula", "registro") || "—",
+    book: anyDocValue("livro") || "—",
+    page: anyDocValue("pagina", "folha") || "—",
     documents: linked,
   };
 }
