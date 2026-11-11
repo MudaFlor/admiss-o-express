@@ -217,8 +217,8 @@ function CandidatoDetailPage() {
       await updateBasics({ data: { id, ...basics } });
       toast.success("Dados salvos");
       setConfirmDateChange(false);
-      setEditingBasics(false);
       await qc.invalidateQueries({ queryKey: ["candidate", id] });
+      setEditingBasics(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao salvar os dados.");
     } finally {
