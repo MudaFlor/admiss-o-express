@@ -17,6 +17,7 @@ import { DuplicateCandidatesCard } from "@/components/DuplicateCandidatesCard";
 import { DiscCard } from "@/components/DiscCard";
 import { HrIndicatorsCard } from "@/components/HrIndicatorsCard";
 import { CandidateDependents } from "@/components/CandidateDependents";
+import { HrDocumentUpload } from "@/components/HrDocumentUpload";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -386,6 +387,7 @@ function CandidatoDetailPage() {
         </TabsList>
 
         <TabsContent value="documentos" className="space-y-3">
+          <div className="flex justify-end"><HrDocumentUpload candidateId={id} labels={DOC_LABELS} /></div>
           <div className={`grid gap-4 ${hasSubmitted ? "lg:grid-cols-[280px_1fr_360px]" : "lg:grid-cols-[280px_1fr]"}`}>
             <Card>
               <CardHeader><CardTitle className="text-sm">Documentos enviados</CardTitle></CardHeader>

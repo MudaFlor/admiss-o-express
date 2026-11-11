@@ -12,6 +12,7 @@ export type AuditAction =
   | "reject"
   | "reopen"
   | "soft_delete_doc"
+  | "hr_upload_doc"
   | "restore_doc"
   | "purge_doc"
   | "export"
