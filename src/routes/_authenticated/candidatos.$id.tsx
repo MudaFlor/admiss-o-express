@@ -206,6 +206,44 @@ function CandidatoDetailPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  async function saveBasics() {
+    const dateValidation = candidateRegistrationDateSchema.safeParse(basics.data_cadastro);
+    if (!dateValidation.success) {
+      toast.error(dateValidation.error.issues[0]?.message ?? "Informe a data de inclusão.");
+      return;
+    }
+    setSavingBasics(true);
+    try {
+      await updateBasics({ data: { id, ...basics } });
+      toast.success("Dados salvos");
+      setConfirmDateChange(false);
+      setEditingBasics(false);
+      await qc.invalidateQueries({ queryKey: ["candidate", id] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar os dados.");
+    } finally {
+      setSavingBasics(false);
+    }
+  }
+
+  function requestSaveBasics() {
+    const dateValidation = candidateRegistrationDateSchema.safeParse(basics.data_cadastro);
+    if (!dateValidation.success) {
+      toast.error(dateValidation.error.issues[0]?.message ?? "Informe a data de inclusão.");
+      return;
+    }
+    if (hasCandidateRegistrationDateChanged(candidate?.data_cadastro, basics.data_cadastro)) {
+      setConfirmDateChange(true);
+      return;
+    }
+    void saveBasics();
+  }
+
+  function cancelDateChange() {
+    setBasics((current) => ({ ...current, data_cadastro: candidate?.data_cadastro ?? "" }));
+    setConfirmDateChange(false);
+  }
+
   if (q.isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
   if (q.isError || !candidate) return <p className="text-sm text-rose-600">Erro ao carregar candidato.</p>;
 
