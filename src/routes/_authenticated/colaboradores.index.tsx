@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Brain, FolderOpen, Pencil, Plus, Search, UserPlus, Users } from "lucide-react";
+import { Brain, FolderOpen, Pencil, Plus, Search, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -142,13 +142,13 @@ function ColaboradoresPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Dialog open={importOpen} onOpenChange={(open) => { setImportOpen(open); setRegistrationError(""); }}>
             <DialogTrigger asChild>
-              <Button variant="outline">
-                <UserPlus className="h-4 w-4" /> Importar de Candidatos
+              <Button>
+                <Plus className="h-4 w-4" /> Novo colaborador
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Importar candidato aprovado</DialogTitle>
+                <DialogTitle>Novo colaborador — importar candidato aprovado</DialogTitle>
                 <DialogDescription>
                   Defina a data de admissão e importe. Documentos, termo LGPD, DISC e histórico seguem para a pasta do colaborador.
                 </DialogDescription>
@@ -206,15 +206,16 @@ function ColaboradoresPage() {
                   </TableBody>
                 </Table>
               </div>
+              <div className="border-t pt-3 text-center">
+                <button type="button" className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+                  onClick={() => { setImportOpen(false); setRegistrationError(""); setManualOpen(true); }}>
+                  Candidato não está na lista? Cadastrar sem importar
+                </button>
+              </div>
             </DialogContent>
           </Dialog>
 
           <Dialog open={manualOpen} onOpenChange={(open) => { setManualOpen(open); setRegistrationError(""); }}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4" /> Novo colaborador
-              </Button>
-            </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Novo colaborador</DialogTitle>
