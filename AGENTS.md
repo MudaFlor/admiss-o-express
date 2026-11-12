@@ -1,4 +1,5 @@
 # Architecture rules
+- Later employee document uploads use authenticated HR-only actions, employee-scoped private storage paths and shared file validation; append to the independent dossier without replacing admission attachments.
 - HR resume imports share extension/signature validation and preserve the original file type; Word text extraction uses in-memory buffers only, and PDF/image inputs use their respective AI media parts to avoid corrupting attachments or analysis.
 - Candidate registration dates use a dedicated DATE column and shared calendar validation; default to the São Paulo day and filter inclusive date bounds without changing creation timestamps.
 - HR candidate registration warnings share an authenticated HR-only lookup and pure advisory matching; never use warning matches to merge or block records automatically.

@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DiscCard } from "@/components/DiscCard";
 import { DeleteEmployeeButton } from "@/components/DeleteEmployeeButton";
+import { EmployeeDocumentUpload } from "@/components/EmployeeDocumentUpload";
 import {
   addEmployeeNote,
   getEmployee,
@@ -238,6 +239,10 @@ function EmployeePage() {
         </TabsContent>
 
         <TabsContent value="documentos">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-base font-semibold">Documentos do colaborador</h2>
+            <EmployeeDocumentUpload employeeId={id} />
+          </div>
           <Card>
             <CardContent className="p-4">
               {documents.length === 0 ? (
