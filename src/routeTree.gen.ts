@@ -19,6 +19,7 @@ import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authen
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated/gestao'
 import { Route as AuthenticatedRecrutamentoRouteImport } from './routes/_authenticated/recrutamento'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as DiscTokenRouteImport } from './routes/disc.$token'
 import { Route as AuthenticatedCandidatosIndexRouteImport } from './routes/_authenticated/candidatos.index'
@@ -85,6 +86,11 @@ const AuthenticatedRecrutamentoRoute =
     path: '/recrutamento',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CTokenRoute = CTokenRouteImport.update({
   id: '/c/$token',
   path: '/c/$token',
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/gestao': typeof AuthenticatedGestaoRouteWithChildren
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/c/$token': typeof CTokenRoute
   '/disc/$token': typeof DiscTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/c/$token': typeof CTokenRoute
   '/disc/$token': typeof DiscTokenRoute
   '/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/gestao': typeof AuthenticatedGestaoRouteWithChildren
   '/_authenticated/recrutamento': typeof AuthenticatedRecrutamentoRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/c/$token': typeof CTokenRoute
   '/disc/$token': typeof DiscTokenRoute
   '/_authenticated/candidatos/$id': typeof AuthenticatedCandidatosIdRoute
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/gestao'
     | '/recrutamento'
+    | '/auth/callback'
     | '/c/$token'
     | '/disc/$token'
     | '/candidatos/$id'
@@ -269,6 +279,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/dashboard'
     | '/recrutamento'
+    | '/auth/callback'
     | '/c/$token'
     | '/disc/$token'
     | '/candidatos/$id'
@@ -294,6 +305,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/gestao'
     | '/_authenticated/recrutamento'
+    | '/auth/callback'
     | '/c/$token'
     | '/disc/$token'
     | '/_authenticated/candidatos/$id'
@@ -315,6 +327,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   PortalRoute: typeof PortalRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   CTokenRoute: typeof CTokenRoute
   DiscTokenRoute: typeof DiscTokenRoute
   ApiConsentReceiptIdRoute: typeof ApiConsentReceiptIdRoute
@@ -393,6 +406,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/recrutamento'
       preLoaderRoute: typeof AuthenticatedRecrutamentoRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/c/$token': {
       id: '/c/$token'
@@ -539,6 +559,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   PortalRoute: PortalRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   CTokenRoute: CTokenRoute,
   DiscTokenRoute: DiscTokenRoute,
   ApiConsentReceiptIdRoute: ApiConsentReceiptIdRoute,

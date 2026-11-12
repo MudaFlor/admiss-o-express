@@ -60,7 +60,7 @@ function LoginPage() {
       email: String(fd.get("email")),
       password: String(fd.get("password")),
       options: {
-        emailRedirectTo: `${window.location.origin}/${profile === "colab" ? "portal" : "dashboard"}`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: {
           full_name: String(fd.get("full_name") ?? ""),
           company_name: String(fd.get("company_name") ?? ""),
@@ -79,7 +79,7 @@ function LoginPage() {
 
   async function handleGoogle() {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/dashboard",
+      redirect_uri: window.location.origin + "/auth/callback",
     });
     if (result.error) toast.error("Falha no login com Google");
     if (!result.redirected && !result.error) navigate({ to: "/dashboard" });
