@@ -147,7 +147,23 @@ function EmployeePage() {
       {defs.map((d) => (
         <div key={d.key} className={`space-y-1.5 ${d.wide ? "sm:col-span-2" : ""}`}>
           <Label htmlFor={d.key}>{d.label}</Label>
-          {d.key === "sexo" ? (
+          {d.key === "termination_reason" ? (
+            <select
+              id={d.key}
+              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+              value={form[d.key] ?? ""}
+              onChange={(e) => setForm({ ...form, [d.key]: e.target.value })}
+            >
+              <option value="">Selecione…</option>
+              <option value="pedido_demissao">Pedido de demissão</option>
+              <option value="sem_justa_causa">Demissão sem justa causa</option>
+              <option value="justa_causa">Demissão com justa causa</option>
+              <option value="fim_experiencia">Término de experiência</option>
+              <option value="acordo">Acordo entre as partes</option>
+              <option value="rescisao_antecipada_empregado">Rescisão Antecipada - EMPREGADO</option>
+              <option value="rescisao_antecipada_empregador">Rescisão Antecipada - EMPREGADOR</option>
+            </select>
+          ) : d.key === "sexo" ? (
             <select
               id={d.key}
               className="h-9 w-full rounded-md border bg-background px-2 text-sm"

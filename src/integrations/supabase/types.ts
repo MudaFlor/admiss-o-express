@@ -1079,6 +1079,8 @@ export type Database = {
         | "justa_causa"
         | "fim_experiencia"
         | "acordo"
+        | "rescisao_antecipada_empregado"
+        | "rescisao_antecipada_empregador"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1261,6 +1263,8 @@ export const Constants = {
         "justa_causa",
         "fim_experiencia",
         "acordo",
+        "rescisao_antecipada_empregado",
+        "rescisao_antecipada_empregador",
       ],
     },
   },
