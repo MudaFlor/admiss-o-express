@@ -40,3 +40,13 @@ describe("ficha de dependentes", () => {
     for (const field of ["nome", "data_nascimento", "cpf", "numero_nativivo", "matricula", "livro", "pagina"]) expect(DEPENDENT_CERTIFICATE_FIELDS).toContain(field);
   });
 });
+import { formatCivilRegistration as fcr } from "./dependent-record";
+describe("formatCivilRegistration", () => {
+  it("formata 32 dígitos no padrão da matrícula", () => {
+    expect(fcr("12345601552015100123045000123412")).toBe("123456.01.55.2015.1.00123.045.0001234.12");
+    expect(fcr("123456 01 55 2015 1 00123 045 0001234-12")).toBe("123456.01.55.2015.1.00123.045.0001234.12");
+  });
+  it("mantém valores incompletos como estão", () => {
+    expect(fcr("12345")).toBe("12345");
+  });
+});

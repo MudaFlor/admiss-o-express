@@ -67,9 +67,20 @@ export function buildDependentRecord(dep: DependentIdentity, documents: Dependen
     birthDate: formatDependentBirthDate(dep.birth_date || anyDocValue("data_nascimento", "nascimento")),
     cpf: formatDependentCpf(dep.cpf || documentValue(["dependente_certidao", "dependente_rg_cpf"], "cpf")),
     liveBirthNumber: anyDocValue("numero_nativivo", "numero_nascido_vivo", "dnv") || "—",
-    registration: anyDocValue("matricula", "registro") || "—",
+    registration: formatCivilRegistration(anyDocValue("matricula", "registro")) || "—",
     book: anyDocValue("livro") || "—",
     page: anyDocValue("pagina", "folha") || "—",
     documents: linked,
   };
+}
+/** Matrícula do registro civil (32 dígitos): CNS.acervo.serviço.ano.tipo.livro.folha.termo.DV */
+export function formatCivilRegistration(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const d = String(value).replace(/\D/g, "");
+  if (d.length !== 32) return String(value).trim() || null;
+  const sizes = [6, 2, 2, 4, 1, 5, 3, 7, 2];
+  const parts: string[] = [];
+  let i = 0;
+  for (const n of sizes) { parts.push(d.slice(i, i + n)); i += n; }
+  return parts.join(".");
 }

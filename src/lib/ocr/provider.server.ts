@@ -4,7 +4,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import type { Database } from "@/integrations/supabase/types";
-import { DEPENDENT_CERTIFICATE_FIELDS, DEPENDENT_CERTIFICATE_INSTRUCTION } from "@/lib/dependent-record";
+import { DEPENDENT_CERTIFICATE_FIELDS, DEPENDENT_CERTIFICATE_INSTRUCTION, formatCivilRegistration } from "@/lib/dependent-record";
 
 export type DocumentType = Database["public"]["Enums"]["document_type"];
 
@@ -276,5 +276,6 @@ export async function runOcr(type: DocumentType, storagePath: string): Promise<O
   }
 
   const confidence = filled === 0 ? 0 : Number((confSum / filled).toFixed(2));
+  if (fields.matricula) fields.matricula = formatCivilRegistration(fields.matricula) ?? fields.matricula;
   return { status: "sucesso", confidence, fields, evidences, field_confidences: fieldConfidences };
 }
