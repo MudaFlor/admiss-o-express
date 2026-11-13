@@ -1,4 +1,5 @@
 # Ajustes do portal do candidato
+- [x] Tornar a escolha de sexo visível no acesso direto aos documentos; 8 testes existentes passaram e compilação OK. Conferência visual em link real pendente: nenhum portal acessível localizado nas fichas consultadas, sem renovar links ou alterar cadastros.
 - [x] Ampliar importação de currículo para imagem, Word e PDF, preservando leitura e arquivo original; 9 testes passaram e leitura de DOCX/JPG/PDF conferida no formulário autenticado, DOC processado sem inventar dados ausentes. Não foram salvos cadastros de teste.
 - [x] Criar fichas expansíveis dos dependentes no recrutamento, com dados da certidão e documentos por dependente; regras testadas e fichas reais conferidas com abertura/download dos anexos. Novos campos de OCR aplicam-se às próximas leituras, sem reprocessar arquivos existentes.
 - [ ] Exigir data de cadastro no início do formulário, preencher com hoje e adicionar coluna e filtro no cabeçalho da tabela; validar o fluxo.

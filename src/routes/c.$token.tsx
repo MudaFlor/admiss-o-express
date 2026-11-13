@@ -396,7 +396,7 @@ function CandidatePage() {
   if (candidate.status === "rejeitado")
     return <Done title="Cadastro encerrado" desc="Entre em contato com o RH para mais informacoes." />;
 
-  const sexo = candidate.sexo ?? "";
+  const sexo = form.sexo;
   const requireReservista = sexo === "masculino";
   // Todo documento exigido pelo RH precisa ter um cartão de envio aqui,
   // mesmo que não esteja na lista padrão (ex.: currículo).
@@ -929,19 +929,7 @@ function CandidatePage() {
 
               <Section title="Informações complementares">
                 <Grid2>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Sexo *</Label>
-                    <select
-                      required
-                      className={`h-9 w-full rounded-md border bg-background px-2 text-sm ${form.sexo ? "" : "border-destructive"}`}
-                      value={form.sexo}
-                      onChange={(e) => setField("sexo", e.target.value)}
-                    >
-                      <option value="">Selecione</option>
-                      <option value="masculino">Masculino</option>
-                      <option value="feminino">Feminino</option>
-                    </select>
-                  </div>
+                  <SexField value={form.sexo} onChange={(value) => setField("sexo", value)} />
                   <div className="space-y-1.5">
                     <Label className="text-xs">Estado civil</Label>
                     <select
@@ -980,6 +968,7 @@ function CandidatePage() {
               <h1 className="text-lg font-semibold">Envie seus documentos</h1>
               <p className="mt-1 text-sm text-muted-foreground">Tire fotos nitidas. Aceitamos JPG, PNG e PDF.</p>
             </div>
+            <SexField value={form.sexo} onChange={(value) => setField("sexo", value)} />
             <Card>
               <CardContent className="space-y-2 p-4">
                 <div className="flex items-center justify-between text-sm font-medium">
@@ -1324,6 +1313,24 @@ function CandidatePage() {
         )}
       </main>
     </div>
+  );
+}
+
+function SexField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <fieldset className="space-y-2">
+      <legend id="candidate-sex-label" className="text-xs font-medium">Sexo (obrigatório)</legend>
+      <RadioGroup value={value} onValueChange={onChange} aria-labelledby="candidate-sex-label" required className="flex flex-wrap gap-x-6 gap-y-2">
+        <div className="flex items-center gap-2">
+          <RadioGroupItem id="candidate-sex-feminino" value="feminino" />
+          <Label htmlFor="candidate-sex-feminino">Feminino</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <RadioGroupItem id="candidate-sex-masculino" value="masculino" />
+          <Label htmlFor="candidate-sex-masculino">Masculino</Label>
+        </div>
+      </RadioGroup>
+    </fieldset>
   );
 }
 
