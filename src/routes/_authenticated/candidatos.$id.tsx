@@ -485,7 +485,7 @@ function CandidatoDetailPage() {
                   /\.(pdf)$/i.test(doc.storage_path) ? (
                     <PdfBlobViewer url={doc.signed_url} />
                   ) : (
-                    <img src={doc.signed_url} alt="Documento" className="max-h-[600px] w-auto rounded-md object-contain" />
+                    <img src={doc.signed_url} alt="Documento" loading="lazy" decoding="async" className="max-h-[600px] w-auto rounded-md object-contain" />
                   )
                 ) : (
                   <p className="text-sm text-muted-foreground">Selecione um documento</p>

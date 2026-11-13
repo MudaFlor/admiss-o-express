@@ -1,4 +1,5 @@
 import { resolveCertidaoParents } from "@/lib/ocr/certidao-parents";
+import { compressImageFile } from "@/lib/image-compress";
 import { createFileRoute } from "@tanstack/react-router";
 import { maskCpf, cpfAware } from "@/lib/cpf";
 import { useServerFn } from "@tanstack/react-start";
@@ -562,10 +563,11 @@ function CandidatePage() {
     setStep(2);
   }
 
-  async function uploadDoc(type: DocType, file: File, opts?: { dependent_id?: string; label?: string }) {
+  async function uploadDoc(type: DocType, original: File, opts?: { dependent_id?: string; label?: string }) {
     const key = `${type}:${opts?.dependent_id ?? ""}`;
     setUploading(key);
     try {
+      const file = await compressImageFile(original);
       const invalid = validateFile(file);
       if (invalid) throw new Error(invalid);
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
@@ -1085,6 +1087,8 @@ function CandidatePage() {
                             <img
                               src={uploaded.signed_url}
                               alt={d.label}
+                              loading="lazy"
+                              decoding="async"
                               className="h-14 w-14 rounded-md border object-cover"
                             />
                           </a>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { compressImageFile } from "@/lib/image-compress";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -36,13 +37,15 @@ export function HrDocumentUpload({ candidateId, labels, takenOver }: { candidate
   }
 
   async function send() {
-    if (!file) return toast.error("Selecione um arquivo.");
-    if (file.size > 10 * 1024 * 1024) return toast.error("Arquivo acima de 10 MB.");
-    const ext = (file.name.split(".").pop() ?? "").toLowerCase();
+    const picked = file;
+    if (!picked) return toast.error("Selecione um arquivo.");
+    const upFile = await compressImageFile(picked);
+    if (upFile.size > 10 * 1024 * 1024) return toast.error("Arquivo acima de 10 MB.");
+    const ext = (upFile.name.split(".").pop() ?? "").toLowerCase();
     setBusy(true);
     try {
       const up = await createUrl({ data: { candidate_id: candidateId, type, ext } });
-      const { error } = await supabase.storage.from("candidate-documents").uploadToSignedUrl(up.path, up.token, file, { contentType: file.type || undefined });
+      const { error } = await supabase.storage.from("candidate-documents").uploadToSignedUrl(up.path, up.token, upFile, { contentType: upFile.type || undefined });
       if (error) throw new Error("Falha ao enviar o arquivo.");
       const r = await finalize({ data: { candidate_id: candidateId, type, storage_path: up.path } });
       toast.success(r.fields ? `Documento anexado. ${r.fields} campo(s) extraído(s) pelo OCR.` : "Documento anexado.");

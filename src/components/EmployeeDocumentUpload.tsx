@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { compressImageFile } from "@/lib/image-compress";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { Upload, Loader2 } from "lucide-react";
@@ -23,17 +24,19 @@ export function EmployeeDocumentUpload({ employeeId }: { employeeId: string }) {
 
   async function send(event: React.FormEvent) {
     event.preventDefault();
-    if (!file || busy) return;
-    const invalid = validateFile(file);
+    const picked = file;
+    if (!picked || busy) return;
+    const upFile = await compressImageFile(picked);
+    const invalid = validateFile(upFile);
     if (invalid) return setProblem(invalid);
     setBusy(true);
     setProblem("");
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+      const ext = upFile.name.split(".").pop()?.toLowerCase() ?? "";
       const up = await createUrl({ data: { employee_id: employeeId, ext } });
-      const { error } = await supabase.storage.from("candidate-documents").uploadToSignedUrl(up.path, up.token, file, { contentType: file.type || undefined });
+      const { error } = await supabase.storage.from("candidate-documents").uploadToSignedUrl(up.path, up.token, upFile, { contentType: upFile.type || undefined });
       if (error) throw new Error("Não foi possível enviar o arquivo. Tente novamente.");
-      await finalize({ data: { employee_id: employeeId, storage_path: up.path, label: label.trim() || file.name } });
+      await finalize({ data: { employee_id: employeeId, storage_path: up.path, label: label.trim() || picked.name } });
       await qc.invalidateQueries({ queryKey: ["employee", employeeId] });
       toast.success("Documento adicionado à pasta do colaborador.");
       setFile(null);
