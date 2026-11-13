@@ -1,3 +1,4 @@
+import { resolveCertidaoParents } from "@/lib/ocr/certidao-parents";
 import { createFileRoute } from "@tanstack/react-router";
 import { maskCpf, cpfAware } from "@/lib/cpf";
 import { useServerFn } from "@tanstack/react-start";
@@ -344,8 +345,15 @@ function CandidatePage() {
       const raw = (d as { ocr_data?: { values?: Record<string, string> } }).ocr_data;
       const saved = cand?.form_data as Record<string, unknown> | null;
       const reviewed = saved?.documentos_revisados as Record<string, Record<string, string>> | undefined;
-      const vals = reviewedOcrData(raw, reviewed?.[d.id]).values;
+      let vals = reviewedOcrData(raw, reviewed?.[d.id]).values;
       if (!vals) continue;
+      if (d.type === "certidao")
+        vals = resolveCertidaoParents(
+          vals,
+          docsForOcr
+            .filter((x) => !x.dependent_id && (x.type === "rg" || x.type === "cnh"))
+            .map((x) => (x as { ocr_data?: { values?: Record<string, string> } }).ocr_data?.values),
+        );
       const map = OCR_TO_FORM[d.type as DocType];
       if (map)
         for (const [ok, fk] of Object.entries(map))
@@ -590,7 +598,16 @@ function CandidatePage() {
 
   // Merge OCR -> form respeitando o trabalho do candidato:
   // preenche apenas campos vazios ou que ainda estão marcados como autoFilled.
-  function mergeOcrIntoForm(type: DocType, ocrFields: Record<string, string>): number {
+  function mergeOcrIntoForm(type: DocType, rawFields: Record<string, string>): number {
+    const ocrFields =
+      type === "certidao"
+        ? resolveCertidaoParents(rawFields, [
+            ...(q.data?.documents ?? [])
+              .filter((x) => !x.dependent_id && (x.type === "rg" || x.type === "cnh"))
+              .map((x) => (x as { ocr_data?: { values?: Record<string, string> } }).ocr_data?.values),
+            autoFilled.has("nome_mae") ? null : { nome_mae: form.nome_mae, nome_pai: form.nome_pai },
+          ])
+        : rawFields;
     const map = OCR_TO_FORM[type];
     if (!map && type !== "comprovante_residencia") return 0;
     // Monta a lista de writes a partir do mapeamento + endereço agregado

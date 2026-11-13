@@ -1,3 +1,4 @@
+import { resolveCertidaoParents } from "@/lib/ocr/certidao-parents";
 // Validação cruzada de dados entre documentos extraídos por OCR e os dados
 // declarados pelo candidato. Função pura — pode rodar no cliente e no servidor.
 
@@ -149,6 +150,21 @@ function getDeclared(field: string, declared: CrossCheckInput["declared"]): stri
   return typeof v === "string" && v.trim() ? v : null;
 }
 
+function ocrValues(o: unknown): Record<string, unknown> | null {
+  if (!o || typeof o !== "object") return null;
+  const r = o as { values?: Record<string, unknown> };
+  return r.values && typeof r.values === "object" ? r.values : (o as Record<string, unknown>);
+}
+
+function fixCertParents(ocr: unknown, docs: CrossCheckInput["documents"]): unknown {
+  const vals = ocrValues(ocr);
+  if (!vals) return ocr;
+  const refs = docs.filter((d) => d.type === "rg" || d.type === "cnh").map((d) => ocrValues(d.ocr_data));
+  const fixed = resolveCertidaoParents(vals, refs);
+  const r = ocr as { values?: unknown };
+  return r.values && typeof r.values === "object" ? { ...r, values: fixed } : fixed;
+}
+
 export function crossCheckCandidate(input: CrossCheckInput): CrossCheckResult {
   const holderDocs = input.documents.filter((d) => !d.dependent_id);
   const fields: CrossCheckField[] = [];
@@ -161,7 +177,9 @@ export function crossCheckCandidate(input: CrossCheckInput): CrossCheckResult {
     for (const docType of sources) {
       const doc = holderDocs.find((d) => d.type === docType);
       if (!doc) continue;
-      const v = getDocValue(campo, docType, doc.ocr_data);
+      let ocr = doc.ocr_data;
+      if (docType === "certidao" && (campo === "nome_mae" || campo === "nome_pai")) ocr = fixCertParents(ocr, holderDocs);
+      const v = getDocValue(campo, docType, ocr);
       if (!v) continue;
       collected.push({
         origem: docType,
