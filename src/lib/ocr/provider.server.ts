@@ -128,7 +128,7 @@ function userInstruction(type: DocumentType): string {
     certificado_curso: "Certificado de Curso",
     vacinacao_covid: "Comprovante de Vacinação Covid",
     dependente_certidao: DEPENDENT_CERTIFICATE_INSTRUCTION,
-    dependente_rg_cpf: "RG ou CPF de dependente",
+    dependente_rg_cpf: "RG, CIN (Carteira de Identidade Nacional) ou CPF de dependente. Na CIN o número principal é o próprio CPF: preencha 'cpf' com ele (formato 000.000.000-00). Extraia nome e data de nascimento do titular (DD/MM/AAAA). Não confunda CPF com RG ou número de registro.",
     dependente_vacinacao: "Carteira de Vacinação de dependente",
     dependente_escolar: "Comprovante Escolar de dependente",
   };

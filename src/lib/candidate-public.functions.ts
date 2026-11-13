@@ -260,6 +260,25 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
       .single();
     if (error) fail(error);
 
+    if (data.dependent_id && ocr.status === "sucesso" && (data.type === "dependente_rg_cpf" || data.type === "dependente_certidao")) {
+      const { data: dep } = await supabaseAdmin
+        .from("dependents")
+        .select("id, cpf, birth_date")
+        .eq("id", data.dependent_id)
+        .eq("candidate_id", candidate.id)
+        .maybeSingle();
+      if (dep) {
+        const patch: Record<string, string> = {};
+        const cpfDigits = String(ocr.fields.cpf ?? "").replace(/\D/g, "");
+        if (!dep.cpf && cpfDigits.length === 11) patch.cpf = cpfDigits;
+        const m = String(ocr.fields.data_nascimento ?? "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (!dep.birth_date && m) patch.birth_date = `${m[3]}-${m[2]}-${m[1]}`;
+        if (Object.keys(patch).length) {
+          await supabaseAdmin.from("dependents").update(patch as never).eq("id", dep.id);
+        }
+      }
+    }
+
     if (candidate.status === "pendente") {
       await supabaseAdmin
         .from("candidates")
