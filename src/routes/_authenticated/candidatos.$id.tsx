@@ -937,31 +937,48 @@ function FichaForm({
         e.preventDefault();
         await onSave(merged);
       }}
-      className="grid gap-3 md:grid-cols-2"
+      className="flex flex-col"
     >
+      <dl className="divide-y border-y">
       {FICHA_FIELDS.map(([k, label]) => (
-        <div key={k} className="space-y-1.5">
-          <Label>{label}</Label>
-          <Input
-            value={cpfAware(k, merged[k] ?? "")}
-            disabled={disabled}
-            onChange={(e) => setEditing({ ...editing, [k]: k === "cpf" ? maskCpf(e.target.value) : e.target.value })}
-          />
-          {origem[k] && <p className="text-[10px] text-muted-foreground">Fonte: {ORIGEM_LABEL[origem[k]] ?? origem[k]}</p>}
+        <div key={k} className="grid grid-cols-1 items-center gap-1 py-2.5 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-4">
+          <dt className="text-sm text-muted-foreground">{label}:</dt>
+          <dd className="min-w-0">
+            {disabled ? (
+              <span className="break-words text-sm font-medium uppercase">{cpfAware(k, merged[k] ?? "") || "—"}</span>
+            ) : (
+              <Input
+                aria-label={label}
+                className="h-8"
+                value={cpfAware(k, merged[k] ?? "")}
+                onChange={(e) => setEditing({ ...editing, [k]: k === "cpf" ? maskCpf(e.target.value) : e.target.value })}
+              />
+            )}
+            {origem[k] && <p className="text-[10px] text-muted-foreground">Fonte: {ORIGEM_LABEL[origem[k]] ?? origem[k]}</p>}
+          </dd>
         </div>
       ))}
-      <div className="space-y-1.5">
-        <Label htmlFor="rh-cor-raca">Raça/cor (autodeclaração)</Label>
-        <select id="rh-cor-raca" disabled={disabled} className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={merged.cor_raca ?? ""} onChange={(event) => setEditing({ ...editing, cor_raca: event.target.value })}>
-          <option value="">Não preenchido</option>
-          {RACE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
-      </div>
-      <div className="md:col-span-2">
-        <Button type="submit" disabled={disabled}>
-          <Save className="h-4 w-4" /> Salvar ficha
-        </Button>
-      </div>
+        <div className="grid grid-cols-1 items-center gap-1 py-2.5 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-4">
+          <dt className="text-sm text-muted-foreground"><label htmlFor="rh-cor-raca">Raça/cor (autodeclaração):</label></dt>
+          <dd className="min-w-0">
+            {disabled ? (
+              <span className="text-sm font-medium uppercase">{RACE_OPTIONS.find((o) => o.value === merged.cor_raca)?.label ?? "—"}</span>
+            ) : (
+              <select id="rh-cor-raca" className="h-8 w-full rounded-md border bg-background px-2 text-sm" value={merged.cor_raca ?? ""} onChange={(event) => setEditing({ ...editing, cor_raca: event.target.value })}>
+                <option value="">Não preenchido</option>
+                {RACE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            )}
+          </dd>
+        </div>
+      </dl>
+      {!disabled && (
+        <div className="mt-3">
+          <Button type="submit">
+            <Save className="h-4 w-4" /> Salvar ficha
+          </Button>
+        </div>
+      )}
     </form>
   );
 }
