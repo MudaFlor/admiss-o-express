@@ -373,15 +373,6 @@ function CandidatoDetailPage() {
         stageNote={candidate.stage_note}
       />
 
-      <CorrectionRequestCard
-        candidateId={id}
-        availableDocuments={Array.from(
-          new Map(
-            q.data!.documents.map((d) => [d.type as string, { type: d.type as string, label: (d.label ?? DOC_LABELS[d.type] ?? d.type) as string }]),
-          ).values(),
-        )}
-      />
-
       {hrTakeover && <HrAdmissionBar candidateId={id} info={hrTakeover} />}
       <Tabs defaultValue="documentos">
         <TabsList className="h-auto flex-wrap justify-start gap-1">
@@ -900,6 +891,15 @@ function CandidatoDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <CorrectionRequestCard
+        candidateId={id}
+        availableDocuments={Array.from(
+          new Map(
+            q.data!.documents.map((d) => [d.type as string, { type: d.type as string, label: (d.label ?? DOC_LABELS[d.type] ?? d.type) as string }]),
+          ).values(),
+        )}
+      />
         </TabsContent>
       </Tabs>
     </div>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, Check, Loader2, MessageCircle, RotateCcw } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, ChevronUp, Loader2, MessageCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -33,6 +33,7 @@ export function CorrectionRequestCard({
   const [docs, setDocs] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [lastLink, setLastLink] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const historyQ = useQuery({
     queryKey: ["corrections", candidateId],
@@ -80,8 +81,28 @@ export function CorrectionRequestCard({
   return (
     <Card>
       <CardHeader className="space-y-0 pb-3">
-        <CardTitle className="text-sm">Solicitar correção ao candidato</CardTitle>
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-sm">Solicitar correção ao candidato</CardTitle>
+          <div className="flex shrink-0 items-center gap-2">
+            {open && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-900">
+                pendência aberta
+              </span>
+            )}
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              aria-expanded={expanded}
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {expanded ? "Ocultar" : "Mostrar"}
+            </Button>
+          </div>
+        </div>
       </CardHeader>
+      {expanded && (
       <CardContent className="space-y-4">
         {open && (
           <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
@@ -167,6 +188,7 @@ export function CorrectionRequestCard({
           </ul>
         )}
       </CardContent>
+      )}
     </Card>
   );
 }
