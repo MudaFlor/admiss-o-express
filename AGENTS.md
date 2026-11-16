@@ -14,3 +14,4 @@
 - HR takeover of an admission revokes the candidate link, keeps uploaded documents, and finalizes through the shared finalizeApplication validator used by the portal, so both paths enforce identical submission rules.
 - Candidate sex selection uses the same control in the review and direct-document steps, with the local selection driving the default checklist so the express flow cannot hide a required field.
 - Phone photos are compressed client-side via src/lib/image-compress.ts before every document upload (max side 2400px, JPEG 0.85, PDFs untouched) to keep OCR legible while cutting memory and upload time.
+- Candidate document previews request fresh links through the existing authorized document action on demand, without caching links across opens or refetching the candidate on window focus; this preserves short-lived access and low memory use.

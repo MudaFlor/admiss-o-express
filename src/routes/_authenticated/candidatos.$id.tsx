@@ -18,6 +18,7 @@ import { DuplicateCandidatesCard } from "@/components/DuplicateCandidatesCard";
 import { DiscCard } from "@/components/DiscCard";
 import { HrIndicatorsCard } from "@/components/HrIndicatorsCard";
 import { CandidateDependents } from "@/components/CandidateDependents";
+import { CandidateDocumentPreview } from "@/components/CandidateDocumentPreview";
 import { HrDocumentUpload, HrAdmissionBar } from "@/components/HrDocumentUpload";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -472,12 +473,8 @@ function CandidatoDetailPage() {
                 </div>
               )}
               <CardContent className="flex min-h-[400px] items-center justify-center bg-muted/30 p-2">
-                {doc?.signed_url ? (
-                  /\.(pdf)$/i.test(doc.storage_path) ? (
-                    <PdfBlobViewer url={doc.signed_url} />
-                  ) : (
-                    <img src={doc.signed_url} alt="Documento" loading="lazy" decoding="async" className="max-h-[600px] w-auto rounded-md object-contain" />
-                  )
+                {doc ? (
+                  <CandidateDocumentPreview key={doc.id} documentId={doc.id} isPdf={/\.(pdf)$/i.test(doc.storage_path)} />
                 ) : (
                   <p className="text-sm text-muted-foreground">Selecione um documento</p>
                 )}
@@ -735,11 +732,7 @@ function CandidatoDetailPage() {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          {d.signed_url && (
-                            <Button asChild size="sm" variant="ghost">
-                              <a href={d.signed_url} target="_blank" rel="noreferrer">Visualizar</a>
-                            </Button>
-                          )}
+                          <Button size="sm" variant="ghost" onClick={() => openDoc(d.id, false)}>Visualizar</Button>
                           <Button
                             size="sm"
                             variant="outline"
@@ -1039,20 +1032,4 @@ function CrossCheckCard({ result }: { result: CrossCheckResult }) {
       </CardContent>
     </Card>
   );
-}
-
-// Mostra o PDF dentro da página carregando o arquivo no navegador (blob),
-// evitando o bloqueio do navegador ao abrir o link assinado direto no iframe.
-function PdfBlobViewer({ url }: { url: string }) {
-  const [show, setShow] = useState(false);
-  useEffect(() => setShow(false), [url]);
-  if (!show) {
-    return (
-      <div className="flex flex-col items-start gap-2 rounded-md border p-4">
-        <p className="text-sm text-muted-foreground">A prévia do PDF só carrega quando solicitada, para não pesar a página.</p>
-        <Button size="sm" variant="outline" onClick={() => setShow(true)}>Visualizar PDF aqui</Button>
-      </div>
-    );
-  }
-  return <iframe src={url} title="Documento PDF" loading="lazy" className="h-[600px] w-full rounded-md border bg-background" />;
 }
