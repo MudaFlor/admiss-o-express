@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ import { HR_FIELDS, HR_LABELS, HR_SELECT_OPTIONS, isReferral, type HrField } fro
 
 type Values = Record<HrField, string>;
 
-export function HrIndicatorsCard({ candidateId, candidate }: { candidateId: string; candidate: Record<string, unknown> }) {
+export function HrIndicatorsCard({ candidateId, candidate, onPendingChange }: { candidateId: string; candidate: Record<string, unknown>; onPendingChange?: (save: (() => Promise<boolean>) | null) => void }) {
   const save = useServerFn(updateCandidateHrIndicators);
   const qc = useQueryClient();
   const fromCandidate = () =>
@@ -24,13 +24,20 @@ export function HrIndicatorsCard({ candidateId, candidate }: { candidateId: stri
 
   useEffect(() => { if (!editing) setValues(fromCandidate()); }, [candidate, editing]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const saveRef = useRef<() => Promise<boolean>>(async () => true);
+  saveRef.current = onSave;
+  useEffect(() => {
+    onPendingChange?.(editing ? () => saveRef.current() : null);
+  }, [editing]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => onPendingChange?.(null), []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const set = (k: HrField, v: string) => setValues((p) => ({ ...p, [k]: v }));
   const referral = isReferral(values.meio_recebimento);
 
   async function onSave() {
     if (referral && values.indicacao_colaborador.trim().length < 3) {
       toast.error("Informe o nome completo do colaborador que indicou.");
-      return;
+      return false;
     }
     setSaving(true);
     try {
@@ -39,8 +46,10 @@ export function HrIndicatorsCard({ candidateId, candidate }: { candidateId: stri
       setEditing(false);
       qc.invalidateQueries({ queryKey: ["candidate", candidateId] });
       qc.invalidateQueries({ queryKey: ["candidates"] });
+      return true;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar");
+      return false;
     } finally {
       setSaving(false);
     }

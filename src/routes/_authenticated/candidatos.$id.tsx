@@ -1,9 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
 import { maskCpf, cpfAware, formatCpf } from "@/lib/cpf";
 import { useServerFn } from "@tanstack/react-start";
 import { getConsentReceiptUrl } from "@/lib/lgpd.functions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, CheckCircle2, XCircle, FileText, Pencil, Save, X, RotateCcw, AlertTriangle, Trash2, Undo2, Download, ExternalLink, Printer } from "lucide-react";
 import { consolidateFicha, FICHA_FIELDS, ORIGEM_LABEL } from "@/lib/ficha-consolidation";
@@ -155,6 +155,11 @@ function CandidatoDetailPage() {
   const [basics, setBasics] = useState({ full_name: "", cpf: "", email: "", phone: "", position: "", data_cadastro: "" });
   const [confirmDateChange, setConfirmDateChange] = useState(false);
   const [savingBasics, setSavingBasics] = useState(false);
+  const [activeTab, setActiveTab] = useState("basicos");
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
+  const [savingPending, setSavingPending] = useState(false);
+  const [indicatorsDirty, setIndicatorsDirty] = useState(false);
+  const indicatorsSaveRef = useRef<(() => Promise<boolean>) | null>(null);
 
   useEffect(() => {
     if (q.data?.documents && !activeDoc) setActiveDoc(q.data.documents[0]?.id ?? null);
@@ -214,7 +219,7 @@ function CandidatoDetailPage() {
     const dateValidation = candidateRegistrationDateSchema.safeParse(basics.data_cadastro);
     if (!dateValidation.success) {
       toast.error(dateValidation.error.issues[0]?.message ?? "Informe a data de inclusão.");
-      return;
+      return false;
     }
     setSavingBasics(true);
     try {
@@ -223,8 +228,10 @@ function CandidatoDetailPage() {
       setConfirmDateChange(false);
       await qc.invalidateQueries({ queryKey: ["candidate", id] });
       setEditingBasics(false);
+      return true;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao salvar os dados.");
+      return false;
     } finally {
       setSavingBasics(false);
     }
@@ -241,6 +248,85 @@ function CandidatoDetailPage() {
       return;
     }
     void saveBasics();
+  }
+
+  async function saveOcr() {
+    if (!doc) return true;
+    try {
+      const prev = parseOcr(doc.ocr_data);
+      await updateOcr({ data: { document_id: doc.id, ocr_data: { values: ocrDraft, confidences: prev.confidences } } });
+      toast.success("OCR salvo");
+      setEditingOcr(false);
+      qc.invalidateQueries({ queryKey: ["candidate", id] });
+      return true;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+      return false;
+    }
+  }
+
+  async function saveFicha(data?: Record<string, string>) {
+    if (!candidate) return false;
+    try {
+      const fdAll = (candidate.form_data ?? {}) as Record<string, unknown>;
+      const fdStr = fdAll as Record<string, string>;
+      const profile = (fdAll.perfil_recrutamento ?? {}) as Record<string, unknown>;
+      const base = consolidateFicha(
+        { ...profile, ...fdAll, full_name: (fdStr.full_name || candidate.full_name), cpf: fdStr.cpf || candidate.cpf || "", email: fdStr.email || candidate.email || "", phone: fdStr.telefone || candidate.phone || "" },
+        (q.data?.documents ?? []).map((d) => ({ type: d.type as string, dependent_id: d.dependent_id, ocr_data: d.ocr_data })),
+      ).data;
+      const merged = data ?? { ...base, ...editing };
+      const fd = (candidate.form_data ?? {}) as Record<string, unknown>;
+      const prev = new Set(Array.isArray(fd._rh_overrides) ? (fd._rh_overrides as string[]) : []);
+      for (const k of Object.keys(editing)) if (editing[k] !== base[k]) prev.add(k);
+      const { phone, ...rest } = merged;
+      await updateForm({ data: { id, form_data: { ...fd, ...rest, telefone: phone, _rh_overrides: [...prev] } as never } });
+      toast.success("Ficha salva");
+      setEditing({});
+      setEditingFicha(false);
+      qc.invalidateQueries({ queryKey: ["candidate", id] });
+      return true;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao salvar a ficha");
+      return false;
+    }
+  }
+
+  const isDirty = editingBasics || editingFicha || editingOcr || indicatorsDirty;
+  const dirtyRef = useRef(false);
+  dirtyRef.current = isDirty;
+  const blocker = useBlocker({ shouldBlockFn: () => dirtyRef.current, enableBeforeUnload: () => dirtyRef.current, withResolver: true });
+
+  async function saveAllPending() {
+    setSavingPending(true);
+    try {
+      if (editingBasics) {
+        if (hasCandidateRegistrationDateChanged(candidate?.data_cadastro, basics.data_cadastro)) {
+          setConfirmDateChange(true);
+          return false;
+        }
+        if (!(await saveBasics())) return false;
+      }
+      if (editingFicha && !(await saveFicha())) return false;
+      if (editingOcr && !(await saveOcr())) return false;
+      if (indicatorsSaveRef.current && !(await indicatorsSaveRef.current())) return false;
+      return true;
+    } finally {
+      setSavingPending(false);
+    }
+  }
+
+  async function confirmSavePending() {
+    const ok = await saveAllPending();
+    if (!ok) { cancelPending(); return; }
+    dirtyRef.current = false;
+    if (pendingTab) { setActiveTab(pendingTab); setPendingTab(null); }
+    if (blocker.status === "blocked") blocker.proceed();
+  }
+
+  function cancelPending() {
+    setPendingTab(null);
+    if (blocker.status === "blocked") blocker.reset();
   }
 
   function cancelDateChange() {
@@ -273,7 +359,22 @@ function CandidatoDetailPage() {
       </div>
 
 
-      <Tabs defaultValue="basicos" className="space-y-4">
+      <AlertDialog open={blocker.status === "blocked" || pendingTab !== null} onOpenChange={(open) => { if (!open && !savingPending) cancelPending(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Alterações não salvas</AlertDialogTitle>
+            <AlertDialogDescription>AS INFORMAÇÕES NÃO FORAM SALVAS, DESEJA SALVAR AGORA?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={savingPending} onClick={cancelPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction disabled={savingPending} onClick={(e) => { e.preventDefault(); void confirmSavePending(); }}>
+              {savingPending ? "Salvando…" : "Salvar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Tabs value={activeTab} onValueChange={(v) => { if (isDirty) setPendingTab(v); else setActiveTab(v); }} className="space-y-4">
         <TabsList className="h-auto w-full flex-wrap justify-start gap-1 p-1">
           <TabsTrigger value="basicos">Dados básicos</TabsTrigger>
           <TabsTrigger value="indicadores">Indicadores de RH</TabsTrigger>
@@ -360,7 +461,7 @@ function CandidatoDetailPage() {
       <DuplicateCandidatesCard candidateId={id} />
         </TabsContent>
         <TabsContent value="indicadores">
-      <HrIndicatorsCard candidateId={id} candidate={candidate as unknown as Record<string, unknown>} />
+      <HrIndicatorsCard candidateId={id} candidate={candidate as unknown as Record<string, unknown>} onPendingChange={(save) => { indicatorsSaveRef.current = save; setIndicatorsDirty(save !== null); }} />
         </TabsContent>
         <TabsContent value="perfil">
       <DiscCard candidateId={id} name={candidate.full_name} phone={candidate.phone} />
@@ -497,17 +598,7 @@ function CandidatoDetailPage() {
                     }}>
                       <X className="h-3.5 w-3.5" />
                     </Button>
-                    <Button size="sm" onClick={async () => {
-                      try {
-                        const prev = parseOcr(doc.ocr_data);
-                        await updateOcr({ data: { document_id: doc.id, ocr_data: { values: ocrDraft, confidences: prev.confidences } } });
-                        toast.success("OCR salvo");
-                        setEditingOcr(false);
-                        qc.invalidateQueries({ queryKey: ["candidate", id] });
-                      } catch (e) {
-                        toast.error(e instanceof Error ? e.message : "Erro");
-                      }
-                    }}>
+                    <Button size="sm" onClick={() => void saveOcr()}>
                       <Save className="h-3.5 w-3.5" /> Salvar
                     </Button>
                   </div>
@@ -615,17 +706,7 @@ function CandidatoDetailPage() {
                 origem={consolidated.origem}
                 editing={editing}
                 setEditing={setEditing}
-                onSave={async (data) => {
-                  const fd = (candidate.form_data ?? {}) as Record<string, unknown>;
-                  const prev = new Set(Array.isArray(fd._rh_overrides) ? (fd._rh_overrides as string[]) : []);
-                  for (const k of Object.keys(editing)) if (editing[k] !== consolidated.data[k]) prev.add(k);
-                  const { phone, ...rest } = data;
-                  await updateForm({ data: { id, form_data: { ...fd, ...rest, telefone: phone, _rh_overrides: [...prev] } as never } });
-                  toast.success("Ficha salva");
-                  setEditing({});
-                  setEditingFicha(false);
-                  qc.invalidateQueries({ queryKey: ["candidate", id] });
-                }}
+                onSave={async (data) => { await saveFicha(data); }}
               />
               {reviewedDocuments && Object.keys(reviewedDocuments).length > 0 && <section className="mt-5 space-y-3 border-t pt-4">
                 <h3 className="text-sm font-medium">Dados dos documentos revisados pelo candidato</h3>
