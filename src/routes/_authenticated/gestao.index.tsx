@@ -23,6 +23,8 @@ import {
 import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/management/KpiCard";
 import { getManagementOverview } from "@/lib/management.functions";
+import { filterInput, useManagementFilter } from "@/components/management/ManagementFilterBar";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/gestao/")({
   head: () => ({
@@ -40,10 +42,12 @@ export const Route = createFileRoute("/_authenticated/gestao/")({
 
 function OverviewPage() {
   const fetcher = useServerFn(getManagementOverview);
+  const { filter, setDepartments } = useManagementFilter();
   const { data, isLoading } = useQuery({
-    queryKey: ["gestao", "overview", 6],
-    queryFn: () => fetcher({ data: { months: 6 } }),
+    queryKey: ["gestao", "overview", filter],
+    queryFn: () => fetcher({ data: filterInput(filter, 6) }),
   });
+  useEffect(() => { if (data?.departments) setDepartments(data.departments); }, [data?.departments, setDepartments]);
 
   if (isLoading || !data) return <SkeletonGrid />;
   const k = data.kpis;

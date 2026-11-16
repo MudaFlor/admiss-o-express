@@ -27,6 +27,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getDashboardStats, listCandidates } from "@/lib/candidates.functions";
 import { getManagementOverview } from "@/lib/management.functions";
+import { useState } from "react";
+import { ManagementFilterBar, defaultFilter, filterInput } from "@/components/management/ManagementFilterBar";
 import type { CandidateStatus } from "@/lib/candidate-status-counts";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -48,9 +50,11 @@ function DashboardPage() {
 
   const statsQ = useQuery({ queryKey: ["dash-stats"], queryFn: () => stats() });
   const recentQ = useQuery({ queryKey: ["dash-recent"], queryFn: () => list({ data: {} }) });
+  const [filter, setFilter] = useState(defaultFilter);
   const overviewQ = useQuery({
-    queryKey: ["dash-overview", 6],
-    queryFn: () => overview({ data: { months: 6 } }),
+    queryKey: ["dash-overview", filter],
+    queryFn: () => overview({ data: filterInput(filter, 6) }),
+    placeholderData: (prev) => prev,
   });
 
   const k = overviewQ.data?.kpis;
@@ -104,7 +108,8 @@ function DashboardPage() {
               : "Cadastre colaboradores e candidatos para começar a ver dados."}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <ManagementFilterBar filter={filter} onChange={setFilter} departments={overviewQ.data?.departments ?? []} />
           <Button asChild variant="outline" className="h-10 border-border bg-card hover:bg-secondary">
             <Link to="/recrutamento">
               <Briefcase className="h-4 w-4" /> Abrir vaga

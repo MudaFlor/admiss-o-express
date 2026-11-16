@@ -3,32 +3,21 @@ import { fail } from "@/lib/errors";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { countCandidateStatuses } from "@/lib/candidate-status-counts";
+import { buildBuckets, bucketRange, sameDepartment } from "@/lib/management-filter";
 import { checkNewEmployee, DUPLICATE_ID_MESSAGE } from "@/lib/validation/employee-id";
 
 const periodSchema = z
   .object({
     months: z.number().int().min(1).max(24).optional(),
+    period: z.enum(["anual", "mensal"]).optional(),
+    year: z.number().int().min(2000).max(2100).optional(),
+    month: z.number().int().min(1).max(12).optional(),
+    department: z.string().trim().max(120).optional(),
   })
   .optional();
 
 function monthKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function buildMonths(months: number) {
-  const out: { key: string; label: string; year: number; month: number }[] = [];
-  const now = new Date();
-  const cur = new Date(now.getFullYear(), now.getMonth(), 1);
-  for (let i = months - 1; i >= 0; i--) {
-    const d = new Date(cur.getFullYear(), cur.getMonth() - i, 1);
-    out.push({
-      key: monthKey(d),
-      label: d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""),
-      year: d.getFullYear(),
-      month: d.getMonth() + 1,
-    });
-  }
-  return out;
 }
 
 function daysBetween(a: string, b: string) {
@@ -42,21 +31,32 @@ export const getManagementOverview = createServerFn({ method: "POST" })
   .inputValidator((input) => periodSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const months = data?.months ?? 6;
-    const buckets = buildMonths(months);
-    const fromISO = `${buckets[0].key}-01`;
+    const dept = data?.department || undefined;
+    const buckets = buildBuckets({ period: data?.period, year: data?.year, month: data?.month, count: data?.months ?? 6 });
+    const months = buckets.length;
+    const { fromISO, toISO } = bucketRange(buckets);
 
     const [employeesRes, absencesRes, candidatesRes] = await Promise.all([
       supabase.from("employees").select("id, admission_date, termination_date, termination_reason, department, full_name"),
-      supabase.from("absences").select("id, employee_id, start_date, end_date, reason, hours_lost").gte("start_date", fromISO),
-      supabase.from("candidates").select("id, status, full_name, position, created_at"),
+      supabase.from("absences").select("id, employee_id, start_date, end_date, reason, hours_lost").gte("start_date", fromISO).lte("start_date", toISO),
+      supabase.from("candidates").select("id, status, full_name, position, created_at, departamento"),
     ]);
 
-    const employees = employeesRes.data ?? [];
-    const absences = absencesRes.data ?? [];
-    const candidates = candidatesRes.data ?? [];
+    const allEmployees = employeesRes.data ?? [];
+    const departments = [...new Set(
+      [...allEmployees.map((e) => e.department), ...(candidatesRes.data ?? []).map((c) => c.departamento)]
+        .map((d) => (d ?? "").trim()).filter(Boolean),
+    )].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const employees = allEmployees.filter((e) => sameDepartment(e.department, dept));
+    const empIds = new Set(employees.map((e) => e.id));
+    const absences = (absencesRes.data ?? []).filter((a) => empIds.has(a.employee_id));
+    const toEnd = new Date(`${toISO}T23:59:59`);
+    const candidates = (candidatesRes.data ?? []).filter(
+      (c) => sameDepartment(c.departamento, dept) && (!data?.period || (new Date(c.created_at) >= new Date(fromISO) && new Date(c.created_at) <= toEnd)),
+    );
 
     const activeNow = employees.filter((e) => !e.termination_date).length;
+    const inRange = (d: string | null) => !!d && new Date(d) >= new Date(fromISO) && new Date(d) <= toEnd;
 
     // Series
     const series = buckets.map((b) => {
@@ -90,19 +90,23 @@ export const getManagementOverview = createServerFn({ method: "POST" })
       };
     });
 
-    const fromDate = new Date(fromISO);
-    const periodAdmissions = employees.filter((e) => new Date(e.admission_date) >= fromDate).length;
+    const periodAdmissions = employees.filter((e) => inRange(e.admission_date)).length;
     const periodTerminations = employees.filter(
-      (e) => e.termination_date && new Date(e.termination_date) >= fromDate,
+      (e) => inRange(e.termination_date),
     ).length;
     const probationTerminations = employees.filter((e) => {
       if (!e.termination_date) return false;
-      if (new Date(e.termination_date) < fromDate) return false;
+      if (!inRange(e.termination_date)) return false;
       return daysBetween(e.admission_date, e.termination_date) <= 90;
     }).length;
 
-    const last = series[series.length - 1];
-    const prev = series[series.length - 2] ?? last;
+    // No modo anual do ano corrente, os indicadores "do mês" usam o mês atual (não meses futuros).
+    const nowD = new Date();
+    const curKey = `${nowD.getFullYear()}-${String(nowD.getMonth() + 1).padStart(2, "0")}`;
+    const curIdx = series.findIndex((x) => x.key === curKey);
+    const lastIdx = curIdx >= 0 ? curIdx : series.length - 1;
+    const last = series[lastIdx];
+    const prev = series[lastIdx - 1] ?? last;
 
     // Absence breakdown
     const absencesByReason = ["atestado", "falta_justificada", "falta_injustificada", "licenca"].map((r) => ({
@@ -130,13 +134,13 @@ export const getManagementOverview = createServerFn({ method: "POST" })
     const termReasons = ["pedido_demissao", "sem_justa_causa", "justa_causa", "fim_experiencia", "acordo"].map((r) => ({
       reason: r,
       count: employees.filter(
-        (e) => e.termination_reason === r && e.termination_date && new Date(e.termination_date) >= fromDate,
+        (e) => e.termination_reason === r && inRange(e.termination_date),
       ).length,
     }));
 
     // Recent terminations
     const recentTerminations = employees
-      .filter((e) => e.termination_date)
+      .filter((e) => inRange(e.termination_date))
       .sort((a, b) => (a.termination_date! < b.termination_date! ? 1 : -1))
       .slice(0, 10)
       .map((e) => ({
@@ -166,6 +170,7 @@ export const getManagementOverview = createServerFn({ method: "POST" })
 
     return {
       months,
+      departments,
       kpis: {
         active_employees: activeNow,
         absenteeism_rate: last?.absenteeism_rate ?? 0,
@@ -175,7 +180,7 @@ export const getManagementOverview = createServerFn({ method: "POST" })
         period_admissions: periodAdmissions,
         period_terminations: periodTerminations,
         probation_terminations: probationTerminations,
-        curriculos_periodo: candidates.filter((c) => new Date(c.created_at) >= fromDate).length,
+        curriculos_periodo: candidates.filter((c) => inRange(c.created_at)).length,
         em_integracao: pipeline.aprovados_aguardando,
       },
       series,

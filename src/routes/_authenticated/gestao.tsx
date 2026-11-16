@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
+import { ManagementFilterProvider, SharedManagementFilterBar } from "@/components/management/ManagementFilterBar";
 import { BarChart3, TrendingDown, Users2, LineChart } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/gestao")({
@@ -16,6 +17,7 @@ const tabs = [
 function GestaoLayout() {
   const { pathname } = useLocation();
   return (
+    <ManagementFilterProvider>
     <div className="flex h-full min-h-screen flex-col bg-background">
       <header className="border-b border-border/50 bg-card/40 backdrop-blur">
         <div className="mx-auto w-full max-w-7xl px-6 pt-8 pb-2">
@@ -23,9 +25,12 @@ function GestaoLayout() {
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
             Gestão executiva
           </div>
-          <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-foreground">
-            Dashboards de pessoas
-          </h1>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+            <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+              Dashboards de pessoas
+            </h1>
+            <SharedManagementFilterBar />
+          </div>
           <p className="mt-1 text-sm text-muted-foreground">
             Indicadores reais de absenteísmo, rotatividade e funil de admissão.
           </p>
@@ -57,5 +62,6 @@ function GestaoLayout() {
         <Outlet />
       </main>
     </div>
+    </ManagementFilterProvider>
   );
 }

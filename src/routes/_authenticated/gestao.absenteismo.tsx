@@ -16,6 +16,8 @@ import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/management/KpiCard";
 import { Activity, Clock, TrendingDown } from "lucide-react";
 import { getManagementOverview } from "@/lib/management.functions";
+import { filterInput, useManagementFilter } from "@/components/management/ManagementFilterBar";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/gestao/absenteismo")({
   head: () => ({
@@ -40,10 +42,12 @@ const reasonLabels: Record<string, string> = {
 
 function AbsenteismoPage() {
   const fetcher = useServerFn(getManagementOverview);
+  const { filter, setDepartments } = useManagementFilter();
   const { data, isLoading } = useQuery({
-    queryKey: ["gestao", "absenteismo", 12],
-    queryFn: () => fetcher({ data: { months: 12 } }),
+    queryKey: ["gestao", "absenteismo", filter],
+    queryFn: () => fetcher({ data: filterInput(filter, 12) }),
   });
+  useEffect(() => { if (data?.departments) setDepartments(data.departments); }, [data?.departments, setDepartments]);
 
   if (isLoading || !data) return <div className="h-40 animate-pulse rounded-lg bg-card/40" />;
 
