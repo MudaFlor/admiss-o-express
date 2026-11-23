@@ -3,7 +3,7 @@ import { fail } from "@/lib/errors";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { countCandidateStatuses } from "@/lib/candidate-status-counts";
-import { buildBuckets, bucketRange, sameDepartment } from "@/lib/management-filter";
+import { buildBuckets, bucketRange, sameDepartment, selectedPeriodRange } from "@/lib/management-filter";
 import { checkNewEmployee, DUPLICATE_ID_MESSAGE } from "@/lib/validation/employee-id";
 
 const periodSchema = z
@@ -35,6 +35,15 @@ export const getManagementOverview = createServerFn({ method: "POST" })
     const buckets = buildBuckets({ period: data?.period, year: data?.year, month: data?.month, count: data?.months ?? 6 });
     const months = buckets.length;
     const { fromISO, toISO } = bucketRange(buckets);
+    const now = new Date();
+    const selectedRange = data?.period
+      ? selectedPeriodRange({
+          period: data.period,
+          year: data.year ?? now.getFullYear(),
+          month: data.month ?? now.getMonth() + 1,
+        })
+      : { fromISO, toISO };
+    const { fromISO: periodFromISO, toISO: periodToISO } = selectedRange;
 
     const [employeesRes, absencesRes, candidatesRes] = await Promise.all([
       supabase.from("employees").select("id, admission_date, termination_date, termination_reason, department, full_name"),
@@ -50,13 +59,13 @@ export const getManagementOverview = createServerFn({ method: "POST" })
     const employees = allEmployees.filter((e) => sameDepartment(e.department, dept));
     const empIds = new Set(employees.map((e) => e.id));
     const absences = (absencesRes.data ?? []).filter((a) => empIds.has(a.employee_id));
-    const toEnd = new Date(`${toISO}T23:59:59`);
-    const candidates = (candidatesRes.data ?? []).filter(
-      (c) => sameDepartment(c.departamento, dept) && (!data?.period || (new Date(c.created_at) >= new Date(fromISO) && new Date(c.created_at) <= toEnd)),
-    );
+    const candidates = (candidatesRes.data ?? []).filter((c) => sameDepartment(c.departamento, dept));
 
     const activeNow = employees.filter((e) => !e.termination_date).length;
-    const inRange = (d: string | null) => !!d && new Date(d) >= new Date(fromISO) && new Date(d) <= toEnd;
+    const periodEnd = new Date(`${periodToISO}T23:59:59`);
+    const inRange = (d: string | null) => !!d && new Date(d) >= new Date(periodFromISO) && new Date(d) <= periodEnd;
+    const periodCandidates = candidates.filter((c) => inRange(c.created_at));
+    const periodAbsences = absences.filter((a) => inRange(a.start_date));
 
     // Series
     const series = buckets.map((b) => {
@@ -112,13 +121,13 @@ export const getManagementOverview = createServerFn({ method: "POST" })
     const absencesByReason = ["atestado", "falta_justificada", "falta_injustificada", "licenca"].map((r) => ({
       reason: r,
       hours: Math.round(
-        absences.filter((a) => a.reason === r).reduce((s, a) => s + Number(a.hours_lost ?? 0), 0) * 10,
+        periodAbsences.filter((a) => a.reason === r).reduce((s, a) => s + Number(a.hours_lost ?? 0), 0) * 10,
       ) / 10,
     }));
 
     // Top absentees
     const byEmp = new Map<string, number>();
-    for (const a of absences) byEmp.set(a.employee_id, (byEmp.get(a.employee_id) ?? 0) + Number(a.hours_lost ?? 0));
+    for (const a of periodAbsences) byEmp.set(a.employee_id, (byEmp.get(a.employee_id) ?? 0) + Number(a.hours_lost ?? 0));
     const empMap = new Map(employees.map((e) => [e.id, e]));
     const topAbsentees = [...byEmp.entries()]
       .map(([id, hours]) => ({
@@ -153,8 +162,8 @@ export const getManagementOverview = createServerFn({ method: "POST" })
         days: daysBetween(e.admission_date, e.termination_date!),
       }));
 
-    // Pipeline
-    const { counts, total } = countCandidateStatuses(candidates);
+    // Pipeline e detalhamentos acompanham exatamente o período escolhido.
+    const { counts, total } = countCandidateStatuses(periodCandidates);
     const pipeline = {
       curriculos: total,
       em_analise: counts.em_analise,
@@ -164,7 +173,7 @@ export const getManagementOverview = createServerFn({ method: "POST" })
       rejeitados: counts.rejeitado,
     };
 
-    const pendingOnboarding = candidates
+    const pendingOnboarding = periodCandidates
       .filter((c) => c.status === "aprovado")
       .map((c) => ({ id: c.id, name: c.full_name, position: c.position ?? "—", created_at: c.created_at }));
 
@@ -180,7 +189,7 @@ export const getManagementOverview = createServerFn({ method: "POST" })
         period_admissions: periodAdmissions,
         period_terminations: periodTerminations,
         probation_terminations: probationTerminations,
-        curriculos_periodo: candidates.filter((c) => inRange(c.created_at)).length,
+        curriculos_periodo: periodCandidates.length,
         em_integracao: pipeline.aprovados_aguardando,
       },
       series,

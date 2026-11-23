@@ -17,6 +17,7 @@ import { KpiCard } from "@/components/management/KpiCard";
 import { Activity, Clock, TrendingDown } from "lucide-react";
 import { getManagementOverview } from "@/lib/management.functions";
 import { filterInput, useManagementFilter } from "@/components/management/ManagementFilterBar";
+import { periodSummary } from "@/lib/management-filter";
 import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/gestao/absenteismo")({
@@ -59,13 +60,15 @@ function AbsenteismoPage() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <KpiCard label="Taxa atual" value={k.absenteeism_rate.toFixed(2)} unit="%" delta={k.absenteeism_delta} deltaInverse icon={TrendingDown} />
-        <KpiCard label="Horas perdidas (12m)" value={totalHours.toFixed(0)} unit="h" icon={Clock} />
+        <KpiCard label="Horas perdidas no período" value={totalHours.toFixed(0)} unit="h" icon={Clock} hint={periodSummary(filter)} />
         <KpiCard label="Colaboradores ativos" value={k.active_employees} icon={Activity} />
       </div>
 
       <Card className="border-border/50 bg-card/60 p-6 backdrop-blur-sm">
         <h2 className="font-display text-lg font-semibold text-foreground">Taxa mensal de absenteísmo</h2>
-        <p className="text-xs text-muted-foreground">12 meses</p>
+        <p className="text-xs text-muted-foreground">
+          {filter.period === "anual" ? periodSummary(filter) : `12 meses até ${periodSummary(filter)}`}
+        </p>
         <div className="mt-4 h-64">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data.series}>

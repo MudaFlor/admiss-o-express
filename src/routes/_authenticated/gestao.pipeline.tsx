@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/management/KpiCard";
 import { getManagementOverview } from "@/lib/management.functions";
 import { filterInput, useManagementFilter } from "@/components/management/ManagementFilterBar";
+import { periodSummary } from "@/lib/management-filter";
 import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/gestao/pipeline")({
@@ -47,15 +48,15 @@ function PipelinePage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Currículos no período" value={k.curriculos_periodo} icon={FileText} hint={`${data.months} meses`} />
+        <KpiCard label="Currículos no período" value={k.curriculos_periodo} icon={FileText} hint={periodSummary(filter)} />
         <KpiCard label="Em integração" value={k.em_integracao} icon={UserCheck} hint="aprovados aguardando admissão" />
-        <KpiCard label="Admissões" value={k.period_admissions} icon={UserPlus} />
-        <KpiCard label="Rescisões em experiência" value={k.probation_terminations} icon={UserMinus} hint="≤ 90 dias" />
+        <KpiCard label="Admissões" value={k.period_admissions} icon={UserPlus} hint={periodSummary(filter)} />
+        <KpiCard label="Rescisões em experiência" value={k.probation_terminations} icon={UserMinus} hint={periodSummary(filter)} />
       </div>
 
       <Card className="border-border/50 bg-card/60 p-6 backdrop-blur-sm">
         <h2 className="font-display text-lg font-semibold text-foreground">Funil de admissão</h2>
-        <p className="text-xs text-muted-foreground">Do currículo recebido à efetivação</p>
+        <p className="text-xs text-muted-foreground">Do currículo recebido à efetivação · {periodSummary(filter)}</p>
         <div className="mt-6 space-y-3">
           {funnel.map((f) => {
             const pct = (f.value / max) * 100;

@@ -19,6 +19,7 @@ import { KpiCard } from "@/components/management/KpiCard";
 import { Activity, UserMinus, UserPlus } from "lucide-react";
 import { getManagementOverview } from "@/lib/management.functions";
 import { filterInput, useManagementFilter } from "@/components/management/ManagementFilterBar";
+import { periodSummary } from "@/lib/management-filter";
 import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/gestao/rotatividade")({
@@ -65,14 +66,16 @@ function RotatividadePage() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Rotatividade (mês)" value={k.turnover_rate.toFixed(2)} unit="%" delta={k.turnover_delta} deltaInverse icon={Activity} />
-        <KpiCard label="Admissões (12m)" value={k.period_admissions} icon={UserPlus} />
-        <KpiCard label="Rescisões (12m)" value={k.period_terminations} icon={UserMinus} />
-        <KpiCard label="Em experiência" value={k.probation_terminations} hint="≤ 90 dias" icon={UserMinus} />
+        <KpiCard label="Admissões no período" value={k.period_admissions} icon={UserPlus} hint={periodSummary(filter)} />
+        <KpiCard label="Rescisões no período" value={k.period_terminations} icon={UserMinus} hint={periodSummary(filter)} />
+        <KpiCard label="Em experiência" value={k.probation_terminations} hint={periodSummary(filter)} icon={UserMinus} />
       </div>
 
       <Card className="border-border/50 bg-card/60 p-6 backdrop-blur-sm">
         <h2 className="font-display text-lg font-semibold text-foreground">Movimentação mensal</h2>
-        <p className="text-xs text-muted-foreground">Admissões, rescisões e taxa de rotatividade</p>
+        <p className="text-xs text-muted-foreground">
+          Admissões, rescisões e taxa de rotatividade · {filter.period === "anual" ? periodSummary(filter) : `12 meses até ${periodSummary(filter)}`}
+        </p>
         <div className="mt-4 h-72">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={data.series}>

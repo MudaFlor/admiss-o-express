@@ -1,6 +1,14 @@
 export type PeriodMode = "anual" | "mensal";
 export type ManagementFilter = { period: PeriodMode; year: number; month: number; department: string };
 
+export const MONTH_LABELS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+export function periodSummary(filter: Pick<ManagementFilter, "period" | "year" | "month">) {
+  return filter.period === "anual"
+    ? `Ano ${filter.year}`
+    : `${MONTH_LABELS[filter.month - 1]} de ${filter.year}`;
+}
+
 export type Bucket = { key: string; label: string; year: number; month: number };
 
 function monthKey(y: number, m: number) {
@@ -42,6 +50,11 @@ export function bucketRange(b: Bucket[]) {
   const last = b[b.length - 1];
   const lastDay = new Date(last.year, last.month, 0).getDate();
   return { fromISO: `${b[0].key}-01`, toISO: `${last.key}-${String(lastDay).padStart(2, "0")}` };
+}
+
+/** Intervalo dos totais: o ano inteiro no modo anual ou somente o mês escolhido no mensal. */
+export function selectedPeriodRange(opts: { period: PeriodMode; year: number; month: number }) {
+  return bucketRange(buildBuckets({ ...opts, count: opts.period === "anual" ? 12 : 1 }));
 }
 
 export function sameDepartment(value: string | null | undefined, filter?: string) {

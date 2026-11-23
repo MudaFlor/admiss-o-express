@@ -29,6 +29,7 @@ import { getDashboardStats, listCandidates } from "@/lib/candidates.functions";
 import { getManagementOverview } from "@/lib/management.functions";
 import { useState } from "react";
 import { ManagementFilterBar, defaultFilter, filterInput } from "@/components/management/ManagementFilterBar";
+import { periodSummary } from "@/lib/management-filter";
 import type { CandidateStatus } from "@/lib/candidate-status-counts";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -71,9 +72,9 @@ function DashboardPage() {
 
   const kpis = [
     { label: "Colaboradores ativos", value: k?.active_employees ?? 0, icon: Users, to: "/colaboradores" as const },
-    { label: "Candidatos no pipeline", value: candCount, icon: Briefcase, to: "/candidatos" as const },
-    { label: "Admissões no período", value: k?.period_admissions ?? 0, icon: UserPlus, to: "/gestao" as const },
-    { label: "Cadastros pendentes", value: statsQ.data?.counts.pendente ?? 0, icon: FileText, to: "/candidatos" as const },
+    { label: "Candidatos no pipeline", value: pipeline?.curriculos ?? 0, icon: Briefcase, to: "/candidatos" as const, detail: periodSummary(filter) },
+    { label: "Admissões no período", value: k?.period_admissions ?? 0, icon: UserPlus, to: "/gestao" as const, detail: periodSummary(filter) },
+    { label: "Cadastros pendentes", value: pipeline?.pendentes ?? 0, icon: FileText, to: "/candidatos" as const, detail: periodSummary(filter) },
     {
       label: "Absenteísmo (mês)",
       value: `${(k?.absenteeism_rate ?? 0).toFixed(2)}%`,
@@ -145,6 +146,7 @@ function DashboardPage() {
                     {kp.label}
                   </p>
                   <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{kp.value}</p>
+                  {kp.detail && <p className="mt-1 text-[11px] text-muted-foreground">{kp.detail}</p>}
                 </div>
                 <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/[0.04] blur-2xl transition-opacity group-hover:opacity-100" />
               </Card>
@@ -158,7 +160,7 @@ function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold tracking-tight">Pipeline de recrutamento</h2>
-            <p className="text-xs text-muted-foreground">Distribuição de candidatos por status</p>
+            <p className="text-xs text-muted-foreground">Distribuição de candidatos por status · {periodSummary(filter)}</p>
           </div>
           <Button asChild variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground">
             <Link to="/recrutamento">Ver kanban <ArrowUpRight className="h-3 w-3" /></Link>
@@ -188,7 +190,9 @@ function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-semibold tracking-tight">Movimentação de pessoas</h2>
-              <p className="text-xs text-muted-foreground">Admissões e desligamentos · últimos 6 meses</p>
+              <p className="text-xs text-muted-foreground">
+                Admissões e desligamentos · {filter.period === "anual" ? periodSummary(filter) : `6 meses até ${periodSummary(filter)}`}
+              </p>
             </div>
             <div className="flex items-center gap-3 text-xs">
               <span className="flex items-center gap-1.5 text-muted-foreground">

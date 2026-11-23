@@ -24,6 +24,7 @@ import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/management/KpiCard";
 import { getManagementOverview } from "@/lib/management.functions";
 import { filterInput, useManagementFilter } from "@/components/management/ManagementFilterBar";
+import { periodSummary } from "@/lib/management-filter";
 import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/gestao/")({
@@ -57,14 +58,18 @@ function OverviewPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Absenteísmo (mês)" value={k.absenteeism_rate.toFixed(2)} unit="%" delta={k.absenteeism_delta} deltaInverse icon={TrendingDown} hint="vs. mês anterior" />
         <KpiCard label="Rotatividade (mês)" value={k.turnover_rate.toFixed(2)} unit="%" delta={k.turnover_delta} deltaInverse icon={Activity} hint="vs. mês anterior" />
-        <KpiCard label="Admissões no período" value={k.period_admissions} icon={UserPlus} hint={`${data.months} meses`} />
-        <KpiCard label="Rescisões em experiência" value={k.probation_terminations} icon={UserMinus} hint="≤ 90 dias de casa" />
+        <KpiCard label="Admissões no período" value={k.period_admissions} icon={UserPlus} hint={periodSummary(filter)} />
+        <KpiCard label="Rescisões em experiência" value={k.probation_terminations} icon={UserMinus} hint={periodSummary(filter)} />
       </div>
 
       <Card className="border-border/50 bg-card/60 p-6 backdrop-blur-sm">
         <div className="mb-4">
           <h2 className="font-display text-lg font-semibold text-foreground">Evolução mensal</h2>
-          <p className="text-xs text-muted-foreground">Absenteísmo vs. rotatividade nos últimos {data.months} meses</p>
+          <p className="text-xs text-muted-foreground">
+            {filter.period === "anual"
+              ? `Absenteísmo vs. rotatividade · ${periodSummary(filter)}`
+              : `Absenteísmo vs. rotatividade · ${data.months} meses até ${periodSummary(filter)}`}
+          </p>
         </div>
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">

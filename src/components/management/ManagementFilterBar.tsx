@@ -5,9 +5,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import type { ManagementFilter } from "@/lib/management-filter";
+import { MONTH_LABELS, periodSummary, type ManagementFilter } from "@/lib/management-filter";
 
-const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const ALL = "__all__";
 
 export function defaultFilter(): ManagementFilter {
@@ -35,7 +34,7 @@ export function useManagementFilter() {
 }
 
 export function filterSummary(f: ManagementFilter) {
-  const p = f.period === "anual" ? `Ano ${f.year}` : `${MONTHS[f.month - 1]} ${f.year}`;
+  const p = periodSummary(f);
   return f.department ? `${p} · ${f.department}` : p;
 }
 
@@ -92,7 +91,7 @@ export function ManagementFilterBar({
               onValueChange={(v) => onChange({ ...filter, month: Number(v) })}
             >
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{MONTHS.map((m, i) => <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>)}</SelectContent>
+              <SelectContent>{MONTH_LABELS.map((m, i) => <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>)}</SelectContent>
             </Select>
           </div>
         </div>
