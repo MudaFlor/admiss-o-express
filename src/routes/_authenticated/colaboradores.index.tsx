@@ -4,7 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Brain, FolderOpen, Pencil, Plus, Search, Users } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Brain, FolderOpen, Pencil, Plus, Search, Users } from "lucide-react";
+import { sortEmployees, type EmployeeSort, type EmployeeSortKey } from "@/lib/employee-sort";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,6 +53,7 @@ function ColaboradoresPage() {
   const [importDate, setImportDate] = useState(today);
 
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<EmployeeSort>({ key: "full_name", direction: "asc" });
   const [manualOpen, setManualOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importSearch, setImportSearch] = useState("");
@@ -69,10 +71,17 @@ function ColaboradoresPage() {
 
   const filtered = useMemo(() => {
     const rows = q.data ?? [];
-    if (!search) return rows;
-    const s = search.toLowerCase();
-    return rows.filter((r) => r.full_name.toLowerCase().includes(s));
-  }, [q.data, search]);
+    const s = search.trim().toLocaleLowerCase("pt-BR");
+    const matching = s ? rows.filter((r) => r.full_name.toLocaleLowerCase("pt-BR").includes(s)) : rows;
+    return sortEmployees(matching, sort);
+  }, [q.data, search, sort]);
+
+  function toggleSort(key: EmployeeSortKey) {
+    setSort((current) => ({
+      key,
+      direction: current.key === key && current.direction === "asc" ? "desc" : "asc",
+    }));
+  }
 
   async function onManualCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -285,11 +294,11 @@ function ColaboradoresPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Cargo</TableHead>
-                <TableHead>Departamento</TableHead>
-                <TableHead>Admissão</TableHead>
-                <TableHead>Status</TableHead>
+                <SortableHead label="Nome" sortKey="full_name" sort={sort} onSort={toggleSort} />
+                <SortableHead label="Cargo" sortKey="position" sort={sort} onSort={toggleSort} />
+                <SortableHead label="Departamento" sortKey="department" sort={sort} onSort={toggleSort} />
+                <SortableHead label="Admissão" sortKey="admission_date" sort={sort} onSort={toggleSort} />
+                <SortableHead label="Status" sortKey="status" sort={sort} onSort={toggleSort} />
                 <TableHead className="text-right">Pasta / DISC</TableHead>
               </TableRow>
             </TableHeader>
@@ -370,6 +379,33 @@ function ColaboradoresPage() {
     </div>
   );
 }
+
+function SortableHead({ label, sortKey, sort, onSort }: {
+  label: string;
+  sortKey: EmployeeSortKey;
+  sort: EmployeeSort;
+  onSort: (key: EmployeeSortKey) => void;
+}) {
+  const active = sort.key === sortKey;
+  const nextDirection = active && sort.direction === "asc" ? "decrescente" : "crescente";
+  const Icon = !active ? ArrowUpDown : sort.direction === "asc" ? ArrowUp : ArrowDown;
+
+  return (
+    <TableHead aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}>
+      <button
+        type="button"
+        className="inline-flex items-center gap-1.5 rounded-sm font-medium hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        onClick={() => onSort(sortKey)}
+        aria-label={`Ordenar por ${label} em ordem ${nextDirection}`}
+        title={`Ordenar por ${label} em ordem ${nextDirection}`}
+      >
+        {label}
+        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+      </button>
+    </TableHead>
+  );
+}
+
 function AdmissionEditor({ value, onSave }: { value: string; onSave: (d: string) => Promise<void> }) {
   const [editing, setEditing] = useState(false);
   const [v, setV] = useState(value.slice(0, 10));
