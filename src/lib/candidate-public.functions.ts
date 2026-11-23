@@ -211,17 +211,20 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
     await assertUploadedFileIsSafe(data.storage_path);
 
     // Run OCR (no-op para tipos sem extração)
+    // Sem IA (créditos/instabilidade): aceita o arquivo e libera digitação manual.
     let ocr: Awaited<ReturnType<typeof runOcr>>;
+    let aiUnavailable = false;
     try {
       ocr = await runOcr(data.type, data.storage_path);
     } catch {
-      throw new Error("Não foi possível analisar o documento agora, tente novamente em instantes.");
+      aiUnavailable = true;
+      ocr = { status: "falha", confidence: 0, fields: {}, motivo: "IA indisponível — preenchimento manual" };
     }
-    if (isIllegible(data.type, ocr)) {
+    if (!aiUnavailable && isIllegible(data.type, ocr)) {
       await supabaseAdmin.storage.from("candidate-documents").remove([data.storage_path]);
       throw new Error(ILLEGIBLE_MESSAGE);
     }
-    if (data.type === "ctps" && !isCtpsDigital(ocr.fields)) {
+    if (!aiUnavailable && data.type === "ctps" && !isCtpsDigital(ocr.fields)) {
       await supabaseAdmin.storage.from("candidate-documents").remove([data.storage_path]);
       throw new Error(CTPS_DIGITAL_MESSAGE);
     }
@@ -295,7 +298,7 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
       }
     }
 
-    return { ...doc, ocr_fields: ocr.fields };
+    return { ...doc, ocr_fields: ocr.fields, ai_unavailable: aiUnavailable };
   });
 
 export const submitCandidateApplication = createServerFn({ method: "POST" })

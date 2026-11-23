@@ -577,6 +577,11 @@ function CandidatePage() {
       const result = await finalize({
         data: { token, type, storage_path: sig.path, dependent_id: opts?.dependent_id, label: opts?.label },
       });
+      if (result.ai_unavailable) {
+        toast.info("Documento recebido! A leitura automática está indisponível agora — preencha os dados manualmente nos campos.", { duration: 10000 });
+        qc.invalidateQueries({ queryKey: ["c", token] });
+        return;
+      }
       if (Object.keys(result.ocr_fields).length) setEditingDoc(result.id);
       // Pré-preenchimento do formulário com os campos extraídos por OCR do documento.
       // Só para documentos do titular (não dependente).

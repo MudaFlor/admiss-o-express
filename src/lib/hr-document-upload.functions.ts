@@ -54,17 +54,19 @@ export const finalizeHrDocumentUpload = createServerFn({ method: "POST" })
     const { advanceStage } = await import("@/lib/workflow/stage.server");
     await assertUploadedFileIsSafe(data.storage_path);
 
-    let ocr;
+    let ocr: Awaited<ReturnType<typeof runOcr>>;
+    let aiUnavailable = false;
     try {
       ocr = await runOcr(data.type, data.storage_path);
     } catch {
-      throw new Error("Não foi possível analisar o documento agora, tente novamente em instantes.");
+      aiUnavailable = true;
+      ocr = { status: "falha", confidence: 0, fields: {}, motivo: "IA indisponível — preenchimento manual" };
     }
-    if (isIllegible(data.type, ocr)) {
+    if (!aiUnavailable && isIllegible(data.type, ocr)) {
       await supabaseAdmin.storage.from("candidate-documents").remove([data.storage_path]);
       throw new Error(ILLEGIBLE_MESSAGE);
     }
-    if (data.type === "ctps" && !isCtpsDigital(ocr.fields)) {
+    if (!aiUnavailable && data.type === "ctps" && !isCtpsDigital(ocr.fields)) {
       await supabaseAdmin.storage.from("candidate-documents").remove([data.storage_path]);
       throw new Error(CTPS_DIGITAL_MESSAGE);
     }
@@ -88,7 +90,7 @@ export const finalizeHrDocumentUpload = createServerFn({ method: "POST" })
       await advanceStage(data.candidate_id, "ocr_concluido", { note: `OCR concluído: ${data.type}` });
     }
     await logAudit({ actor_user_id: context.userId, action: "hr_upload_doc", entity: "document", entity_id: doc!.id, metadata: { type: data.type } });
-    return { id: doc!.id, fields: Object.keys(ocr.fields).length };
+    return { id: doc!.id, fields: Object.keys(ocr.fields).length, ai_unavailable: aiUnavailable };
   });
 
 // RH assume a admissão: mantém documentos já enviados e encerra o link do candidato.
