@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, ArrowUpDown, Brain, FolderOpen, Hash, Pencil, Plus, Search, Users } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Hash, Pencil, Plus, Search, Users } from "lucide-react";
 import { sortEmployees, type EmployeeSort, type EmployeeSortKey } from "@/lib/employee-sort";
 import { filterEmployees } from "@/lib/employee-filter";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DiscCard } from "@/components/DiscCard";
 import { DeleteEmployeeButton } from "@/components/DeleteEmployeeButton";
 import { createEmployee, listEmployees, updateEmployeeAdmission } from "@/lib/management.functions";
 import { listCandidates } from "@/lib/candidates.functions";
@@ -323,7 +322,7 @@ function ColaboradoresPage() {
                 <SortableHead label="Departamento" sortKey="department" sort={sort} onSort={toggleSort} />
                 <SortableHead label="Admissão" sortKey="admission_date" sort={sort} onSort={toggleSort} />
                 <SortableHead label="Status" sortKey="status" sort={sort} onSort={toggleSort} />
-                <TableHead className="text-right">Pasta / DISC</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -346,7 +345,16 @@ function ColaboradoresPage() {
                 filtered.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium whitespace-nowrap">{c.matricula_esocial || "—"}</TableCell>
-                    <TableCell className="font-medium">{c.full_name}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link
+                        to="/colaboradores/$id"
+                        params={{ id: c.id }}
+                        className="rounded-sm font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        title={`Abrir a ficha de ${c.full_name}`}
+                      >
+                        {c.full_name}
+                      </Link>
+                    </TableCell>
                     <TableCell>{c.position ?? "—"}</TableCell>
                     <TableCell>{c.department ?? "—"}</TableCell>
                     <TableCell>
@@ -374,26 +382,7 @@ function ColaboradoresPage() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="space-x-1 whitespace-nowrap text-right">
-                      {(
-                        <Button size="sm" variant="outline" asChild>
-                          <Link to="/colaboradores/$id" params={{ id: c.id }}>
-                            <FolderOpen className="mr-1 h-3 w-3" /> Ficha
-                          </Link>
-                        </Button>
-                      )}
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="outline"><Brain className="mr-1 h-3 w-3" /> DISC</Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-                          <DialogHeader>
-                            <DialogTitle>{c.full_name}</DialogTitle>
-                            <DialogDescription>Envie o questionário e veja o histórico de perfis.</DialogDescription>
-                          </DialogHeader>
-                          <DiscCard employeeId={c.id} name={c.full_name} />
-                        </DialogContent>
-                      </Dialog>
+                    <TableCell className="whitespace-nowrap text-right">
                       <DeleteEmployeeButton id={c.id} name={c.full_name} compact />
                     </TableCell>
                   </TableRow>
