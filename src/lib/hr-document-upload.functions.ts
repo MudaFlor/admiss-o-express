@@ -126,11 +126,18 @@ export const submitApplicationByHr = createServerFn({ method: "POST" })
     await assertHr(context.supabase, context.userId, data.candidate_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { finalizeApplication } = await import("@/lib/admission/finalize.server");
+    const { resolveCandidateSex } = await import("@/lib/admission/candidate-sex");
     const { data: cand, error } = await supabaseAdmin.from("candidates").select("*").eq("id", data.candidate_id).single();
     if (error) fail(error);
     const fd = (cand!.form_data ?? {}) as Record<string, unknown>;
-    const rawSexo = String(cand!.sexo ?? fd.sexo ?? "").toLowerCase();
-    const sexo = rawSexo.startsWith("m") ? "masculino" : rawSexo.startsWith("f") ? "feminino" : null;
+    const { data: documents, error: documentsError } = await supabaseAdmin
+      .from("documents")
+      .select("type, dependent_id, ocr_data")
+      .eq("candidate_id", data.candidate_id)
+      .is("deleted_at", null);
+    if (documentsError) fail(documentsError);
+    const profile = (fd.perfil_recrutamento ?? {}) as Record<string, unknown>;
+    const sexo = resolveCandidateSex(cand!.sexo, { ...profile, ...fd }, documents ?? []);
     if (!sexo) throw new Error("Preencha o sexo (Feminino ou Masculino) na ficha.");
     await finalizeApplication(cand!, {
       form_data: { ...fd, email: fd.email ?? cand!.email ?? undefined },
