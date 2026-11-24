@@ -1,16 +1,3 @@
-# Ajustes do portal do candidato
-- [x] Tornar a escolha de sexo visível no acesso direto aos documentos; 8 testes existentes passaram e compilação OK. Conferência visual em link real pendente: nenhum portal acessível localizado nas fichas consultadas, sem renovar links ou alterar cadastros.
-- [x] Ampliar importação de currículo para imagem, Word e PDF, preservando leitura e arquivo original; 9 testes passaram e leitura de DOCX/JPG/PDF conferida no formulário autenticado, DOC processado sem inventar dados ausentes. Não foram salvos cadastros de teste.
-- [x] Criar fichas expansíveis dos dependentes no recrutamento, com dados da certidão e documentos por dependente; regras testadas e fichas reais conferidas com abertura/download dos anexos. Novos campos de OCR aplicam-se às próximas leituras, sem reprocessar arquivos existentes.
-- [ ] Exigir data de cadastro no início do formulário, preencher com hoje e adicionar coluna e filtro no cabeçalho da tabela; validar o fluxo.
-- [x] Adicionar currículo em PDF ao botão Novo candidato, preencher os dados extraídos, salvar o arquivo na ficha e testar o fluxo.
-- [ ] Exibir alerta de possível candidato duplicado durante o cadastro, comparando nome, telefone, e-mail e endereço com data anterior; testar nas duas telas do RH.
-- [x] Adicionar exclusão de colaborador com confirmação Sim/Não; cancelamento e exclusão testados pela lista e ficha com cadastro temporário removido, sem alterar colaboradores reais.
-- [ ] Separar cards Aprovados e Admitidos, corrigir contagens e verificar filtros com dados reais.
-- [ ] Corrigir matrícula obrigatória e única em novos cadastros, importações e alterações de colaboradores; testar bloqueios.
-- [x] Corrigir múltiplos anexos de cursos, vacinação e dependentes; 12 inserções verificadas e desfeitas sem alterar documentos existentes.
-- [x] Corrigir endereço público dos links de correção; testes de URL e WhatsApp passaram. Envio completo pela tela não exercitado; publicação pendente.
-- [x] Solicitar raça/cor por escolha e exigir e-mail no envio.
-- [x] Ler nome, emissão e CPF da CTPS obrigatória.
-- [x] Exibir extrações para revisão editável antes do envio.
-- [x] Validar regras com 18 testes e testar upload real de CTPS fictícia, extração e revisão no portal. Envio final completo ao RH não exercitado.
+# Ajustes atuais
+- [x] Portal do candidato: permitir anexar primeiro os documentos do dependente, preencher campos editáveis por OCR e salvar nomes em maiúsculas sem acentos.
+- [x] Visualização de documentos do candidato: adicionar rotação da imagem nos sentidos horário e anti-horário.

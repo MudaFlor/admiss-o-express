@@ -19,6 +19,11 @@ import { isAllowedExtension } from "@/lib/upload-rules";
 import { candidateContactSchema, reviewedDocumentsSchema, reviewedOcrData, requiresCtps } from "@/lib/validation/candidate-submission";
 import { crossCheckCandidate, extractDeclaredFromFormData, blockingIssues } from "@/lib/validation/cross-check";
 import { resolveCandidateSex } from "@/lib/admission/candidate-sex";
+import {
+  DEPENDENT_NAME_PLACEHOLDER,
+  dependentOcrPatch,
+  normalizeDependentName,
+} from "@/lib/dependent-record";
 
 const clientIp = createServerOnlyFn((): string => {
   return getRequestIP({ xForwardedFor: true }) ?? "unknown";
@@ -30,6 +35,7 @@ const LIMIT_UPLOAD = { limit: 20, windowMs: 60_000 };    // 20 uploads/min
 const LIMIT_CONSENT = { limit: 5, windowMs: 60_000 };    // 5 tentativas de assinatura/min
 
 type DocType = Database["public"]["Enums"]["document_type"];
+type DependentRow = Database["public"]["Tables"]["dependents"]["Row"];
 
 const ALL_DOC_TYPES: readonly DocType[] = [
   "rg", "cpf", "cnh", "ctps", "titulo_eleitor", "foto_3x4", "certidao",
@@ -133,7 +139,10 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
         deletion_requested_at: candidate.deletion_requested_at,
       },
       documents: docsWithUrls,
-      dependents: dependents ?? [],
+      dependents: (dependents ?? []).map((dependent) => ({
+        ...dependent,
+        full_name: normalizeDependentName(dependent.full_name),
+      })),
       correction: (corrections?.[0] as
         | { id: string; fields: string[]; documents: { type: string; label: string }[]; note: string | null; created_at: string }
         | undefined) ?? null,
@@ -204,6 +213,7 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
         type: DocTypeEnum,
         storage_path: z.string().min(3).max(300),
         dependent_id: z.string().uuid().optional(),
+        create_dependent: z.boolean().optional(),
         label: z.string().trim().max(120).optional(),
       })
       .parse(input),
@@ -214,6 +224,28 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
     requireConsent(candidate);
     assertPathBelongsToCandidate(data.storage_path, candidate.id);
     await assertUploadedFileIsSafe(data.storage_path);
+
+    const canCreateDependent = data.type === "dependente_certidao" || data.type === "dependente_rg_cpf";
+    if (data.create_dependent && !canCreateDependent) {
+      throw new Error("Para iniciar o cadastro, anexe a certidão de nascimento ou o RG/CPF do dependente.");
+    }
+    if (data.create_dependent && data.dependent_id) {
+      throw new Error("Não é possível criar e vincular um dependente ao mesmo tempo.");
+    }
+
+    // Um documento nunca pode ser associado ao dependente de outro candidato.
+    let existingDependent: DependentRow | null = null;
+    if (data.dependent_id) {
+      const { data: dependent, error } = await supabaseAdmin
+        .from("dependents")
+        .select("*")
+        .eq("id", data.dependent_id)
+        .eq("candidate_id", candidate.id)
+        .maybeSingle();
+      if (error) fail(error);
+      if (!dependent) throw new Error("Dependente não encontrado");
+      existingDependent = dependent;
+    }
 
     // Run OCR (no-op para tipos sem extração)
     // Sem IA (créditos/instabilidade): aceita o arquivo e libera digitação manual.
@@ -234,6 +266,29 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
       throw new Error(CTPS_DIGITAL_MESSAGE);
     }
 
+    // No fluxo "documento primeiro", o OCR cria o cadastro já preenchido.
+    // Sem nome legível, um campo provisório obriga a revisão manual na tela.
+    let dependentId = data.dependent_id ?? null;
+    let createdDependent: DependentRow | null = null;
+    if (data.create_dependent) {
+      const extracted = dependentOcrPatch({}, ocr.fields);
+      const { data: dependent, error } = await supabaseAdmin
+        .from("dependents")
+        .insert({
+          candidate_id: candidate.id,
+          full_name: extracted.full_name ?? DEPENDENT_NAME_PLACEHOLDER,
+          relationship: "filho",
+          birth_date: extracted.birth_date ?? null,
+          cpf: extracted.cpf ?? null,
+          rg: extracted.rg ?? null,
+        })
+        .select("*")
+        .single();
+      if (error) fail(error);
+      createdDependent = dependent;
+      dependentId = dependent.id;
+    }
+
     // Tipos single-file: substitui o anterior. Multi-file: mantém histórico.
     if (!MULTI_FILE_TYPES.has(data.type)) {
       let del = supabaseAdmin
@@ -241,7 +296,7 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
         .delete()
         .eq("candidate_id", candidate.id)
         .eq("type", data.type);
-      if (data.dependent_id) del = del.eq("dependent_id", data.dependent_id);
+      if (dependentId) del = del.eq("dependent_id", dependentId);
       else del = del.is("dependent_id", null);
       await del;
     }
@@ -261,29 +316,22 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
         ocr_data: ocrPayload as never,
         ocr_confidence: ocr.confidence,
         status: "pendente",
-        dependent_id: data.dependent_id ?? null,
+        dependent_id: dependentId,
         label: data.label ?? null,
       })
       .select("id, type, ocr_data, ocr_confidence, status, dependent_id, label")
       .single();
     if (error) fail(error);
 
-    if (data.dependent_id && ocr.status === "sucesso" && (data.type === "dependente_rg_cpf" || data.type === "dependente_certidao")) {
-      const { data: dep } = await supabaseAdmin
-        .from("dependents")
-        .select("id, cpf, birth_date")
-        .eq("id", data.dependent_id)
-        .eq("candidate_id", candidate.id)
-        .maybeSingle();
-      if (dep) {
-        const patch: Record<string, string> = {};
-        const cpfDigits = String(ocr.fields.cpf ?? "").replace(/\D/g, "");
-        if (!dep.cpf && cpfDigits.length === 11) patch.cpf = cpfDigits;
-        const m = String(ocr.fields.data_nascimento ?? "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-        if (!dep.birth_date && m) patch.birth_date = `${m[3]}-${m[2]}-${m[1]}`;
-        if (Object.keys(patch).length) {
-          await supabaseAdmin.from("dependents").update(patch as never).eq("id", dep.id);
-        }
+    if (existingDependent && ocr.status === "sucesso" && canCreateDependent) {
+      const patch = dependentOcrPatch(existingDependent, ocr.fields);
+      if (Object.keys(patch).length) {
+        const { error: patchError } = await supabaseAdmin
+          .from("dependents")
+          .update(patch)
+          .eq("id", existingDependent.id)
+          .eq("candidate_id", candidate.id);
+        if (patchError) fail(patchError);
       }
     }
 
@@ -303,7 +351,7 @@ export const finalizeDocumentUpload = createServerFn({ method: "POST" })
       }
     }
 
-    return { ...doc, ocr_fields: ocr.fields, ai_unavailable: aiUnavailable };
+    return { ...doc, ocr_fields: ocr.fields, ai_unavailable: aiUnavailable, dependent: createdDependent };
   });
 
 export const submitCandidateApplication = createServerFn({ method: "POST" })
@@ -387,7 +435,7 @@ export const upsertDependent = createServerFn({ method: "POST" })
     requireConsent(candidate);
     const payload = {
       candidate_id: candidate.id,
-      full_name: data.full_name,
+      full_name: normalizeDependentName(data.full_name),
       relationship: data.relationship || null,
       birth_date: data.birth_date || null,
       cpf: data.cpf || null,

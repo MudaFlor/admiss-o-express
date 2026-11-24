@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildDependentRecord, DEPENDENT_CERTIFICATE_FIELDS, formatDependentCpf } from "./dependent-record";
+import {
+  buildDependentRecord,
+  DEPENDENT_CERTIFICATE_FIELDS,
+  DEPENDENT_NAME_PLACEHOLDER,
+  dependentOcrPatch,
+  formatDependentCpf,
+  normalizeDependentName,
+} from "./dependent-record";
 
 const dep = { id: "child-1", full_name: "Dependente", birth_date: "2019-03-20", cpf: "12345678901", relationship: "filho" };
 const certificate = { id: "doc-1", type: "dependente_certidao", dependent_id: dep.id, storage_path: "certidao.pdf", ocr_data: { values: { numero_nativivo: "0012345", matricula: "000123456789", livro: "A-12", pagina: "34" } } };
@@ -38,6 +45,22 @@ describe("ficha de dependentes", () => {
   });
   it("solicita ao OCR todos os campos da certidão requeridos", () => {
     for (const field of ["nome", "data_nascimento", "cpf", "numero_nativivo", "matricula", "livro", "pagina"]) expect(DEPENDENT_CERTIFICATE_FIELDS).toContain(field);
+  });
+  it("salva nomes em maiúsculas e sem acentos", () => {
+    expect(normalizeDependentName("  João   da Conceição ")).toBe("JOAO DA CONCEICAO");
+    expect(buildDependentRecord({ ...dep, full_name: "José María" }, []).fullName).toBe("JOSE MARIA");
+  });
+  it("preenche os campos vazios com os dados lidos dos documentos", () => {
+    expect(dependentOcrPatch(
+      { full_name: DEPENDENT_NAME_PLACEHOLDER, birth_date: null, cpf: null, rg: null },
+      { nome: "Ana Júlia", data_nascimento: "20/03/2019", cpf: "123.456.789-01", rg: "12.345.678-9" },
+    )).toEqual({ full_name: "ANA JULIA", birth_date: "2019-03-20", cpf: "12345678901", rg: "12.345.678-9" });
+  });
+  it("não sobrescreve dados já revisados pelo candidato", () => {
+    expect(dependentOcrPatch(
+      { full_name: "NOME REVISADO", birth_date: "2000-01-02", cpf: "12345678901", rg: "RG-1" },
+      { nome: "OUTRO NOME", data_nascimento: "03/04/2005", cpf: "98765432100", rg: "RG-2" },
+    )).toEqual({});
   });
 });
 import { formatCivilRegistration as fcr } from "./dependent-record";

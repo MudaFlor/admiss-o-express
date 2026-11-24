@@ -44,6 +44,7 @@ import { CORRECTION_FIELD_LABEL } from "@/lib/corrections";
 import { validateFile } from "@/lib/upload-rules";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { candidateContactIssues, RACE_OPTIONS, reviewedOcrData } from "@/lib/validation/candidate-submission";
+import { DEPENDENT_NAME_PLACEHOLDER, normalizeDependentName } from "@/lib/dependent-record";
 
 type SignatureDeviceInfo = {
   user_agent?: string;
@@ -393,7 +394,7 @@ function CandidatePage() {
     );
 
   if (!q.data) return null;
-  const { candidate, documents, correction } = q.data;
+  const { candidate, documents, dependents, correction } = q.data;
 
   if (candidate.deletion_requested_at) {
     return (
@@ -566,8 +567,12 @@ function CandidatePage() {
     setStep(2);
   }
 
-  async function uploadDoc(type: DocType, original: File, opts?: { dependent_id?: string; label?: string }) {
-    const key = `${type}:${opts?.dependent_id ?? ""}`;
+  async function uploadDoc(
+    type: DocType,
+    original: File,
+    opts?: { dependent_id?: string; create_dependent?: boolean; label?: string },
+  ): Promise<DependentRow | null> {
+    const key = `${type}:${opts?.dependent_id ?? (opts?.create_dependent ? "novo" : "")}`;
     setUploading(key);
     try {
       const file = await compressImageFile(original);
@@ -578,29 +583,37 @@ function CandidatePage() {
       const up = await fetch(sig.signedUrl, { method: "PUT", body: file, headers: { "content-type": file.type } });
       if (!up.ok) throw new Error("Upload falhou");
       const result = await finalize({
-        data: { token, type, storage_path: sig.path, dependent_id: opts?.dependent_id, label: opts?.label },
+        data: {
+          token,
+          type,
+          storage_path: sig.path,
+          dependent_id: opts?.dependent_id,
+          create_dependent: opts?.create_dependent,
+          label: opts?.label,
+        },
       });
+      const isDependentDocument = Boolean(opts?.dependent_id || opts?.create_dependent);
       if (result.ai_unavailable) {
         toast.info("Documento recebido! A leitura automática está indisponível agora — preencha os dados manualmente nos campos.", { duration: 10000 });
-        qc.invalidateQueries({ queryKey: ["c", token] });
-        return;
-      }
-      if (Object.keys(result.ocr_fields).length) setEditingDoc(result.id);
-      // Pré-preenchimento do formulário com os campos extraídos por OCR do documento.
-      // Só para documentos do titular (não dependente).
-      if (!opts?.dependent_id) {
-        const filled = mergeOcrIntoForm(type, (result as { ocr_fields?: Record<string, string> }).ocr_fields ?? {});
+      } else if (opts?.create_dependent) {
+        toast.success("Documento lido! Revise e corrija os dados do dependente antes de continuar.", { duration: 8000 });
+      } else if (!opts?.dependent_id) {
+        // Pré-preenchimento do formulário somente com documentos do titular.
+        const filled = mergeOcrIntoForm(type, result.ocr_fields ?? {});
         if (filled > 0) {
           toast.success(`Documento enviado. ${filled} campo(s) preenchido(s) pelo ${DOC_LABEL[type] ?? "documento"}.`);
         } else {
           toast.success("Documento enviado!");
         }
       } else {
-        toast.success("Documento enviado!");
+        toast.success("Documento lido! Os campos vazios do dependente foram preenchidos.");
       }
-      qc.invalidateQueries({ queryKey: ["c", token] });
+      if (!isDependentDocument && Object.keys(result.ocr_fields).length) setEditingDoc(result.id);
+      await qc.invalidateQueries({ queryKey: ["c", token] });
+      return result.dependent;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro no upload", { duration: 10000 });
+      return null;
     } finally {
       setUploading(null);
     }
@@ -656,6 +669,11 @@ function CandidatePage() {
   }
 
   async function handleSubmit() {
+    if (dependents.some((dependent) => normalizeDependentName(dependent.full_name) === DEPENDENT_NAME_PLACEHOLDER)) {
+      setDocStep(DOCS.length);
+      toast.error("Revise o nome do dependente antes de enviar.", { duration: 10000 });
+      return;
+    }
     if (form.sexo !== "feminino" && form.sexo !== "masculino") {
       toast.error("Selecione o sexo (Feminino ou Masculino) antes de enviar.", { duration: 10000 });
       return;
@@ -1605,11 +1623,21 @@ type DocRow = {
   dependent_id: string | null;
 };
 
-function DependentsBlock(props: {
+type DependentDraft = {
+  full_name: string;
+  relationship: string;
+  birth_date: string;
+  cpf: string;
+  rg: string;
+};
+
+type DependentActions = {
   token: string;
-  dependents: DependentRow[];
-  documents: DocRow[];
-  uploadDoc: (type: DocType, file: File, opts?: { dependent_id?: string; label?: string }) => Promise<void>;
+  uploadDoc: (
+    type: DocType,
+    file: File,
+    opts?: { dependent_id?: string; create_dependent?: boolean; label?: string },
+  ) => Promise<DependentRow | null>;
   uploading: string | null;
   saveDependent: (args: {
     data: {
@@ -1625,189 +1653,346 @@ function DependentsBlock(props: {
   dropDependent: (args: { data: { token: string; id: string } }) => Promise<{ ok: boolean }>;
   dropDoc: (args: { data: { token: string; id: string } }) => Promise<{ ok: boolean }>;
   onChange: () => void;
+};
+
+const emptyDependentDraft = (): DependentDraft => ({
+  full_name: "",
+  relationship: "filho",
+  birth_date: "",
+  cpf: "",
+  rg: "",
+});
+
+function DependentFields({ draft, onChange, prefix }: {
+  draft: DependentDraft;
+  onChange: (patch: Partial<DependentDraft>) => void;
+  prefix: string;
 }) {
-  const { token, dependents, documents, uploadDoc, uploading, saveDependent, dropDependent, dropDoc, onChange } = props;
+  return (
+    <div className="space-y-2">
+      <div>
+        <Label htmlFor={`${prefix}-name`} className="text-[11px]">Nome completo</Label>
+        <Input
+          id={`${prefix}-name`}
+          placeholder="NOME COMPLETO"
+          value={draft.full_name}
+          onChange={(e) => onChange({ full_name: normalizeDependentName(e.target.value) })}
+        />
+      </div>
+      <Grid2>
+        <div>
+          <Label htmlFor={`${prefix}-relationship`} className="text-[11px]">Parentesco</Label>
+          <select
+            id={`${prefix}-relationship`}
+            className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+            value={draft.relationship}
+            onChange={(e) => onChange({ relationship: e.target.value })}
+          >
+            <option value="filho">Filho(a)</option>
+            <option value="conjuge">Cônjuge</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+        <div>
+          <Label htmlFor={`${prefix}-birth`} className="text-[11px]">Data de nascimento</Label>
+          <Input
+            id={`${prefix}-birth`}
+            type="date"
+            value={draft.birth_date}
+            onChange={(e) => onChange({ birth_date: e.target.value })}
+          />
+        </div>
+      </Grid2>
+      <Grid2>
+        <div>
+          <Label htmlFor={`${prefix}-cpf`} className="text-[11px]">CPF</Label>
+          <Input
+            id={`${prefix}-cpf`}
+            placeholder="000.000.000-00"
+            value={draft.cpf}
+            onChange={(e) => onChange({ cpf: maskCpf(e.target.value) })}
+          />
+        </div>
+        <div>
+          <Label htmlFor={`${prefix}-rg`} className="text-[11px]">RG</Label>
+          <Input
+            id={`${prefix}-rg`}
+            placeholder="RG"
+            value={draft.rg}
+            onChange={(e) => onChange({ rg: e.target.value })}
+          />
+        </div>
+      </Grid2>
+    </div>
+  );
+}
+
+function DependentUploadButton({ type, label, uploadKey, uploading, onFile }: {
+  type: DocType;
+  label: string;
+  uploadKey: string;
+  uploading: string | null;
+  onFile: (type: DocType, file: File) => void;
+}) {
+  const busy = uploading === uploadKey;
+  return (
+    <label className={`cursor-pointer rounded-md border border-dashed p-3 text-center text-xs font-medium ${busy ? "opacity-60" : "hover:bg-accent"}`}>
+      <input
+        type="file"
+        accept="application/pdf,image/jpeg,image/png"
+        className="hidden"
+        disabled={busy}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onFile(type, file);
+          e.target.value = "";
+        }}
+      />
+      <span className="flex items-center justify-center gap-2">
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+        {busy ? "Lendo documento..." : label}
+      </span>
+    </label>
+  );
+}
+
+function DependentCard({ dep, documents, ...actions }: DependentActions & { dep: DependentRow; documents: DocRow[] }) {
+  const { token, uploadDoc, uploading, saveDependent, dropDependent, dropDoc, onChange } = actions;
+  const [draft, setDraft] = useState<DependentDraft>(() => ({
+    full_name: normalizeDependentName(dep.full_name),
+    relationship: dep.relationship ?? "filho",
+    birth_date: dep.birth_date ?? "",
+    cpf: dep.cpf ?? "",
+    rg: dep.rg ?? "",
+  }));
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setDraft({
+      full_name: normalizeDependentName(dep.full_name),
+      relationship: dep.relationship ?? "filho",
+      birth_date: dep.birth_date ?? "",
+      cpf: dep.cpf ?? "",
+      rg: dep.rg ?? "",
+    });
+  }, [dep.id, dep.full_name, dep.relationship, dep.birth_date, dep.cpf, dep.rg]);
+
+  const age = dep.birth_date
+    ? Math.floor((Date.now() - new Date(`${dep.birth_date}T12:00:00`).getTime()) / (365.25 * 24 * 3600 * 1000))
+    : null;
+  const needsRgCpf = age !== null && age >= 21;
+  const needsVacina = age !== null && age < 7;
+  const depDocList: Array<{ type: DocType; label: string; required: boolean }> = [
+    { type: "dependente_certidao", label: "Certidão de nascimento", required: true },
+    { type: "dependente_rg_cpf", label: "RG e CPF", required: needsRgCpf },
+    { type: "dependente_vacinacao", label: "Carteira de vacinação", required: needsVacina },
+    { type: "dependente_escolar", label: "Comprovante escolar", required: false },
+  ];
+
+  async function save() {
+    if (!draft.full_name.trim() || normalizeDependentName(draft.full_name) === DEPENDENT_NAME_PLACEHOLDER) {
+      return toast.error("Informe o nome do dependente");
+    }
+    setSaving(true);
+    try {
+      await saveDependent({ data: { token, id: dep.id, ...draft } });
+      toast.success("Dados do dependente salvos");
+      onChange();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar dependente");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-md border p-3">
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <div>
+          <div className="text-sm font-medium">Dados do dependente</div>
+          <div className="text-[11px] text-muted-foreground">
+            Revise os dados lidos pelo OCR e corrija se necessário. {age !== null ? `${age} anos.` : ""}
+          </div>
+        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          aria-label={`Remover ${dep.full_name}`}
+          onClick={async () => {
+            if (!confirm("Remover este dependente?")) return;
+            await dropDependent({ data: { token, id: dep.id } });
+            onChange();
+          }}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
+      <DependentFields draft={draft} prefix={`dependent-${dep.id}`} onChange={(patch) => setDraft((current) => ({ ...current, ...patch }))} />
+      <Button size="sm" variant="outline" className="mt-2 w-full" disabled={saving} onClick={save}>
+        {saving ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+        Salvar dados do dependente
+      </Button>
+
+      <div className="mt-4 space-y-2 border-t pt-3">
+        <div className="text-xs font-semibold">Documentos e leitura OCR</div>
+        {depDocList.map((document) => {
+          const files = documents.filter((item) => item.type === document.type);
+          const key = `${document.type}:${dep.id}`;
+          return (
+            <div key={document.type} className="space-y-1 rounded bg-muted/30 p-2 text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <div className="font-medium">
+                  {document.label}
+                  {document.required && <span className="ml-1 text-destructive">*</span>}
+                </div>
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/png"
+                    className="hidden"
+                    disabled={uploading === key}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) uploadDoc(document.type, file, { dependent_id: dep.id });
+                      e.target.value = "";
+                    }}
+                  />
+                  <span className="inline-flex h-7 items-center gap-1 rounded-md border bg-background px-2 text-xs hover:bg-accent">
+                    {uploading === key ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                    {uploading === key ? "Lendo..." : "Enviar"}
+                  </span>
+                </label>
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                {files.length === 0 ? "Nenhum arquivo" : `${files.length} arquivo(s)`}
+                {files.map((file) => (
+                  <span key={file.id} className="ml-1">
+                    · <a href={file.signed_url ?? "#"} target="_blank" rel="noreferrer" className="text-primary underline">ver</a>
+                    <button
+                      className="ml-1 text-destructive"
+                      aria-label="Excluir documento"
+                      onClick={async () => {
+                        await dropDoc({ data: { token, id: file.id } });
+                        onChange();
+                      }}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function DependentsBlock(props: DependentActions & { dependents: DependentRow[]; documents: DocRow[] }) {
+  const { token, dependents, documents, uploadDoc, uploading, saveDependent, onChange } = props;
   const [hasDeps, setHasDeps] = useState<"sim" | "nao" | null>(dependents.length > 0 ? "sim" : null);
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState({ full_name: "", relationship: "filho", birth_date: "", cpf: "", rg: "" });
+  const [manual, setManual] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState<DependentDraft>(emptyDependentDraft());
 
   async function addDep() {
     if (!draft.full_name.trim()) return toast.error("Informe o nome");
+    setSaving(true);
     try {
       await saveDependent({ data: { token, ...draft } });
       toast.success("Dependente adicionado");
-      setDraft({ full_name: "", relationship: "filho", birth_date: "", cpf: "", rg: "" });
+      setDraft(emptyDependentDraft());
       setAdding(false);
+      setManual(false);
       onChange();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao adicionar dependente");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function startWithDocument(type: DocType, file: File) {
+    const created = await uploadDoc(type, file, { create_dependent: true });
+    if (created) {
+      setAdding(false);
+      setManual(false);
+      setDraft(emptyDependentDraft());
     }
   }
 
   return (
     <Card>
       <CardContent className="space-y-3 p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div>
             <div className="text-sm font-semibold">Dependentes ou filhos</div>
             <div className="text-xs text-muted-foreground">Possui filhos ou dependentes?</div>
           </div>
           <div className="flex gap-1">
-            <Button size="sm" variant={hasDeps === "sim" ? "default" : "outline"} onClick={() => setHasDeps("sim")}>
-              Sim
-            </Button>
-            <Button size="sm" variant={hasDeps === "nao" ? "default" : "outline"} onClick={() => setHasDeps("nao")}>
-              Não
-            </Button>
+            <Button size="sm" variant={hasDeps === "sim" ? "default" : "outline"} onClick={() => setHasDeps("sim")}>Sim</Button>
+            <Button size="sm" variant={hasDeps === "nao" ? "default" : "outline"} onClick={() => setHasDeps("nao")}>Não</Button>
           </div>
         </div>
 
         {hasDeps === "sim" && (
-          <div className="space-y-2">
-            {dependents.map((dep) => {
-              const depDocs = documents.filter((d) => d.dependent_id === dep.id);
-              const age = dep.birth_date
-                ? Math.floor((Date.now() - new Date(dep.birth_date).getTime()) / (365.25 * 24 * 3600 * 1000))
-                : null;
-              const needsRgCpf = age !== null && age >= 21;
-              const needsVacina = age !== null && age < 7;
-              const depDocList: Array<{ type: DocType; label: string; required: boolean }> = [
-                { type: "dependente_certidao", label: "Certidão de nascimento", required: true },
-                { type: "dependente_rg_cpf", label: "RG e CPF", required: needsRgCpf },
-                { type: "dependente_vacinacao", label: "Carteira de vacinação", required: needsVacina },
-                { type: "dependente_escolar", label: "Comprovante escolar", required: false },
-              ];
-              return (
-                <div key={dep.id} className="rounded-md border p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="text-sm font-medium">{dep.full_name}</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        {dep.relationship ?? "—"} {age !== null ? `· ${age} anos` : ""}
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={async () => {
-                        if (!confirm("Remover este dependente?")) return;
-                        await dropDependent({ data: { token, id: dep.id } });
-                        onChange();
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  <div className="mt-2 space-y-1">
-                    {depDocList.map((dd) => {
-                      const files = depDocs.filter((x) => x.type === dd.type);
-                      const key = `${dd.type}:${dep.id}`;
-                      return (
-                        <div key={dd.type} className="flex items-center justify-between gap-2 text-xs">
-                          <div className="flex-1">
-                            <span className="font-medium">{dd.label}</span>
-                            {dd.required && <span className="ml-1 text-rose-600">*</span>}
-                            <div className="text-[11px] text-muted-foreground">
-                              {files.length === 0 ? "Nenhum arquivo" : `${files.length} arquivo(s)`}
-                              {files.map((f) => (
-                                <span key={f.id} className="ml-1">
-                                  ·{" "}
-                                  <a
-                                    href={f.signed_url ?? "#"}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-primary underline"
-                                  >
-                                    ver
-                                  </a>
-                                  <button
-                                    className="ml-1 text-rose-600"
-                                    onClick={async () => {
-                                      await dropDoc({ data: { token, id: f.id } });
-                                      onChange();
-                                    }}
-                                  >
-                                    ×
-                                  </button>
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          <label className="cursor-pointer">
-                            <input
-                              type="file"
-                              accept="application/pdf,image/jpeg,image/png"
-                              className="hidden"
-                              disabled={uploading === key}
-                              onChange={(e) => {
-                                const f = e.target.files?.[0];
-                                if (f) uploadDoc(dd.type, f, { dependent_id: dep.id });
-                              }}
-                            />
-                            <span className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border bg-background px-2 text-xs hover:bg-accent">
-                              {uploading === key ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Upload className="h-3 w-3" />
-                              )}
-                              Enviar
-                            </span>
-                          </label>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+          <div className="space-y-3">
+            {dependents.map((dep) => (
+              <DependentCard
+                key={dep.id}
+                {...props}
+                dep={dep}
+                documents={documents.filter((document) => document.dependent_id === dep.id)}
+              />
+            ))}
 
             {adding ? (
-              <div className="space-y-2 rounded-md border bg-muted/30 p-3">
-                <Input
-                  placeholder="Nome completo"
-                  value={draft.full_name}
-                  onChange={(e) => setDraft({ ...draft, full_name: e.target.value })}
-                />
-                <Grid2>
-                  <select
-                    className="h-9 rounded-md border bg-background px-2 text-sm"
-                    value={draft.relationship}
-                    onChange={(e) => setDraft({ ...draft, relationship: e.target.value })}
-                  >
-                    <option value="filho">Filho(a)</option>
-                    <option value="conjuge">Cônjuge</option>
-                    <option value="outro">Outro</option>
-                  </select>
-                  <Input
-                    type="date"
-                    value={draft.birth_date}
-                    onChange={(e) => setDraft({ ...draft, birth_date: e.target.value })}
-                  />
-                </Grid2>
-                <Grid2>
-                  <Input
-                    placeholder="CPF (opcional)"
-                    value={draft.cpf}
-                    onChange={(e) => setDraft({ ...draft, cpf: maskCpf(e.target.value) })}
-                  />
-                  <Input
-                    placeholder="RG (opcional)"
-                    value={draft.rg}
-                    onChange={(e) => setDraft({ ...draft, rg: e.target.value })}
-                  />
-                </Grid2>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="ghost" className="flex-1" onClick={() => setAdding(false)}>
-                    Cancelar
-                  </Button>
-                  <Button size="sm" className="flex-1" onClick={addDep}>
-                    Adicionar
-                  </Button>
+              <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+                <div>
+                  <div className="text-sm font-medium">1. Anexe um documento do dependente</div>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    A leitura OCR preencherá os dados automaticamente. Depois você poderá revisar e corrigir todos os campos.
+                  </p>
                 </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <DependentUploadButton
+                    type="dependente_certidao"
+                    label="Anexar certidão de nascimento"
+                    uploadKey="dependente_certidao:novo"
+                    uploading={uploading}
+                    onFile={startWithDocument}
+                  />
+                  <DependentUploadButton
+                    type="dependente_rg_cpf"
+                    label="Anexar RG ou CPF"
+                    uploadKey="dependente_rg_cpf:novo"
+                    uploading={uploading}
+                    onFile={startWithDocument}
+                  />
+                </div>
+
+                <Button size="sm" variant="link" className="h-auto px-0" onClick={() => setManual((value) => !value)}>
+                  {manual ? "Ocultar cadastro manual" : "Prefiro digitar os dados manualmente"}
+                </Button>
+                {manual && (
+                  <div className="space-y-2 border-t pt-3">
+                    <DependentFields draft={draft} prefix="new-dependent" onChange={(patch) => setDraft((current) => ({ ...current, ...patch }))} />
+                    <Button size="sm" className="w-full" disabled={saving} onClick={addDep}>
+                      {saving ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+                      Adicionar dependente
+                    </Button>
+                  </div>
+                )}
+                <Button size="sm" variant="ghost" className="w-full" onClick={() => { setAdding(false); setManual(false); }}>
+                  Cancelar
+                </Button>
               </div>
             ) : (
               <Button variant="outline" size="sm" className="w-full" onClick={() => setAdding(true)}>
-                + Adicionar dependente
+                + Adicionar dependente pelos documentos
               </Button>
             )}
           </div>

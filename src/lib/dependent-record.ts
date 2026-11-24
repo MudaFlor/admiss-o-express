@@ -24,6 +24,49 @@ export type DependentDocument = {
   storage_path: string;
 };
 
+export const DEPENDENT_NAME_PLACEHOLDER = "PREENCHER NOME DO DEPENDENTE";
+
+export function normalizeDependentName(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+type DependentOcrCurrent = {
+  full_name?: string | null;
+  birth_date?: string | null;
+  cpf?: string | null;
+  rg?: string | null;
+};
+
+/** Preenche apenas dados ausentes; um nome provisório pode ser substituído pelo OCR. */
+export function dependentOcrPatch(current: DependentOcrCurrent, fields: Record<string, string>) {
+  const patch: { full_name?: string; birth_date?: string; cpf?: string; rg?: string } = {};
+  const currentName = normalizeDependentName(current.full_name ?? "");
+  const extractedName = normalizeDependentName(fields.nome ?? "");
+  if (extractedName && (!currentName || currentName === DEPENDENT_NAME_PLACEHOLDER)) {
+    patch.full_name = extractedName;
+  }
+
+  const cpf = String(fields.cpf ?? "").replace(/\D/g, "");
+  if (!current.cpf && cpf.length === 11) patch.cpf = cpf;
+
+  if (!current.birth_date) {
+    const value = String(fields.data_nascimento ?? "").trim();
+    const brazilian = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+    const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (brazilian) patch.birth_date = `${brazilian[3]}-${brazilian[2]}-${brazilian[1]}`;
+    else if (iso) patch.birth_date = value;
+  }
+
+  const rg = String(fields.rg ?? "").trim();
+  if (!current.rg && rg) patch.rg = rg;
+  return patch;
+}
+
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
@@ -63,7 +106,7 @@ export function buildDependentRecord(dep: DependentIdentity, documents: Dependen
   const certificateValue = (...keys: string[]) => documentValue(["dependente_certidao"], ...keys);
   const anyDocValue = (...keys: string[]) => documentValue([...new Set(linked.map((d) => d.type))], ...keys);
   return {
-    fullName: dep.full_name || certificateValue("nome") || "—",
+    fullName: normalizeDependentName(dep.full_name || certificateValue("nome") || "") || "—",
     birthDate: formatDependentBirthDate(dep.birth_date || anyDocValue("data_nascimento", "nascimento")),
     cpf: formatDependentCpf(dep.cpf || documentValue(["dependente_certidao", "dependente_rg_cpf"], "cpf")),
     liveBirthNumber: anyDocValue("numero_nativivo", "numero_nascido_vivo", "dnv") || "—",
