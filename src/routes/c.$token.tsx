@@ -328,10 +328,10 @@ function CandidatePage() {
             cpf: cand.cpf ?? "",
             email: cand.email ?? "",
             telefone: cand.phone ?? "",
-            sexo: cand.sexo ?? "",
             cor_raca: cand.cor_raca ?? "",
             estado_civil: cand.estado_civil ?? "",
             ...savedForm,
+            sexo: cand.sexo ?? savedForm.sexo ?? "",
           },
     );
   }, [cand]);
@@ -559,6 +559,9 @@ function CandidatePage() {
     f.cpf = candidate.cpf ?? "";
     f.email = candidate.email ?? "";
     f.telefone = candidate.phone ?? "";
+    f.sexo = candidate.sexo ?? "";
+    f.cor_raca = candidate.cor_raca ?? "";
+    f.estado_civil = candidate.estado_civil ?? "";
     setForm(f);
     setStep(2);
   }

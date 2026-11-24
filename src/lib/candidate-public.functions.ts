@@ -18,6 +18,7 @@ import { signedDocumentUrl, assertUploadedFileIsSafe } from "@/lib/security/stor
 import { isAllowedExtension } from "@/lib/upload-rules";
 import { candidateContactSchema, reviewedDocumentsSchema, reviewedOcrData, requiresCtps } from "@/lib/validation/candidate-submission";
 import { crossCheckCandidate, extractDeclaredFromFormData, blockingIssues } from "@/lib/validation/cross-check";
+import { resolveCandidateSex } from "@/lib/admission/candidate-sex";
 
 const clientIp = createServerOnlyFn((): string => {
   return getRequestIP({ xForwardedFor: true }) ?? "unknown";
@@ -89,6 +90,10 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
       .eq("candidate_id", candidate.id)
       .is("deleted_at", null);
 
+    const fd = (candidate.form_data ?? {}) as Record<string, unknown>;
+    const profile = (fd.perfil_recrutamento ?? {}) as Record<string, unknown>;
+    const sexo = resolveCandidateSex(candidate.sexo, { ...profile, ...fd }, documents ?? []);
+
     const docsWithUrls = await Promise.all(
       (documents ?? []).map(async (d) => {
         const signedUrl = await signedDocumentUrl(d.storage_path);
@@ -121,7 +126,7 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
         position: candidate.position,
         status: candidate.status,
         form_data: candidate.form_data,
-        sexo: candidate.sexo,
+        sexo,
         cor_raca: candidate.cor_raca,
         estado_civil: candidate.estado_civil,
         lgpd_accepted_at: candidate.lgpd_accepted_at,
@@ -346,9 +351,17 @@ export const getRequiredDocuments = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await assertRateLimitPersisted(`portal:read:${clientIp()}`, LIMIT_READ);
     const candidate = await loadByToken(data.token);
+    const { data: documents, error } = await supabaseAdmin
+      .from("documents")
+      .select("type, dependent_id, ocr_data")
+      .eq("candidate_id", candidate.id)
+      .is("deleted_at", null);
+    if (error) fail(error);
+    const fd = (candidate.form_data ?? {}) as Record<string, unknown>;
+    const profile = (fd.perfil_recrutamento ?? {}) as Record<string, unknown>;
     const rules = await requiredDocumentsFor({
       position: candidate.position,
-      sexo: candidate.sexo,
+      sexo: resolveCandidateSex(candidate.sexo, { ...profile, ...fd }, documents ?? []),
       estado_civil: candidate.estado_civil,
     });
     return rules.map((r) => ({ document_type: r.document_type, label: r.label }));

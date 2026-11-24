@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { countCandidateStatuses } from "@/lib/candidate-status-counts";
 import { buildBuckets, bucketRange, sameDepartment, selectedPeriodRange } from "@/lib/management-filter";
 import { checkNewEmployee, DUPLICATE_ID_MESSAGE } from "@/lib/validation/employee-id";
+import { resolveCandidateSex } from "@/lib/admission/candidate-sex";
 
 const periodSchema = z
   .object({
@@ -252,13 +253,19 @@ export const createEmployee = createServerFn({ method: "POST" })
       if (c) {
         const fd = (c.form_data ?? {}) as Record<string, unknown>;
         const pr = (fd.perfil_recrutamento ?? {}) as Record<string, unknown>;
+        const { data: documents, error: documentsError } = await supabase
+          .from("documents")
+          .select("type, dependent_id, ocr_data")
+          .eq("candidate_id", data.candidate_id!)
+          .is("deleted_at", null);
+        if (documentsError) fail(documentsError);
         snap = {
           cpf: c.cpf ?? str(fd.cpf),
           rg: str(fd.rg),
           birth_date: isoDate(fd.data_nascimento) ?? isoDate(pr.data_nascimento),
           email: c.email ?? str(fd.email),
           phone: c.phone ?? str(fd.telefone),
-          sexo: c.sexo,
+          sexo: resolveCandidateSex(c.sexo, { ...pr, ...fd }, documents ?? []),
           estado_civil: c.estado_civil,
           address: str(fd.endereco) ?? str(pr.endereco),
           pis: str(fd.pis) ?? str(fd.pis_pasep),

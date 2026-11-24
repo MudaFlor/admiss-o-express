@@ -6,6 +6,7 @@ import { advanceStage } from "@/lib/workflow/stage.server";
 import { requiredDocumentsFor, missingDocs } from "@/lib/requirements/requirements.server";
 import { candidateContactSchema, reviewedDocumentsSchema, reviewedOcrData, requiresCtps } from "@/lib/validation/candidate-submission";
 import { crossCheckCandidate, extractDeclaredFromFormData, blockingIssues } from "@/lib/validation/cross-check";
+import { resolveCandidateSex } from "@/lib/admission/candidate-sex";
 
 type DocType = Database["public"]["Enums"]["document_type"];
 type Candidate = Database["public"]["Tables"]["candidates"]["Row"];
@@ -42,7 +43,8 @@ export async function finalizeApplication(
     const holderDocs = new Set((docs ?? []).filter((d) => !d.dependent_id).map((d) => d.type));
     // RG ou CNH: pelo menos um
     const hasIdentidade = holderDocs.has("rg") || holderDocs.has("cnh");
-    const sexo = data.sexo ?? candidate.sexo;
+    const sexo = data.sexo ?? resolveCandidateSex(candidate.sexo, data.form_data, effectiveDocs);
+    if (!sexo) throw new Error("Preencha o sexo (Feminino ou Masculino) na ficha.");
 
     // Fonte única da verdade: as regras configuradas pelo RH. Sem regras cadastradas,
     // aplica a lista padrão de documentos do titular.
@@ -77,7 +79,7 @@ export async function finalizeApplication(
         email: contact.email,
         phone: typeof data.form_data.telefone === "string" ? data.form_data.telefone.trim().slice(0, 40) || null : candidate.phone,
         status: "em_analise",
-        sexo: data.sexo ?? candidate.sexo ?? null,
+        sexo,
         cor_raca: contact.cor_raca,
         estado_civil: data.estado_civil ?? candidate.estado_civil ?? null,
       })
