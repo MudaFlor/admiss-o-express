@@ -4,8 +4,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowDown, ArrowUp, ArrowUpDown, Brain, FolderOpen, Pencil, Plus, Search, Users } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Brain, FolderOpen, Hash, Pencil, Plus, Search, Users } from "lucide-react";
 import { sortEmployees, type EmployeeSort, type EmployeeSortKey } from "@/lib/employee-sort";
+import { filterEmployees } from "@/lib/employee-filter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,6 +54,7 @@ function ColaboradoresPage() {
   const [importDate, setImportDate] = useState(today);
 
   const [search, setSearch] = useState("");
+  const [matriculaFilter, setMatriculaFilter] = useState("");
   const [sort, setSort] = useState<EmployeeSort>({ key: "full_name", direction: "asc" });
   const [manualOpen, setManualOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -70,11 +72,9 @@ function ColaboradoresPage() {
   });
 
   const filtered = useMemo(() => {
-    const rows = q.data ?? [];
-    const s = search.trim().toLocaleLowerCase("pt-BR");
-    const matching = s ? rows.filter((r) => r.full_name.toLocaleLowerCase("pt-BR").includes(s)) : rows;
+    const matching = filterEmployees(q.data ?? [], { search, matricula: matriculaFilter });
     return sortEmployees(matching, sort);
-  }, [q.data, search, sort]);
+  }, [q.data, search, matriculaFilter, sort]);
 
   function toggleSort(key: EmployeeSortKey) {
     setSort((current) => ({
@@ -282,18 +282,42 @@ function ColaboradoresPage() {
 
       <Card>
         <CardContent className="p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="max-w-sm"
-            />
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Hash className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Filtrar por ID / matrícula…"
+                value={matriculaFilter}
+                onChange={(e) => setMatriculaFilter(e.target.value)}
+                className="max-w-xs"
+              />
+            </div>
+            {(search || matriculaFilter) ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => { setSearch(""); setMatriculaFilter(""); }}
+              >
+                Limpar filtros
+              </Button>
+            ) : null}
+            <span className="text-xs text-muted-foreground">
+              {filtered.length} de {(q.data ?? []).length} colaborador(es)
+            </span>
           </div>
           <Table>
             <TableHeader>
               <TableRow>
+                <SortableHead label="ID / Matrícula" sortKey="matricula" sort={sort} onSort={toggleSort} />
                 <SortableHead label="Nome" sortKey="full_name" sort={sort} onSort={toggleSort} />
                 <SortableHead label="Cargo" sortKey="position" sort={sort} onSort={toggleSort} />
                 <SortableHead label="Departamento" sortKey="department" sort={sort} onSort={toggleSort} />
@@ -305,21 +329,24 @@ function ColaboradoresPage() {
             <TableBody>
               {q.isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">Carregando…</TableCell>
+                  <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">Carregando…</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
                     <div className="flex flex-col items-center gap-2 py-6">
                       <Users className="h-6 w-6 text-muted-foreground/60" />
-                      Nenhum colaborador ainda. Importe um candidato aprovado ou cadastre manualmente.
+                      {(q.data ?? []).length === 0
+                        ? "Nenhum colaborador ainda. Importe um candidato aprovado ou cadastre manualmente."
+                        : "Nenhum colaborador corresponde aos filtros. Ajuste o nome ou a matrícula."}
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 filtered.map((c) => (
                   <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.full_name}{"matricula_esocial" in c && c.matricula_esocial ? <div className="text-xs text-muted-foreground">ID eSocial: {c.matricula_esocial}</div> : null}</TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">{c.matricula_esocial || "—"}</TableCell>
+                    <TableCell className="font-medium">{c.full_name}</TableCell>
                     <TableCell>{c.position ?? "—"}</TableCell>
                     <TableCell>{c.department ?? "—"}</TableCell>
                     <TableCell>
