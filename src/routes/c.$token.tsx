@@ -1676,7 +1676,7 @@ function DependentFields({ draft, onChange, prefix }: {
           id={`${prefix}-name`}
           placeholder="NOME COMPLETO"
           value={draft.full_name}
-          onChange={(e) => onChange({ full_name: normalizeDependentName(e.target.value) })}
+          onChange={(e) => onChange({ full_name: e.target.value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() })}
         />
       </div>
       <Grid2>
