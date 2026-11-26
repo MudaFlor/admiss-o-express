@@ -74,7 +74,7 @@
     "vite-tsconfig-paths": "^6.0.2",
     "word-extractor": "^1.0.4",
     "write-excel-file": "^4.1.1",
-    "zod": "^3.24.2"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
@@ -106,15 +106,6 @@
     "ws": "^8.21.0",
     "source-map-js": "^1.2.2",
     "browserslist": "^4.28.7",
-    "js-yaml": "^4.3.2",
-    "@tanstack/router-generator": {
-      "zod": "^4.6.6"
-    },
-    "@tanstack/router-plugin": {
-      "zod": "^4.6.6"
-    },
-    "@tanstack/start-plugin-core": {
-      "zod": "^4.6.6"
-    }
+    "js-yaml": "^4.3.2"
   }
 }

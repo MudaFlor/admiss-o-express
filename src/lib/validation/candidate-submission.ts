@@ -11,9 +11,7 @@ export const RACE_OPTIONS = [
 
 export const candidateContactSchema = z.object({
   email: z.string().trim().min(1, "E-mail obrigatório.").email("Informe um e-mail válido.").max(255),
-  cor_raca: z.enum(["branca", "preta", "parda", "amarela", "indigena", "nao_informado"], {
-    errorMap: () => ({ message: "Selecione sua raça/cor ou prefiro não informar." }),
-  }),
+  cor_raca: z.enum(["branca", "preta", "parda", "amarela", "indigena", "nao_informado"], { error: "Selecione sua raça/cor ou prefiro não informar." }),
 });
 
 export function candidateContactIssues(input: { email?: unknown; cor_raca?: unknown }): Record<string, string> {

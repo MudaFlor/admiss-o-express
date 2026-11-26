@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const candidateRegistrationDateSchema = z.string({ required_error: "A data de inclusão é obrigatória." })
+export const candidateRegistrationDateSchema = z.string({ error: "A data de inclusão é obrigatória." })
   .trim().min(1, "A data de inclusão é obrigatória.")
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Informe uma data de inclusão válida.")
   .refine((value) => {
