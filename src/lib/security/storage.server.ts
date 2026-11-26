@@ -10,8 +10,11 @@ const BUCKET = "candidate-documents";
 /** Validade curta para links de documentos (dados pessoais sensíveis). */
 export const SIGNED_URL_TTL_SECONDS = 5 * 60;
 
-export async function signedDocumentUrl(path: string): Promise<string | null> {
-  const { data } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+/** Links entregues pelo portal público duram menos, limitando o uso após revogação. */
+export const PORTAL_SIGNED_URL_TTL_SECONDS = 60;
+
+export async function signedDocumentUrl(path: string, ttlSeconds: number = SIGNED_URL_TTL_SECONDS): Promise<string | null> {
+  const { data } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(path, ttlSeconds);
   return data?.signedUrl ?? null;
 }
 

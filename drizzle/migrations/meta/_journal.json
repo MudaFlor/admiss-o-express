@@ -113,6 +113,13 @@
       "when": 1794485659305,
       "tag": "0015_add_early_termination_reasons",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1795712300773,
+      "tag": "0016_restrict_role_checks",
+      "breakpoints": true
     }
   ]
 }

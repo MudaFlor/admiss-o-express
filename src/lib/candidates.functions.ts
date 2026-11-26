@@ -312,11 +312,15 @@ export const approveCandidate = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { error } = await supabase
+    const { data: isHr } = await supabase.rpc("is_hr", { _user_id: userId });
+    if (!isHr) throw new Error("Acesso restrito ao RH.");
+    const { data: updated, error } = await supabase
       .from("candidates")
       .update({ status: "aprovado", reviewed_by: userId, reviewed_at: new Date().toISOString(), rejection_reason: null })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .select("id");
     if (error) fail(error);
+    if (!updated || updated.length === 0) throw new Error("Candidato não encontrado.");
     await supabaseAdmin.from("notifications").insert({
       candidate_id: data.id,
       event: "candidate.approved",

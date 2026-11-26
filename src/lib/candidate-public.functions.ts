@@ -14,7 +14,8 @@ import { advanceStage } from "@/lib/workflow/stage.server";
 import { finalizeApplication } from "@/lib/admission/finalize.server";
 import { requiredDocumentsFor, missingDocs } from "@/lib/requirements/requirements.server";
 import { lookupCep, checkDuplicateCpf } from "@/lib/validation/field-checks";
-import { signedDocumentUrl, assertUploadedFileIsSafe } from "@/lib/security/storage.server";
+import { signedDocumentUrl, assertUploadedFileIsSafe, PORTAL_SIGNED_URL_TTL_SECONDS } from "@/lib/security/storage.server";
+import { sanitizePortalFormData } from "@/lib/validation/portal-form-data";
 import { isAllowedExtension } from "@/lib/upload-rules";
 import { candidateContactSchema, reviewedDocumentsSchema, reviewedOcrData, requiresCtps } from "@/lib/validation/candidate-submission";
 import { crossCheckCandidate, extractDeclaredFromFormData, blockingIssues } from "@/lib/validation/cross-check";
@@ -102,7 +103,7 @@ export const getCandidateByToken = createServerFn({ method: "POST" })
 
     const docsWithUrls = await Promise.all(
       (documents ?? []).map(async (d) => {
-        const signedUrl = await signedDocumentUrl(d.storage_path);
+        const signedUrl = await signedDocumentUrl(d.storage_path, PORTAL_SIGNED_URL_TTL_SECONDS);
         return { ...d, signed_url: signedUrl };
       }),
     );
@@ -371,7 +372,9 @@ export const submitCandidateApplication = createServerFn({ method: "POST" })
     const candidate = await loadByToken(data.token);
     requireConsent(candidate);
 
-    await finalizeApplication(candidate, data, "Envio finalizado pelo candidato");
+    const existing = (candidate.form_data ?? {}) as Record<string, unknown>;
+    const form_data = sanitizePortalFormData(data.form_data, existing);
+    await finalizeApplication(candidate, { ...data, form_data }, "Envio finalizado pelo candidato");
 
     return { ok: true };
   });
