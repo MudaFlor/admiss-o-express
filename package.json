@@ -107,6 +107,14 @@
     "source-map-js": "^1.2.2",
     "browserslist": "^4.28.7",
     "js-yaml": "^4.3.2",
-    "zod": "^4.6.6"
+    "@tanstack/router-generator": {
+      "zod": "^4.6.6"
+    },
+    "@tanstack/router-plugin": {
+      "zod": "^4.6.6"
+    },
+    "@tanstack/start-plugin-core": {
+      "zod": "^4.6.6"
+    }
   }
 }
