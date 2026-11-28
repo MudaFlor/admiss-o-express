@@ -18,6 +18,7 @@ import { Route as AuthenticatedAnalisePerfilRouteImport } from './routes/_authen
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated/gestao'
+import { Route as AuthenticatedImportacaoRouteImport } from './routes/_authenticated/importacao'
 import { Route as AuthenticatedRecrutamentoRouteImport } from './routes/_authenticated/recrutamento'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as CTokenRouteImport } from './routes/c.$token'
@@ -78,6 +79,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedGestaoRoute = AuthenticatedGestaoRouteImport.update({
   id: '/gestao',
   path: '/gestao',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedImportacaoRoute = AuthenticatedImportacaoRouteImport.update({
+  id: '/importacao',
+  path: '/importacao',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedRecrutamentoRoute =
@@ -176,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/gestao': typeof AuthenticatedGestaoRouteWithChildren
+  '/importacao': typeof AuthenticatedImportacaoRoute
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/c/$token': typeof CTokenRoute
@@ -200,6 +207,7 @@ export interface FileRoutesByTo {
   '/analise-perfil': typeof AuthenticatedAnalisePerfilRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/importacao': typeof AuthenticatedImportacaoRoute
   '/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/c/$token': typeof CTokenRoute
@@ -227,6 +235,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/gestao': typeof AuthenticatedGestaoRouteWithChildren
+  '/_authenticated/importacao': typeof AuthenticatedImportacaoRoute
   '/_authenticated/recrutamento': typeof AuthenticatedRecrutamentoRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/c/$token': typeof CTokenRoute
@@ -254,6 +263,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/dashboard'
     | '/gestao'
+    | '/importacao'
     | '/recrutamento'
     | '/auth/callback'
     | '/c/$token'
@@ -278,6 +288,7 @@ export interface FileRouteTypes {
     | '/analise-perfil'
     | '/configuracoes'
     | '/dashboard'
+    | '/importacao'
     | '/recrutamento'
     | '/auth/callback'
     | '/c/$token'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/gestao'
+    | '/_authenticated/importacao'
     | '/_authenticated/recrutamento'
     | '/auth/callback'
     | '/c/$token'
@@ -398,6 +410,13 @@ declare module '@tanstack/react-router' {
       path: '/gestao'
       fullPath: '/gestao'
       preLoaderRoute: typeof AuthenticatedGestaoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/importacao': {
+      id: '/_authenticated/importacao'
+      path: '/importacao'
+      fullPath: '/importacao'
+      preLoaderRoute: typeof AuthenticatedImportacaoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/recrutamento': {
@@ -530,6 +549,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedGestaoRoute: typeof AuthenticatedGestaoRouteWithChildren
+  AuthenticatedImportacaoRoute: typeof AuthenticatedImportacaoRoute
   AuthenticatedRecrutamentoRoute: typeof AuthenticatedRecrutamentoRoute
   AuthenticatedCandidatosIdRoute: typeof AuthenticatedCandidatosIdRoute
   AuthenticatedColaboradoresIdRoute: typeof AuthenticatedColaboradoresIdRoute
@@ -542,6 +562,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedGestaoRoute: AuthenticatedGestaoRouteWithChildren,
+  AuthenticatedImportacaoRoute: AuthenticatedImportacaoRoute,
   AuthenticatedRecrutamentoRoute: AuthenticatedRecrutamentoRoute,
   AuthenticatedCandidatosIdRoute: AuthenticatedCandidatosIdRoute,
   AuthenticatedColaboradoresIdRoute: AuthenticatedColaboradoresIdRoute,

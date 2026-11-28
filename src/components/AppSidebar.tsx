@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, Briefcase, Settings, LogOut, BarChart3, Brain } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Settings, LogOut, BarChart3, Brain, FileUp } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   Sidebar,
@@ -27,6 +27,7 @@ const items = [
 ];
 
 const bottomItems = [
+  { title: "Importar dados antigos", url: "/importacao", icon: FileUp },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
